@@ -57,7 +57,7 @@ psql --version
 
 ### 1. Clone the Repository
 ```bash
-git clone <repository-url> 
+git clone https://github.com/FuTour-App/room-management-system 
 cd backend
 ```
 If the repository is already available locally:
