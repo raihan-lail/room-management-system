@@ -1,14 +1,14 @@
 from fastapi import FastAPI
 
 app = FastAPI(
-    title="Dorm Management API",
+    title="Room Management API",
     version="1.0.0"
 )
 
 @app.get("/")
 async def root():
     return {
-        "message": "Dorm Management API"
+        "message": "Room Management API"
     }
     
 @app.get("/health")
