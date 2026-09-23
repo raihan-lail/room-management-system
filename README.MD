@@ -156,6 +156,7 @@ services:
 Create a .env file in the backend root directory, and fill with this (example):
 ```
 DATABASE_URL=postgresql+asyncpg://postgres:postgres@localhost:5432/room_management
+ALEMBIC_DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/room_management
 JWT_SECRET=your-jwt-secret
 JWT_ALGORITHM=HS256
 JWT_EXPIRES_HOURS=8
