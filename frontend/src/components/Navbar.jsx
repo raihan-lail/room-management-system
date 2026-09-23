@@ -17,7 +17,7 @@ export default function Navbar({
           <i className="bi bi-list" />
         </button>
 
-        <i class="bi bi-geo-alt"></i>
+        <i className="bi bi-geo-alt"></i>
 
         <span className="navbar__title">DONGGI</span>
 

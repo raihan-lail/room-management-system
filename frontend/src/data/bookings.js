@@ -1,6 +1,6 @@
 export const bookings = [
   {
-    room: "101",
+    room: "DS -101",
     guest: {
       name: "Ahmad Fauzan",
       gender: "Male",
@@ -23,8 +23,8 @@ export const bookings = [
       meal_type: "Breakfast",
     },
     started_at: "2026-09-02",
-    ended_at: "2026-09-08",
-    status: "COMPLETED",
+    ended_at: "2026-09-20",
+    status: "OCCUPIED",
     notes: "Late check-in requested",
   },
   {

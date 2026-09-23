@@ -8,7 +8,6 @@
 ### TECH STACK
 - React
 - Vite
-- Tailwind CSS
 - ESLint
 - Javascript
 ### Installation

@@ -11,6 +11,7 @@ import BookingCalendarView from "./pages/bookings/BookingCalendarView";
 import BookingMapView from "./pages/bookings/BookingMapView";
 import BookingTableView from "./pages/bookings/BookingTableView";
 import RoomManagement from "./pages/rooms/RoomManagement";
+import RoomBookingDetails from "./pages/rooms/RoomBookingDetails";
 import RoomAllocation from "./pages/rooms/RoomAllocations";
 import GuestManagement from "./pages/guest/GuestManagement";
 import SiteManagement from "./pages/settings/SiteManagement";
@@ -28,6 +29,7 @@ function App() {
           <Route path="/rooms/map" element={<BookingMapView />} />
           <Route path="/bookings/table" element={<BookingTableView />} />
           <Route path="/rooms/management" element={<RoomManagement />} />
+          <Route path="/rooms/:roomName/booking-details" element={<RoomBookingDetails />} />
           <Route path="/rooms/allocation" element={<RoomAllocation />} />
           <Route path="/guests/management" element={<GuestManagement />} />
           <Route path="/sites" element={<SiteManagement />} />

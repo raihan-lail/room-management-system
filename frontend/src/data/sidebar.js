@@ -26,9 +26,14 @@ export const sidebarMenu = [
     ],
   },
   {
-    label: "Guests",
+    label: "Residents",
     path: "/guests/management",
     icon: "bi-people",
+     items: [
+      { label: 'Residents Management', path: '/guest/management', icon: 'bi-door-open' },
+      { label: 'Meal Type', path: '/rooms/allocation', icon: 'bi-house' },
+       { label: 'Department', path: '/rooms/map', icon: 'bi-house' },
+    ],
   },
   {
     label: "Settings",

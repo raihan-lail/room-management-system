@@ -1,11 +1,13 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { rooms } from "../../data/room";
 
 const PAGE_SIZE = 10;
 
 
 export default function RoomManagement() {
+     const navigate = useNavigate();
      const [currentPage, setCurrentPage] = useState(1);
      const [search, setSearch] = useState("");
 
@@ -138,7 +140,9 @@ export default function RoomManagement() {
                             className="btn btn-neutral"
                             title={`View room  ${room.name || "guest"}`}
                             onClick={() =>
-                              console.log("View room:", room)
+                              navigate(
+                                `/rooms/${room.name}/booking-details`
+                              )
                             }
                           >
                             <i
