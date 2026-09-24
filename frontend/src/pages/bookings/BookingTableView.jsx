@@ -7,6 +7,19 @@ const PAGE_SIZE = 10;
 export default function BookingTableView() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+
+    setCurrentPage(1);
+  };
 
   const filteredBookings = useMemo(() => {
     const query = search.trim().toLowerCase();
@@ -23,21 +36,98 @@ export default function BookingTableView() {
         booking.guest?.meal_type,
         booking.status,
         booking.notes,
-      ].some((value) =>
-        (value || "").toString().toLowerCase().includes(query)
-      )
+      ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
   }, [search]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredBookings.length / PAGE_SIZE));
+  const sortedBookings = useMemo(() => {
+    if (!sortConfig.key) return filteredBookings;
+
+    return [...filteredBookings].sort((a, b) => {
+      let aValue;
+      let bValue;
+
+      switch (sortConfig.key) {
+        case "room":
+          aValue = a.room;
+          bValue = b.room;
+          break;
+
+        case "guest":
+          aValue = a.guest?.name;
+          bValue = b.guest?.name;
+          break;
+
+        case "gender":
+          aValue = a.guest?.gender;
+          bValue = b.guest?.gender;
+          break;
+
+        case "country":
+          aValue = a.guest?.country;
+          bValue = b.guest?.country;
+          break;
+
+        case "dept":
+          aValue = a.guest?.dept;
+          bValue = b.guest?.dept;
+          break;
+
+        case "meal_type":
+          aValue = a.guest?.meal_type;
+          bValue = b.guest?.meal_type;
+          break;
+
+        case "started_at":
+          aValue = a.started_at;
+          bValue = b.started_at;
+          break;
+
+        case "ended_at":
+          aValue = a.ended_at;
+          bValue = b.ended_at;
+          break;
+
+        case "status":
+          aValue = a.status;
+          bValue = b.status;
+          break;
+
+        case "notes":
+          aValue = a.notes;
+          bValue = b.notes;
+          break;
+
+        default:
+          return 0;
+      }
+
+      aValue = (aValue ?? "").toString().toLowerCase();
+      bValue = (bValue ?? "").toString().toLowerCase();
+
+      if (aValue < bValue) {
+        return sortConfig.direction === "asc" ? -1 : 1;
+      }
+
+      if (aValue > bValue) {
+        return sortConfig.direction === "asc" ? 1 : -1;
+      }
+
+      return 0;
+    });
+  }, [filteredBookings, sortConfig]);
+
+  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedBookings = useMemo(() => {
     const startIndex = (safePage - 1) * PAGE_SIZE;
-    return filteredBookings.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredBookings, safePage]);
 
-  const startRow = filteredBookings.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+    return sortedBookings.slice(startIndex, startIndex + PAGE_SIZE);
+  }, [sortedBookings, safePage]);
+
+  const startRow =
+    filteredBookings.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
   const endRow = Math.min(safePage * PAGE_SIZE, filteredBookings.length);
 
   const handleSearchChange = (value) => {
@@ -51,9 +141,7 @@ export default function BookingTableView() {
         {/* HEADER */}
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">
-              Bookings (table view)
-            </h1>
+            <h1 className="dashboard-header__title">Bookings (table view)</h1>
 
             <p className="dashboard-header__subtitle">
               View and manage room bookings
@@ -102,15 +190,90 @@ export default function BookingTableView() {
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
-                  <th>Room</th>
-                  <th>Guest</th>
-                  <th>Gender</th>
-                  <th>Country</th>
-                  <th>Department</th>
-                  <th>Meal Type</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("room")}
+                    >
+                      Room
+                      <i className="bi bi-sort-alpha-down" column="room">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("guest")}
+                    >
+                      Guest
+                      <i className="bi bi-sort-alpha-down" column="guest">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
+
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("gender")}
+                    >
+                      Gender
+                      <i className="bi bi-sort-alpha-down" column="gender"></i>
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("country")}
+                    >
+                      Country
+                      <i className="bi bi-sort-alpha-down" column="country"></i>
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("department")}
+                    >
+                      Department
+                      <i
+                        className="bi bi-sort-alpha-down"
+                        column="department"
+                      ></i>
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("meal_type")}
+                    >
+                      Meal Type
+                      <i
+                        className="bi bi-sort-alpha-down"
+                        column="meal_type"
+                      ></i>
+                    </button>
+                  </th>
                   <th>Started At</th>
                   <th>Ended At</th>
-                  <th>Status</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("status")}
+                    >
+                      Status
+                      <i className="bi bi-sort-alpha-down" column="status"></i>
+                    </button>
+                  </th>
                   <th>Notes</th>
                   <th>Action</th>
                 </tr>
@@ -125,9 +288,7 @@ export default function BookingTableView() {
                   </tr>
                 ) : (
                   pagedBookings.map((booking, index) => (
-                    <tr
-                      key={`${booking.room}-${booking.started_at}-${index}`}
-                    >
+                    <tr key={`${booking.room}-${booking.started_at}-${index}`}>
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}
                       </td>
@@ -170,10 +331,7 @@ export default function BookingTableView() {
                               console.log("View booking:", booking)
                             }
                           >
-                            <i
-                              className="bi bi-eye"
-                              aria-hidden="true"
-                            />
+                            <i className="bi bi-eye" aria-hidden="true" />
                           </button>
 
                           <button
@@ -209,9 +367,7 @@ export default function BookingTableView() {
                 type="button"
                 className="btn btn-neutral"
                 disabled={safePage <= 1}
-                onClick={() =>
-                  setCurrentPage((prev) => Math.max(1, prev - 1))
-                }
+                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
                 Prev

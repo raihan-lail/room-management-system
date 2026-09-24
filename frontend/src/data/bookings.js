@@ -1,6 +1,6 @@
 export const bookings = [
   {
-    room: "DS -101",
+    room: "101",
     guest: {
       name: "Ahmad Fauzan",
       gender: "Male",
@@ -10,7 +10,7 @@ export const bookings = [
     },
     started_at: "2026-09-01",
     ended_at: "2026-09-05",
-    status: "COMPLETED",
+    status: "IN_HOUSE",
     notes: "Regular accommodation",
   },
   {
@@ -24,7 +24,7 @@ export const bookings = [
     },
     started_at: "2026-09-02",
     ended_at: "2026-09-20",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Late check-in requested",
   },
   {
@@ -38,7 +38,7 @@ export const bookings = [
     },
     started_at: "2026-09-04",
     ended_at: "2026-09-12",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "Needs workspace",
   },
   {
@@ -52,7 +52,7 @@ export const bookings = [
     },
     started_at: "2026-09-05",
     ended_at: "2026-09-10",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "Vegetarian meal requested",
   },
   {
@@ -65,8 +65,8 @@ export const bookings = [
       meal_type: "Full Board",
     },
     started_at: "2026-09-07",
-    ended_at: "2026-09-15",
-    status: "COMPLETED",
+    ended_at: "2026-09-25",
+    status: "IN_HOUSE",
     notes: "",
   },
   {
@@ -80,7 +80,7 @@ export const bookings = [
     },
     started_at: "2026-09-09",
     ended_at: "2026-09-14",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "Allergy information provided",
   },
   {
@@ -94,7 +94,7 @@ export const bookings = [
     },
     started_at: "2026-09-10",
     ended_at: "2026-09-20",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Booking extended by 3 days",
   },
   {
@@ -108,7 +108,7 @@ export const bookings = [
     },
     started_at: "2026-09-11",
     ended_at: "2026-09-18",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "Airport pickup required",
   },
   {
@@ -122,7 +122,7 @@ export const bookings = [
     },
     started_at: "2026-09-12",
     ended_at: "2026-09-19",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "Early check-out",
   },
   {
@@ -136,7 +136,7 @@ export const bookings = [
     },
     started_at: "2026-09-13",
     ended_at: "2026-09-22",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Conference participant",
   },
   {
@@ -150,7 +150,7 @@ export const bookings = [
     },
     started_at: "2026-09-14",
     ended_at: "2026-09-21",
-    status: "COMPLETED",
+    status: "IN_REQUEST",
     notes: "",
   },
   {
@@ -164,7 +164,7 @@ export const bookings = [
     },
     started_at: "2026-09-15",
     ended_at: "2026-09-25",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Requires quiet room",
   },
   {
@@ -178,7 +178,7 @@ export const bookings = [
     },
     started_at: "2026-09-16",
     ended_at: "2026-09-23",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Home leave scheduled",
   },
   {
@@ -192,7 +192,7 @@ export const bookings = [
     },
     started_at: "2026-09-17",
     ended_at: "2026-09-28",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Long stay",
   },
   {
@@ -206,7 +206,7 @@ export const bookings = [
     },
     started_at: "2026-09-18",
     ended_at: "2026-09-24",
-    status: "OCCUPIED",
+    status: "IN_HOUSE",
     notes: "Halal meal requested",
   },
   {
@@ -218,9 +218,9 @@ export const bookings = [
       dept: "Engineering",
       meal_type: "Breakfast",
     },
-    started_at: "2026-09-20",
-    ended_at: "2026-09-27",
-    status: "BOOKED",
+    started_at: "2026-09-02",
+    ended_at: "2026-09-12",
+    status: "CONFIRMED",
     notes: "Arrival after 18:00",
   },
   {
@@ -232,9 +232,9 @@ export const bookings = [
       dept: "Administration",
       meal_type: "Full Board",
     },
-    started_at: "2026-09-23",
-    ended_at: "2026-09-30",
-    status: "BOOKED",
+    started_at: "2026-09-03",
+    ended_at: "2026-09-11",
+    status: "CONFIRMED",
     notes: "First-time guest",
   },
   {
@@ -246,9 +246,9 @@ export const bookings = [
       dept: "Operations",
       meal_type: "Full Board",
     },
-    started_at: "2026-09-24",
+    started_at: "2026-09-02",
     ended_at: "2026-10-02",
-    status: "BOOKED",
+    status: "CONFIRMED",
     notes: "",
   },
   {
@@ -260,9 +260,9 @@ export const bookings = [
       dept: "Finance",
       meal_type: "Breakfast",
     },
-    started_at: "2026-09-25",
-    ended_at: "2026-10-01",
-    status: "PENDING",
+    started_at: "2026-09-02",
+    ended_at: "2026-09-12",
+    status: "CHECKED_OUT",
     notes: "Waiting for final confirmation",
   },
   {
@@ -274,9 +274,23 @@ export const bookings = [
       dept: "Research",
       meal_type: "Half Board",
     },
-    started_at: "2026-09-27",
-    ended_at: "2026-10-05",
-    status: "PENDING",
+    started_at: "2026-09-05",
+    ended_at: "2026-09-16",
+    status: "CHECKED_OUT",
+    notes: "Arrival details not confirmed",
+  },
+  {
+    room: "201",
+    guest: {
+      name: "Rin Thosaka",
+      gender: "Female",
+      country: "Japan",
+      dept: "Research",
+      meal_type: "Japanese",
+    },
+    started_at: "2026-09-05",
+    ended_at: "2026-10-01",
+    status: "IN_HOUSE",
     notes: "Arrival details not confirmed",
   },
 ];

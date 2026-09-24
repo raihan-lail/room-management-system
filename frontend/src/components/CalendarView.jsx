@@ -17,11 +17,12 @@ const CALENDAR_START = "2026-09-01";
 const CALENDAR_END = "2026-10-28";
 
 const STATUSES = [
-  "OCCUPIED",
-  "BOOKED",
-  "COMPLETED",
-  "PENDING",
-  "CANCELLED",
+  "CONFIRMED",
+  "IN_REQUEST",
+  "IN_HOUSE",
+  "CHECKED_OUT",
+  "NO_SHOW",
+  "ARCHIVED"
 ];
 
 function parseDate(dateStr) {
@@ -526,8 +527,6 @@ export default function CalendarView() {
                   }
                 >
 
-                  {/* ROOM */}
-
                   <div className="calendar-room">
 
                     <strong>
@@ -538,8 +537,6 @@ export default function CalendarView() {
 
                   </div>
 
-                  {/* TIMELINE */}
-
                   <div
                     className="calendar-timeline"
                     style={{
@@ -548,8 +545,6 @@ export default function CalendarView() {
                         DAY_WIDTH,
                     }}
                   >
-
-                    {/* GRID */}
 
                     {dates.map((date) => (
                       <div
@@ -641,11 +636,7 @@ export default function CalendarView() {
   );
 }
 
-/*
- * =================================
- * BOOKING TOOLTIP
- * =================================
- */
+
 
 function BookingTooltip({ booking }) {
   const statusClass = String(

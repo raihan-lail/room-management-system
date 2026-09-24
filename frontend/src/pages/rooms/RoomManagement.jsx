@@ -10,6 +10,22 @@ export default function RoomManagement() {
      const navigate = useNavigate();
      const [currentPage, setCurrentPage] = useState(1);
      const [search, setSearch] = useState("");
+     const [sortConfig, setSortConfig] = useState({
+  key: null,
+  direction: "asc",
+});
+
+ const handleSort = (key) => {
+  setSortConfig((prev) => ({
+    key,
+    direction:
+      prev.key === key && prev.direction === "asc"
+        ? "desc"
+        : "asc",
+  }));
+
+  setCurrentPage(1);
+};
 
      const filteredRooms = useMemo(() => {
         const query = search.trim().toLowerCase();
@@ -26,13 +42,56 @@ export default function RoomManagement() {
     )
     )
      }, [search]);
+
+      const sortedRoom = useMemo(() => {
+  if (!sortConfig.key) return filteredRooms;
+
+  return [...filteredRooms].sort((a, b) => {
+    let aValue;
+    let bValue;
+
+    switch (sortConfig.key) {
+      case "name":
+        aValue = a.name;
+        bValue = b.name;
+        break;
+
+      case "location":
+        aValue = a.location;
+        bValue = b.location;
+        break;
+
+      case "status":
+        aValue = a.status;
+        bValue = b.status;
+        break;
+
+      default:
+        return 0;
+    }
+
+    aValue = (aValue ?? "").toString().toLowerCase();
+    bValue = (bValue ?? "").toString().toLowerCase();
+
+    if (aValue < bValue) {
+      return sortConfig.direction === "asc" ? -1 : 1;
+    }
+
+    if (aValue > bValue) {
+      return sortConfig.direction === "asc" ? 1 : -1;
+    }
+
+    return 0;
+  });
+}, [filteredRooms, sortConfig]);
+
      const totalPages = Math.max(1, Math.ceil(filteredRooms.length / PAGE_SIZE));
      const safePage = Math.min(currentPage, totalPages);
 
       const pagedRooms = useMemo(() => {
          const startIndex = (safePage - 1) * PAGE_SIZE;
-         return filteredRooms.slice(startIndex, startIndex + PAGE_SIZE);
-       }, [filteredRooms, safePage]);
+         return sortedRoom.slice(startIndex, startIndex + PAGE_SIZE);
+       }, [sortedRoom, safePage]);
      
        const startRow = filteredRooms.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
        const endRow = Math.min(safePage * PAGE_SIZE, filteredRooms.length);
@@ -94,10 +153,43 @@ export default function RoomManagement() {
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
-                  <th>Room Number</th>
-                  <th>Location</th>
+                    <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("name")}
+                    >
+                      Room Number
+                      <i className="bi bi-sort-alpha-down" column="name">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
+                 <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("location")}
+                    >
+                      Location
+                      <i className="bi bi-sort-alpha-down" column="location">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
                   <th>Desc</th>
-                  <th>Status</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("status")}
+                    >
+                      Status
+                      <i className="bi bi-sort-alpha-down" column="status">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
                    <th>Action</th>
                   
                 </tr>

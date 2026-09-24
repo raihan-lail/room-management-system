@@ -540,6 +540,98 @@ user-dropdown-toogle {
   transition: background-color 0.2s ease;
 }
 
+.notifications-dropdown {
+  position: fixed;
+  top: 70px; 
+  left: 50%;
+  transform: translateX(-50%);
+  width: min(420px, calc(100vw - 32px));
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22);
+  z-index: 1000; 
+  overflow: hidden;
+}
+@media (min-width: 728px) {
+  .notifications-dropdown {
+    position: absolute;
+    top: calc(100% + 10px);
+    right: 0;
+    left: auto;
+    transform: none;
+    z-index: 60;
+  }
+
+  .notifications-dropdown__body {
+    max-height: 360px;
+  }
+}
+
+.notifications-dropdown__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  border-bottom: 1px solid #e2e8f0;
+  font-weight: 800;
+  color: #111827;
+}
+
+.notifications-refresh {
+  border: 1px solid #e2e8f0;
+  background: #eaa8a8;
+  color: #0f172a;
+  font-weight: 700;
+  border-radius: 10px;
+  padding: 6px 10px;
+  cursor: pointer;
+  transition: background-color 0.15s ease, filter 0.15s ease;
+}
+
+.notifications-refresh:hover:not(:disabled) {
+  background-color: #f8fafc;
+}
+
+.notifications-refresh:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.notifications-dropdown__body {
+  padding: 12px 14px 14px;
+  max-height: 360px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.notification-item {
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #ffffff;
+}
+
+.notification-item.is-unread {
+  border-color: rgba(39, 56, 150, 0.45);
+  background-color: #f8fafc;
+}
+
+.notification-item__message {
+  margin: 0;
+  font-size: 14px;
+  color: #111827;
+}
+
+.notification-item__meta {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #64748b;
+}
+
 .logout-button:hover {
   background-color: #f3f4f6;
 }
@@ -1163,6 +1255,34 @@ textarea,
 .office-table tbody tr:hover td {
   background-color: #f8fafc;
 }
+.table-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 0;
+  border: 0;
+  background: transparent;
+
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+
+  cursor: pointer;
+}
+
+.table-sort:hover {
+  color: var(--color-primary);
+}
+
+.table-sort i {
+  font-size: 0.8rem;
+  opacity: 0.65;
+}
+
+.table-sort:hover i {
+  opacity: 1;
+}
 
 .office-pagination {
   display: flex;
@@ -1207,12 +1327,12 @@ textarea,
   white-space: nowrap;
 }
 
-.booking-status--completed {
-  background-color: var(--brand-soft);
+.booking-status--in_request {
+  background-color: #FFFF00;
   color: var(--brand-bold);
 }
 
-.booking-status--occupied {
+.booking-status--in_house {
   background-color: var(--brand-nav);
   color: #ffffff;
 }
@@ -1684,17 +1804,26 @@ textarea,
   border-radius: 999px;
 }
 
-.calendar-legend__dot--occupied {
+.calendar-legend__dot--in_house {
   background-color: #273896;
 }
-
-.calendar-legend__dot--booked {
-  background-color: #e7ebff;
-  border: 1px solid #273896;
+.calendar-legend__dot--confirmed {
+  background-color: #008000;
 }
 
-.calendar-legend__dot--completed {
-  background-color: #e2e8f0;
+.calendar-legend__dot--checked_out {
+  background-color: #FF0000;
+}
+
+
+
+.calendar-legend__dot--in_request {
+  background-color: #e7ebff;
+  border: 1px solid #FFFF00;
+}
+
+.calendar-legend__dot--no_show {
+  background-color: #B2BEB5;
 }
 
 .calendar-legend__dot--pending {
@@ -1707,10 +1836,6 @@ textarea,
   border: 1px dashed #94a3b8;
 }
 
-
-/* =========================
-   BOOKING CALENDAR
-========================= */
 
 .booking-calendar {
   width: 100%;
@@ -1951,6 +2076,10 @@ textarea,
   background: #273896;
   color: #ffffff;
 }
+.booking-in_house {
+  background: #273896;
+  color: #ffffff;
+}
 
 
 /* BOOKED */
@@ -1963,13 +2092,28 @@ textarea,
 }
 
 
-/* COMPLETED */
+
 
 .booking-completed {
   background: #e2e8f0;
   color: #0f172a;
 
   border: 1px solid #94a3b8;
+}
+.booking-in_request {
+  background: #f4f4f5;
+  color: #0f172a;
+
+  border: 3px solid #FFFF00;
+}
+.booking-confirmed {
+  background: green;
+  color: white;
+}
+
+.booking-checked_out {
+  background: red;
+  color: white;
 }
 
 
@@ -2040,7 +2184,7 @@ textarea,
     0 12px 30px
       rgba(15, 23, 42, 0.18);
 
-  z-index: 100;
+  z-index: 99999;
 
   pointer-events: none;
 }
