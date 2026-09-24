@@ -19,6 +19,7 @@ import EmployeeManagement from "./pages/settings/EmployeeManagement";
 import ManagePermissions from "./pages/settings/ManagePermissions";
 import AuditLog from "./pages/settings/AuditLogs";
 import Login from "./pages/auth/login";
+import MealType from "./pages/guest/MealType";
 
 function App() {
   return (
@@ -34,6 +35,7 @@ function App() {
           <Route path="/rooms/:roomName/booking-details" element={<RoomBookingDetails />} />
           <Route path="/rooms/allocation" element={<RoomAllocation />} />
           <Route path="/guests/management" element={<GuestManagement />} />
+          <Route path="/guests/meal-type" element={<MealType />} />
           <Route path="/sites" element={<SiteManagement />} />
           <Route path="/employees" element={<EmployeeManagement />} />
           <Route path="/manage-permissions" element={<ManagePermissions />} />

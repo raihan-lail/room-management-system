@@ -31,8 +31,8 @@ export const sidebarMenu = [
     icon: "bi-people",
      items: [
       { label: 'Residents Management', path: '/guests/management', icon: 'bi-door-open' },
-      { label: 'Meal Type', path: '/guests/meal-type', icon: 'bi-house' },
-       { label: 'Department', path: '/guests/department', icon: 'bi-house' },
+      { label: 'Meal Type', path: '/guests/meal-type', icon: 'bi-fork-knife' },
+       
     ],
   },
   {

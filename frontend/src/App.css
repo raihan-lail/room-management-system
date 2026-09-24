@@ -1795,6 +1795,14 @@ textarea,
   border: 1px solid #e2e8f0;
 }
 
+.page-permission-role-selector {
+  gap: 2;
+
+}
+.permission-role-selector {
+  margin-left: 5px;
+}
+
 .detail-card__head {
   display: flex;
   align-items: flex-end;
@@ -1844,6 +1852,7 @@ textarea,
   color: #64748b;
 }
 
+
 .detail-grid__value {
   margin: 2px 0 0;
 
@@ -1859,7 +1868,37 @@ textarea,
 /* =========================
    CALENDAR FILTERS
 ========================= */
+.driver-availability-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  min-width: 52px;
+}
 
+.driver-availability-toggle i {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.driver-availability-toggle.is-on {
+  color: #166534;
+}
+
+.driver-availability-toggle.is-off {
+  color: #991b1b;
+}
+
+.driver-availability-toggle:disabled {
+  color: #94a3b8;
+  cursor: not-allowed;
+  opacity: 1;
+}
 .calendar-filters {
   align-items: center;
 }
