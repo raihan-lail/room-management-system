@@ -110,7 +110,7 @@ export const roomTypeChartData = {
 };
 
 export const bookingStatusChartData = {
-  labels: ["Occupied", "Booked", "Completed", "Pending", "Cancelled"],
+  labels: ["CONFIRMED", "IN_REQUEST", "IN_HOUSE", "CHECKED_OUT", "ARCHIVED"],
   datasets: [
     {
       label: "Bookings",
