@@ -171,6 +171,9 @@ export default function Navbar({
       {/* DROPDOWN MENU */}
       {userDropdownOpen ? (
         <div className="user-dropdown-menu" role="menu">
+          <a href="/login">
+
+
           <button
             type="button"
             className="logout-button"
@@ -179,6 +182,7 @@ export default function Navbar({
             <i className="bi bi-box-arrow-right" aria-hidden="true" />
             Logout
           </button>
+          </a>
         </div>
       ) : null}
     </div>

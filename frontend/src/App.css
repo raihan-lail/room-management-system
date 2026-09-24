@@ -1331,6 +1331,14 @@ textarea,
   background-color: #FFFF00;
   color: var(--brand-bold);
 }
+.booking-status--checked_out {
+  background-color: red;
+  color: white;
+}
+.booking-status--confirmed {
+  background-color: green;
+  color: white;
+}
 
 .booking-status--in_house {
   background-color: var(--brand-nav);
@@ -1458,6 +1466,145 @@ textarea,
   color: #ffffff;
 }
 
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+  padding: 32px;
+}
+
+.login-wrapper {
+  width: 100%;
+  max-width: 1100px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 420px;
+  background-color: #ffffff;
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+  padding: 32px;
+  border: 1px solid var(--brand-bold);
+}
+
+.login-card-branded .login-title {
+  color: var(--brand-bold);
+}
+
+.login-title {
+  margin: 0 0 24px 0;
+  font-size: 26px;
+  text-align: center;
+}
+
+.login-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  font-size: 14px;
+  color: var(--brand-bold);
+}
+
+.form-field input,
+.form-field select,
+.form-field textarea {
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--brand-bold);
+  font-size: 15px;
+  background-color: #ffffff;
+}
+
+.form-field input:focus,
+.form-field select:focus,
+.form-field textarea:focus {
+  outline: 2px solid var(--brand-bold);
+  border-color: var(--brand-bold);
+}
+.password-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.password-input-wrapper input {
+  width: 100%;
+  padding-right: 46px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  border: none;
+  background: transparent;
+  color: var(--brand-bold);
+  padding: 6px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+
+.password-toggle i {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.password-toggle:focus-visible {
+  outline: 2px solid var(--brand-bold);
+  outline-offset: 2px;
+}
+
+.password-toggle:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.login-form button[type='submit'] {
+  padding: 12px;
+  border: none;
+  border-radius: 8px;
+  background-color: var(--brand-bold);
+  color: #ffffff;
+  font-size: 15px;
+  cursor: pointer;
+  transition: filter 0.2s ease;
+}
+
+.login-form button[type='submit']:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.login-form button[type='submit']:hover:not(:disabled) {
+  filter: brightness(0.95);
+}
+.auth-links {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+}
+.app-title {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
 /* =========================
    BUTTONS
 ========================= */
@@ -1762,7 +1909,8 @@ textarea,
   color: #64748b;
 }
 
-.calendar-date-filter input {
+.calendar-date-filter input,
+.calendar-date-filter select {
   min-width: 0;
 
   border: 0;
@@ -1773,6 +1921,35 @@ textarea,
   line-height: 16px;
 
   color: #111827;
+}
+
+.calendar-date-filter select {
+  cursor: pointer;
+}
+
+.calendar-range {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 8px 12px;
+
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+
+  color: #334155;
+
+  margin-bottom: 12px;
+}
+
+.calendar-range i {
+  color: #64748b;
 }
 
 .calendar-legend {

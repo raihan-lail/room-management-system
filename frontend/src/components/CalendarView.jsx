@@ -1,4 +1,10 @@
-import { useMemo, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import bookingsData from "../data/bookings";
 import { rooms as roomsData } from "../data/room";
@@ -10,11 +16,21 @@ const rooms = Array.isArray(roomsData)
     ? roomsData
     : [];
 
-const DAY_WIDTH = 34;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
-const CALENDAR_START = "2026-09-01";
-const CALENDAR_END = "2026-10-28";
+const DAY_WIDTH = 34;
+
+const DEFAULT_SETTINGS = {
+  calendarStart: "2026-09-01",
+  calendarEnd: "2026-10-28",
+  viewMode: "CUSTOM",
+};
+
+const VIEW_DAYS = {
+  DAILY: 0,
+  WEEKLY: 6,
+  BIWEEKLY: 13,
+};
 
 const STATUSES = [
   "CONFIRMED",
@@ -72,10 +88,43 @@ function dayCount(start, end) {
   );
 }
 
+function addDays(dateStr, days) {
+  const date = parseDate(dateStr);
+
+  if (!date) return null;
+
+  date.setUTCDate(date.getUTCDate() + days);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function lastDayOfMonth(dateStr) {
+  const date = parseDate(dateStr);
+
+  if (!date) return null;
+
+  return new Date(
+    Date.UTC(
+      date.getUTCFullYear(),
+      date.getUTCMonth() + 1,
+      0
+    )
+  ).toISOString().slice(0, 10);
+}
+
 function isWeekend(date) {
   const day = date.getUTCDay();
 
   return day === 0 || day === 6;
+}
+
+function formatVisibleDate(date) {
+  return date.toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
 }
 
 function bookingOverlaps(
@@ -129,20 +178,74 @@ export default function CalendarView() {
   const [endDate, setEndDate] =
     useState("");
 
+  const [calendarStart, setCalendarStart] =
+    useState(DEFAULT_SETTINGS.calendarStart);
+
+  const [calendarEnd, setCalendarEnd] =
+    useState(DEFAULT_SETTINGS.calendarEnd);
+
+  const [viewMode, setViewMode] =
+    useState(DEFAULT_SETTINGS.viewMode);
+
+  const calendarRef = useRef(null);
+
+  const [visibleStart, setVisibleStart] =
+    useState(null);
+
+  const [visibleEnd, setVisibleEnd] =
+    useState(null);
+
+  /*
+   * Calendar bounds
+   */
+  const sortedCalStart =
+    calendarStart <= calendarEnd
+      ? calendarStart
+      : calendarEnd;
+
+  const sortedCalEnd =
+    calendarStart <= calendarEnd
+      ? calendarEnd
+      : calendarStart;
+
   /*
    * Calendar window
    */
   const windowStart =
     startDate &&
-    startDate >= CALENDAR_START
+    startDate >= sortedCalStart &&
+    startDate <= sortedCalEnd
       ? startDate
-      : CALENDAR_START;
+      : sortedCalStart;
 
-  const windowEnd =
-    endDate &&
-    endDate <= CALENDAR_END
-      ? endDate
-      : CALENDAR_END;
+  let windowEnd;
+
+  if (viewMode === "CUSTOM") {
+    windowEnd =
+      endDate &&
+      endDate >= sortedCalStart &&
+      endDate <= sortedCalEnd
+        ? endDate
+        : sortedCalEnd;
+  } else if (viewMode === "MONTHLY") {
+    windowEnd =
+      lastDayOfMonth(windowStart) ||
+      windowStart;
+  } else {
+    windowEnd =
+      addDays(
+        windowStart,
+        VIEW_DAYS[viewMode]
+      ) || windowStart;
+  }
+
+  if (windowEnd > sortedCalEnd) {
+    windowEnd = sortedCalEnd;
+  }
+
+  if (windowEnd < windowStart) {
+    windowEnd = windowStart;
+  }
 
   /*
    * Generate calendar dates
@@ -153,6 +256,72 @@ export default function CalendarView() {
       windowEnd
     );
   }, [windowStart, windowEnd]);
+
+  /*
+   * Visible date range (changes on scroll/resize)
+   */
+  const updateVisibleRange = useCallback(() => {
+    const container = calendarRef.current;
+
+    if (!container || dates.length === 0) {
+      setVisibleStart(null);
+      setVisibleEnd(null);
+      return;
+    }
+
+    const header = container.querySelector(
+      ".calendar-room-header"
+    );
+
+    const headerWidth =
+      header?.getBoundingClientRect().width ||
+      64;
+
+    const scrollLeft = container.scrollLeft;
+    const containerWidth =
+      container.clientWidth;
+
+    const firstIndex = Math.max(
+      0,
+      Math.floor(
+        (scrollLeft - headerWidth) / DAY_WIDTH
+      )
+    );
+
+    const lastIndex = Math.min(
+      dates.length - 1,
+      Math.floor(
+        (scrollLeft +
+          containerWidth -
+          headerWidth -
+          1) /
+          DAY_WIDTH
+      )
+    );
+
+    setVisibleStart(dates[firstIndex]);
+    setVisibleEnd(
+      dates[Math.max(firstIndex, lastIndex)]
+    );
+  }, [dates]);
+
+  useEffect(() => {
+    updateVisibleRange();
+
+    const onResize = () =>
+      updateVisibleRange();
+
+    window.addEventListener(
+      "resize",
+      onResize
+    );
+
+    return () =>
+      window.removeEventListener(
+        "resize",
+        onResize
+      );
+  }, [updateVisibleRange]);
 
   /*
    * Filter bookings
@@ -319,7 +488,10 @@ export default function CalendarView() {
     roomFilter.trim() ||
       guestFilter.trim() ||
       startDate ||
-      endDate
+      endDate ||
+      calendarStart !== DEFAULT_SETTINGS.calendarStart ||
+      calendarEnd !== DEFAULT_SETTINGS.calendarEnd ||
+      viewMode !== DEFAULT_SETTINGS.viewMode
   );
 
   const clearFilters = () => {
@@ -327,10 +499,30 @@ export default function CalendarView() {
     setGuestFilter("");
     setStartDate("");
     setEndDate("");
+    setCalendarStart(
+      DEFAULT_SETTINGS.calendarStart
+    );
+    setCalendarEnd(
+      DEFAULT_SETTINGS.calendarEnd
+    );
+    setViewMode(DEFAULT_SETTINGS.viewMode);
   };
 
   return (
     <div className="calendar-view">
+
+      <div className="calendar-range">
+        <i
+          className="bi bi-calendar-range"
+          aria-hidden="true"
+        />
+
+        <span>
+          {visibleStart && visibleEnd
+            ? `${formatVisibleDate(visibleStart)} - ${formatVisibleDate(visibleEnd)}`
+            : "No dates to display"}
+        </span>
+      </div>
 
       {/* =========================
           FILTERS
@@ -383,8 +575,8 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={CALENDAR_START}
-              max={CALENDAR_END}
+              min={sortedCalStart}
+              max={sortedCalEnd}
               value={startDate}
               onChange={(e) =>
                 setStartDate(e.target.value)
@@ -397,9 +589,16 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={CALENDAR_START}
-              max={CALENDAR_END}
-              value={endDate}
+              min={sortedCalStart}
+              max={sortedCalEnd}
+              value={
+                viewMode === "CUSTOM"
+                  ? endDate
+                  : windowEnd
+              }
+              disabled={
+                viewMode !== "CUSTOM"
+              }
               onChange={(e) =>
                 setEndDate(e.target.value)
               }
@@ -443,10 +642,89 @@ export default function CalendarView() {
       </div>
 
       {/* =========================
+          CALENDAR SETTINGS
+      ========================== */}
+
+      <div className="calendar-filters form-actions bookings-toolbar">
+
+        <div className="calendar-filters__dates">
+
+          <label
+            className="calendar-date-filter"
+          >
+            <span>Calendar Start</span>
+
+            <input
+              type="date"
+              value={calendarStart}
+              onChange={(e) =>
+                setCalendarStart(e.target.value)
+              }
+            />
+          </label>
+
+          <label
+            className="calendar-date-filter"
+          >
+            <span>Calendar End</span>
+
+            <input
+              type="date"
+              value={calendarEnd}
+              onChange={(e) =>
+                setCalendarEnd(e.target.value)
+              }
+            />
+          </label>
+
+         
+
+          <label
+            className="calendar-date-filter"
+          >
+            <span>View</span>
+
+            <select
+              value={viewMode}
+              onChange={(e) =>
+                setViewMode(e.target.value)
+              }
+            >
+              <option value="CUSTOM">
+                Custom
+              </option>
+
+              <option value="DAILY">
+                Daily
+              </option>
+
+              <option value="WEEKLY">
+                Weekly
+              </option>
+
+              <option value="BIWEEKLY">
+                Biweekly
+              </option>
+
+              <option value="MONTHLY">
+                Monthly
+              </option>
+            </select>
+          </label>
+
+        </div>
+
+      </div>
+
+      {/* =========================
           CALENDAR
       ========================== */}
 
-      <div className="booking-calendar">
+      <div
+        className="booking-calendar"
+        ref={calendarRef}
+        onScroll={updateVisibleRange}
+      >
 
         {/* HEADER */}
 

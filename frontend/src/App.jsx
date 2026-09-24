@@ -18,12 +18,14 @@ import SiteManagement from "./pages/settings/SiteManagement";
 import EmployeeManagement from "./pages/settings/EmployeeManagement";
 import ManagePermissions from "./pages/settings/ManagePermissions";
 import AuditLog from "./pages/settings/AuditLogs";
+import Login from "./pages/auth/login";
 
 function App() {
   return (
     <Router>
       <div className="app-shell">
         <Routes>
+          <Route path="/login" element={<Login/>} />
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/bookings/calendar" element={<BookingCalendarView />} />
           <Route path="/rooms/map" element={<BookingMapView />} />
@@ -39,7 +41,7 @@ function App() {
 
 
 
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
         </Routes>
       </div>
     </Router>

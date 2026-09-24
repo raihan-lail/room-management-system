@@ -55,3 +55,30 @@ export const rooms = [
   { name: "319", desc: "room", location: "NORTH WING", status: "HOME_LEAVE" },
   { name: "320", desc: "room", location: "NORTH WING", status: "ALLOCATED" }
 ];
+
+export const roomAllocations = [
+  {
+    name: "105",
+    type: "storage",
+    started_at: "2026-09-24",
+    ended_at: "2026-12-20",
+    reason: "allocated for storage",
+    allocated_by: "Admin",
+  },
+  {
+    name: "110",
+    type: "meeting room",
+    started_at: "2026-09-24",
+    ended_at: "2026-12-20",
+    reason: "allocated for meeting room",
+    allocated_by: "Admin",
+  },
+  {
+    name: "115",
+    type: "emergency kitchen",
+    started_at: "2026-09-24",
+    ended_at: "2026-12-20",
+    reason: "the main kitchen are exploded",
+    allocated_by: "Admin",
+  }
+]
