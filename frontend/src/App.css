@@ -457,6 +457,31 @@
   border: 1.5px solid var(--brand-nav);
 }
 
+.navbar-date-time {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+
+  padding: 0 8px;
+
+  color: inherit;
+  white-space: nowrap;
+}
+
+.navbar-date-time__date {
+  font-size: 11px;
+  line-height: 14px;
+}
+
+.navbar-date-time__clock {
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 16px;
+
+  font-variant-numeric: tabular-nums;
+}
+
 .navbar-user-dropdown {
   position: relative; 
  

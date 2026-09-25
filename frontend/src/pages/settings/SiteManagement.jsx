@@ -167,6 +167,7 @@ export default function SiteManagement() {
                   </th>
                   <th>Room Statuses</th>
                   <th>Booking Statuses</th>
+                  <th>Timezone</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -224,6 +225,7 @@ export default function SiteManagement() {
                             : "-"}
                         </div>
                       </td>
+                      <td>{site.timezone}</td>
 
                       <td>
                         <div className="table-actions">

@@ -1,9 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
+const dateFormatter = new Intl.DateTimeFormat("en-US", {
+  weekday: "long",
+  month: "long",
+  day: "numeric",
+  year: "numeric",
+});
 
+const timeFormatter = new Intl.DateTimeFormat("en-US", {
+  hour: "2-digit",
+  minute: "2-digit",
+  second: "2-digit",
+  hour12: true,
+});
 
 export default function Navbar({
-  isSidebarCollapsed,
   onToggleSidebar,
 }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false)
@@ -13,6 +24,15 @@ export default function Navbar({
       const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
        const notificationsContainerRef = useRef(null);
+       const [currentTime, setCurrentTime] = useState(() => new Date());
+
+       useEffect(() => {
+         const intervalId = window.setInterval(() => {
+           setCurrentTime(new Date());
+         }, 1000);
+
+         return () => window.clearInterval(intervalId);
+       }, []);
 
        useEffect(() => {
     if (!notificationsOpen) return
@@ -75,6 +95,16 @@ export default function Navbar({
       </div>
       <div className="navbar__actions">
 
+       <div className="navbar-date-time" aria-label="Current date and time">
+      <span className="navbar-date-time__date">
+        {dateFormatter.format(currentTime)}
+      </span>
+
+      <span className="navbar-date-time__clock">
+        {timeFormatter.format(currentTime)}
+      </span>
+    </div>
+
        <div
       className="navbar-notifications"
       ref={
@@ -133,6 +163,9 @@ export default function Navbar({
         </div>
       ) : null}
     </div>
+
+   
+
       <div className="navbar-user-dropdown">
       <button
         type="button"

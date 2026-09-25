@@ -47,7 +47,8 @@ export const sites = [
         {
             title: "ARCHIVED"
         },
-    ]
+    ],
+    timezone: "WITA"
             
     },
     {
@@ -98,7 +99,8 @@ export const sites = [
         {
             title: "ARCHIVED"
         },
-    ]
+    ],
+    timezone:"WIB"
             
     }
 ]

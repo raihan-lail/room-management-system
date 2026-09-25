@@ -17,7 +17,7 @@ export default function Login() {
 
       <div className="login-card login-card-branded">
        
-        <p className="app-title">ROOM MANAGEMENT SYSTEMS</p>
+        <p className="app-title">INTERACTIVE MOCKUP DESIGN FOR ROOM/CAMP MANAGEMENT SYSTEMS</p>
         <h1 className="login-title">LOGIN</h1>
 
         <form className="login-form" onSubmit={handleSubmit}>
