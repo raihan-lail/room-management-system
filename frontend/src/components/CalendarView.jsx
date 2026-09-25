@@ -21,6 +21,10 @@ const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 const DAY_WIDTH = 34;
 
+const DRAG_EDGE = 80;
+
+const SCROLL_SPEED = 14;
+
 const DEFAULT_SETTINGS = {
   calendarStart: "2026-09-01",
   calendarEnd: "2026-10-28",
@@ -203,7 +207,12 @@ export default function CalendarView() {
   const [bookingDraft, setBookingDraft] =
     useState(null);
 
+  const [dragScrollDirection, setDragScrollDirection] =
+    useState(0);
+
   const dragRangeRef = useRef(null);
+  const dragActiveRef = useRef(false);
+  const lastXRef = useRef(0);
 
   useEffect(() => {
     dragRangeRef.current = dragRange;
@@ -535,27 +544,85 @@ export default function CalendarView() {
 
     event.preventDefault();
 
+    dragActiveRef.current = true;
+
     setDragRange({
       start: { room: roomName, index },
       end: { room: roomName, index },
     });
   };
 
-  const handleCellMouseEnter = (
-    roomName,
-    index
-  ) => {
-    if (!dragRangeRef.current) return;
+  const updateDragEndIndex = useCallback(
+    (clientX) => {
+      const container = calendarRef.current;
 
-    setDragRange((prev) =>
-      prev
-        ? {
-            ...prev,
-            end: { room: roomName, index },
-          }
-        : prev
-    );
-  };
+      if (!container || !dragActiveRef.current) {
+        return;
+      }
+
+      const header = container.querySelector(
+        ".calendar-room-header"
+      );
+
+      const headerWidth =
+        header?.getBoundingClientRect().width ||
+        64;
+
+      const rect = container.getBoundingClientRect();
+
+      const rawIndex = Math.floor(
+        (container.scrollLeft +
+          clientX -
+          rect.left -
+          headerWidth) /
+          DAY_WIDTH
+      );
+
+      const index = Math.max(
+        0,
+        Math.min(dates.length - 1, rawIndex)
+      );
+
+      setDragRange((prev) =>
+        prev
+          ? {
+              ...prev,
+              end: { ...prev.end, index },
+            }
+          : prev
+      );
+    },
+    [dates]
+  );
+
+  const handleWindowMouseMove = useCallback(
+    (event) => {
+      if (!dragActiveRef.current) return;
+
+      lastXRef.current = event.clientX;
+
+      updateDragEndIndex(event.clientX);
+
+      const container = calendarRef.current;
+
+      if (!container) return;
+
+      const rect = container.getBoundingClientRect();
+
+      const clientX = event.clientX;
+
+      let direction = 0;
+
+      if (clientX > rect.right - DRAG_EDGE) {
+        direction = 1;
+      } else if (clientX < rect.left + DRAG_EDGE) {
+        direction = -1;
+      }
+
+      setDragScrollDirection(direction);
+    },
+    [updateDragEndIndex]
+  );
 
   const isCellSelected = (
     roomName,
@@ -564,6 +631,10 @@ export default function CalendarView() {
     const range = dragRange;
 
     if (!range) return false;
+
+    if (roomName !== range.start.room) {
+      return false;
+    }
 
     const minIndex = Math.min(
       range.start.index,
@@ -575,37 +646,16 @@ export default function CalendarView() {
       range.end.index
     );
 
-    const roomPosition = activeRooms.findIndex(
-      (room) => room.name === roomName
-    );
-
-    const minRoom = Math.min(
-      activeRooms.findIndex(
-        (room) => room.name === range.start.room
-      ),
-      activeRooms.findIndex(
-        (room) => room.name === range.end.room
-      )
-    );
-
-    const maxRoom = Math.max(
-      activeRooms.findIndex(
-        (room) => room.name === range.start.room
-      ),
-      activeRooms.findIndex(
-        (room) => room.name === range.end.room
-      )
-    );
-
     return (
-      roomPosition >= minRoom &&
-      roomPosition <= maxRoom &&
       index >= minIndex &&
       index <= maxIndex
     );
   };
 
   const endDrag = useCallback(() => {
+    setDragScrollDirection(0);
+    dragActiveRef.current = false;
+
     const range = dragRangeRef.current;
 
     dragRangeRef.current = null;
@@ -643,12 +693,61 @@ export default function CalendarView() {
       endDrag
     );
 
-    return () =>
+    window.addEventListener(
+      "mousemove",
+      handleWindowMouseMove
+    );
+
+    return () => {
       window.removeEventListener(
         "mouseup",
         endDrag
       );
-  }, [endDrag]);
+
+      window.removeEventListener(
+        "mousemove",
+        handleWindowMouseMove
+      );
+    };
+  }, [endDrag, handleWindowMouseMove]);
+
+  /*
+   * Auto-scroll while dragging near the edges
+   */
+  useEffect(() => {
+    if (dragScrollDirection === 0) return;
+
+    const container = calendarRef.current;
+
+    if (!container) return;
+
+    let frame = null;
+
+    const step = () => {
+      if (!dragActiveRef.current) return;
+
+      container.scrollLeft +=
+        dragScrollDirection * SCROLL_SPEED;
+
+      const maxScroll =
+        container.scrollWidth - container.clientWidth;
+
+      container.scrollLeft = Math.max(
+        0,
+        Math.min(container.scrollLeft, maxScroll)
+      );
+
+      updateDragEndIndex(lastXRef.current);
+
+      frame = requestAnimationFrame(step);
+    };
+
+    frame = requestAnimationFrame(step);
+
+    return () => {
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [dragScrollDirection, updateDragEndIndex]);
 
   const handleCreateBooking = (draft) => {
     setBookings((prev) => [
@@ -1010,12 +1109,6 @@ export default function CalendarView() {
                             room.name,
                             index,
                             event
-                          )
-                        }
-                        onMouseEnter={() =>
-                          handleCellMouseEnter(
-                            room.name,
-                            index
                           )
                         }
                       />
