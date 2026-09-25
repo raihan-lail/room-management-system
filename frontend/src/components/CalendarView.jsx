@@ -8,9 +8,10 @@ import {
 
 import bookingsData from "../data/bookings";
 import { rooms as roomsData } from "../data/room";
+import BookingModal from "./BookingModal";
 
-const bookings = Array.isArray(bookingsData) 
-    ? bookingsData 
+const initialBookings = Array.isArray(bookingsData)
+    ? bookingsData
     : [];
 const rooms = Array.isArray(roomsData)
     ? roomsData
@@ -160,9 +161,7 @@ function bookingOverlaps(
 }
 
 export default function CalendarView() {
-     console.log("CalendarView rendering");
-  console.log("rooms:", rooms);
-  console.log("bookings:", bookings);
+   
   const [hoveredBooking, setHoveredBooking] =
     useState(null);
 
@@ -194,6 +193,21 @@ export default function CalendarView() {
 
   const [visibleEnd, setVisibleEnd] =
     useState(null);
+
+  const [bookings, setBookings] =
+    useState(initialBookings);
+
+  const [dragRange, setDragRange] =
+    useState(null);
+
+  const [bookingDraft, setBookingDraft] =
+    useState(null);
+
+  const dragRangeRef = useRef(null);
+
+  useEffect(() => {
+    dragRangeRef.current = dragRange;
+  }, [dragRange]);
 
   /*
    * Calendar bounds
@@ -367,6 +381,7 @@ export default function CalendarView() {
     guestFilter,
     windowStart,
     windowEnd,
+    bookings,
   ]);
 
   /*
@@ -506,6 +521,154 @@ export default function CalendarView() {
       DEFAULT_SETTINGS.calendarEnd
     );
     setViewMode(DEFAULT_SETTINGS.viewMode);
+  };
+
+  /*
+   * Cell drag-to-book selection
+   */
+  const handleCellMouseDown = (
+    roomName,
+    index,
+    event
+  ) => {
+    if (event.button !== 0) return;
+
+    event.preventDefault();
+
+    setDragRange({
+      start: { room: roomName, index },
+      end: { room: roomName, index },
+    });
+  };
+
+  const handleCellMouseEnter = (
+    roomName,
+    index
+  ) => {
+    if (!dragRangeRef.current) return;
+
+    setDragRange((prev) =>
+      prev
+        ? {
+            ...prev,
+            end: { room: roomName, index },
+          }
+        : prev
+    );
+  };
+
+  const isCellSelected = (
+    roomName,
+    index
+  ) => {
+    const range = dragRange;
+
+    if (!range) return false;
+
+    const minIndex = Math.min(
+      range.start.index,
+      range.end.index
+    );
+
+    const maxIndex = Math.max(
+      range.start.index,
+      range.end.index
+    );
+
+    const roomPosition = activeRooms.findIndex(
+      (room) => room.name === roomName
+    );
+
+    const minRoom = Math.min(
+      activeRooms.findIndex(
+        (room) => room.name === range.start.room
+      ),
+      activeRooms.findIndex(
+        (room) => room.name === range.end.room
+      )
+    );
+
+    const maxRoom = Math.max(
+      activeRooms.findIndex(
+        (room) => room.name === range.start.room
+      ),
+      activeRooms.findIndex(
+        (room) => room.name === range.end.room
+      )
+    );
+
+    return (
+      roomPosition >= minRoom &&
+      roomPosition <= maxRoom &&
+      index >= minIndex &&
+      index <= maxIndex
+    );
+  };
+
+  const endDrag = useCallback(() => {
+    const range = dragRangeRef.current;
+
+    dragRangeRef.current = null;
+    setDragRange(null);
+
+    if (!range) return;
+
+    const minIndex = Math.min(
+      range.start.index,
+      range.end.index
+    );
+
+    const maxIndex = Math.max(
+      range.start.index,
+      range.end.index
+    );
+
+    const startedAt = dates[minIndex];
+    const endedAt = dates[maxIndex];
+
+    if (!startedAt || !endedAt) return;
+
+    setBookingDraft({
+      room: range.start.room,
+      started_at:
+        startedAt.toISOString().slice(0, 10),
+      ended_at:
+        endedAt.toISOString().slice(0, 10),
+    });
+  }, [dates]);
+
+  useEffect(() => {
+    window.addEventListener(
+      "mouseup",
+      endDrag
+    );
+
+    return () =>
+      window.removeEventListener(
+        "mouseup",
+        endDrag
+      );
+  }, [endDrag]);
+
+  const handleCreateBooking = (draft) => {
+    setBookings((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        room: draft.room,
+        guest: {
+          name: draft.guestName || "New Guest",
+          gender: "",
+          country: "",
+          dept: "",
+          meal_type: "",
+        },
+        started_at: draft.started_at,
+        ended_at: draft.ended_at,
+        status: "IN_REQUEST",
+        notes: "",
+      },
+    ]);
   };
 
   return (
@@ -824,17 +987,37 @@ export default function CalendarView() {
                     }}
                   >
 
-                    {dates.map((date) => (
+                    {dates.map((date, index) => (
                       <div
                         key={date.toISOString()}
                         className={`calendar-grid-cell ${
                           isWeekend(date)
                             ? "is-weekend"
                             : ""
+                        } ${
+                          isCellSelected(
+                            room.name,
+                            index
+                          )
+                            ? "is-selected"
+                            : ""
                         }`}
                         style={{
                           width: DAY_WIDTH,
                         }}
+                        onMouseDown={(event) =>
+                          handleCellMouseDown(
+                            room.name,
+                            index,
+                            event
+                          )
+                        }
+                        onMouseEnter={() =>
+                          handleCellMouseEnter(
+                            room.name,
+                            index
+                          )
+                        }
                       />
                     ))}
 
@@ -910,6 +1093,16 @@ export default function CalendarView() {
         </div>
 
       </div>
+
+      {bookingDraft && (
+        <BookingModal
+          room={bookingDraft.room}
+          startedAt={bookingDraft.started_at}
+          endedAt={bookingDraft.ended_at}
+          onClose={() => setBookingDraft(null)}
+          onSubmit={handleCreateBooking}
+        />
+      )}
     </div>
   );
 }

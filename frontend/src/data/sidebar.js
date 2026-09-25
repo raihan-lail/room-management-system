@@ -42,6 +42,7 @@ export const sidebarMenu = [
     items: [
       { label: 'Site Management', path: '/sites', icon: 'bi-door-open' },
       { label: 'Employee Management', path: '/employees', icon: 'bi-person' },
+       { label: 'Role Management', path: '/roles', icon: 'bi-universal-access' },
        { label: 'Manage Permissions', path: '/manage-permissions', icon: 'bi-house' },
         { label: 'Audit Logs', path: '/audit-logs', icon: 'bi-clock-history' },
     ],

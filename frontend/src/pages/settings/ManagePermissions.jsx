@@ -1,25 +1,50 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import { permissions } from "../../data/permissions";
+import { employee } from "../../data/employee";
 
 export default function ManagePermissions() {
-  const [selectedRole, setSelectedRole] = useState("employee");
+  // Extract unique roles dynamically from employee data
+  const roles = useMemo(() => {
+    const uniqueRoles = Array.from(
+      new Set(employee.map((emp) => emp.Role).filter(Boolean))
+    );
+    return uniqueRoles.map((role) => ({
+      value: role,
+      label: role,
+    }));
+  }, []);
+
+  // Default selected role to the first role found, or fallback to 'Employee'
+  const [selectedRole, setSelectedRole] = useState(
+    roles[0]?.value || "Employee"
+  );
+  const [selectedEmployee, setSelectedEmployee] = useState("");
+
+  // Filter employees matching the currently selected role
+  const filteredEmployees = useMemo(() => {
+    return employee.filter(
+      (emp) => emp.Role.toLowerCase() === selectedRole.toLowerCase()
+    );
+  }, [selectedRole]);
 
   // Track enabled permission IDs/routes for each role
   const [enabledPermissions, setEnabledPermissions] = useState({
-    employee: permissions.map((p) => p.id || p.route), // Default all ON for employee
-    reporting: [], // Default all OFF for reporting
+    // Default all ON for Receptionist, all OFF for others (customizable)
+    Receptionist: permissions.map((p) => p.id || p.route),
   });
 
-  const roles = [
-    { value: "employee", label: "Employee" },
-    { value: "reporting", label: "Analytics & Reporting" },
-  ];
+  // Handle switching role -> reset selected employee and update view
+  const handleRoleChange = (newRole) => {
+    setSelectedRole(newRole);
+    setSelectedEmployee(""); // Reset employee selection when role changes
+  };
 
   const handleToggle = (permissionIdentifier) => {
     setEnabledPermissions((prev) => {
       const currentRolePermissions = prev[selectedRole] || [];
-      const isAlreadyEnabled = currentRolePermissions.includes(permissionIdentifier);
+      const isAlreadyEnabled =
+        currentRolePermissions.includes(permissionIdentifier);
 
       const updatedRolePermissions = isAlreadyEnabled
         ? currentRolePermissions.filter((id) => id !== permissionIdentifier)
@@ -39,26 +64,52 @@ export default function ManagePermissions() {
           <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">Manage Permissions</h1>
             <p className="dashboard-header__subtitle">
-              Configure access permissions for each role.
+              Configure access permissions by role and inspect assigned staff.
             </p>
           </div>
         </div>
 
         <div className="bookings-toolbar form-actions">
-          <div className="page-permission-role-selector">
-            <label htmlFor="permission-role">Role</label>
-            <select
-              id="permission-role"
-              value={selectedRole}
-              className="permission-role-selector"
-              onChange={(event) => setSelectedRole(event.target.value)}
-            >
-              {roles.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
+          <div
+            className="permissions-filters"
+            style={{ display: "flex", gap: "16px", alignItems: "center" }}
+          >
+            {/* Role Selector */}
+            <div className="page-permission-role-selector">
+              <label htmlFor="permission-role">Role</label>
+              <select
+                id="permission-role"
+                value={selectedRole}
+                className="permission-role-selector"
+                onChange={(e) => handleRoleChange(e.target.value)}
+              >
+                {roles.map((role) => (
+                  <option key={role.value} value={role.value}>
+                    {role.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Employee Selector (Filtered by Role) */}
+            <div className="page-permission-role-selector">
+              <label htmlFor="permission-employee">Employee</label>
+              <select
+                id="permission-employee"
+                value={selectedEmployee}
+                className="permission-role-selector"
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+              >
+                <option value="">
+                  All {selectedRole}s ({filteredEmployees.length})
                 </option>
-              ))}
-            </select>
+                {filteredEmployees.map((emp, index) => (
+                  <option key={`${emp.Email}-${index}`} value={emp.Email}>
+                    {emp.name} ({emp.Site})
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
         </div>
 
@@ -77,7 +128,7 @@ export default function ManagePermissions() {
               <tbody>
                 {permissions.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="muted">
+                    <td colSpan="4" className="muted text-center">
                       No permissions found.
                     </td>
                   </tr>
@@ -91,8 +142,12 @@ export default function ManagePermissions() {
                     return (
                       <tr key={permissionId || index}>
                         <td className="table-col-no">{index + 1}</td>
-                        <td>{permission.name}</td>
-                        <td>{permission.route}</td>
+                        <td>
+                          <strong>{permission.name}</strong>
+                        </td>
+                        <td>
+                          <code>{permission.route}</code>
+                        </td>
                         <td>
                           <div className="table-actions">
                             <button
@@ -105,9 +160,9 @@ export default function ManagePermissions() {
                               onClick={() => handleToggle(permissionId)}
                               title={
                                 isEnabled
-                                  ? `Turn ${permission.name} Off`
-                                  : `Turn ${permission.name} On`
-                                }
+                                  ? `Turn ${permission.name} Off for ${selectedRole}`
+                                  : `Turn ${permission.name} On for ${selectedRole}`
+                              }
                             >
                               <i
                                 className={`bi ${

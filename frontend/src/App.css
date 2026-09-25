@@ -1468,11 +1468,17 @@ textarea,
 
 .login-page {
   min-height: 100vh;
+  width: 100%;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   background: #ffffff;
   padding: 32px;
+}
+.login-logo {
+  height: 5px;
+  width: 10px;
 }
 
 .login-wrapper {
@@ -1486,12 +1492,13 @@ textarea,
 
 .login-card {
   width: 100%;
+  box-sizing: border-box;
   max-width: 420px;
   background-color: #ffffff;
   border-radius: 12px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.18);
+ 
   padding: 32px;
-  border: 1px solid var(--brand-bold);
+  
 }
 
 .login-card-branded .login-title {
@@ -1604,6 +1611,20 @@ textarea,
   align-items: center;
   justify-content: center;
   text-align: center;
+}
+
+.login-image-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.login-image {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  object-fit: contain;
 }
 /* =========================
    BUTTONS
@@ -1889,6 +1910,7 @@ textarea,
 .driver-availability-toggle.is-on {
   color: #166534;
 }
+
 
 .driver-availability-toggle.is-off {
   color: #991b1b;
@@ -2212,10 +2234,19 @@ textarea,
   border-right: 1px solid #f1f5f9;
 
   flex-shrink: 0;
+
+  cursor: crosshair;
+
+  user-select: none;
 }
 
 .calendar-grid-cell.is-weekend {
   background: #f8fafc;
+}
+
+.calendar-grid-cell.is-selected {
+  background-color: var(--brand-soft);
+  box-shadow: inset 0 0 0 1.5px var(--brand-bold);
 }
 
 
@@ -2677,6 +2708,9 @@ textarea,
   .dashboard-chart__canvas {
     height: 230px;
   }
+  .login-image-wrapper {
+    display: none;
+  }
 }
 
 @media (max-width: 480px) {
@@ -2700,4 +2734,162 @@ textarea,
   .dashboard-chart__canvas {
     height: 210px;
   }
+}
+
+/* =========================
+   LOGIN RESPONSIVE
+========================= */
+
+@media (max-width: 992px) {
+  .login-wrapper {
+    gap: 32px;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-page {
+    padding: 24px 20px;
+  }
+
+  .login-wrapper {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    gap: 24px;
+  }
+
+  .login-card {
+    max-width: 520px;
+  }
+
+  .login-image {
+    max-width: 400px;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+  }
+
+  .login-wrapper {
+    gap: 20px;
+  }
+
+  .login-card {
+    max-width: 100%;
+    padding: 24px 20px;
+  }
+
+  .login-title {
+    font-size: 22px;
+    line-height: 28px;
+    margin-bottom: 20px;
+  }
+
+  .login-image {
+    max-width: 260px;
+  }
+
+  .login-form {
+    gap: 14px;
+  }
+}
+
+/* =========================
+   BOOKING MODAL
+========================= */
+
+.booking-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 20px;
+
+  background-color: rgba(15, 23, 42, 0.5);
+
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.booking-modal {
+  width: 100%;
+  max-width: 440px;
+
+  box-sizing: border-box;
+
+  max-height: calc(100vh - 40px);
+  overflow-y: auto;
+
+  background-color: #ffffff;
+  border-radius: 12px;
+
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.25);
+
+  padding: 24px;
+}
+
+.booking-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  margin-bottom: 20px;
+}
+
+.booking-modal__title {
+  margin: 0;
+
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+
+  color: #111827;
+}
+
+.booking-modal__close {
+  width: 32px;
+  height: 32px;
+
+  display: inline-grid;
+  place-items: center;
+
+  border: none;
+  background: transparent;
+
+  color: #64748b;
+
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.booking-modal__close:hover {
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+}
+
+.booking-modal__form {
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+}
+
+.booking-modal__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  gap: 8px;
 }

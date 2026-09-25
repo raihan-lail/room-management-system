@@ -20,6 +20,7 @@ import ManagePermissions from "./pages/settings/ManagePermissions";
 import AuditLog from "./pages/settings/AuditLogs";
 import Login from "./pages/auth/login";
 import MealType from "./pages/guest/MealType";
+import RoleManagement from "./pages/settings/RoleManagement";
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
           <Route path="/guests/meal-type" element={<MealType />} />
           <Route path="/sites" element={<SiteManagement />} />
           <Route path="/employees" element={<EmployeeManagement />} />
+           <Route path="/roles" element={<RoleManagement/>} />
           <Route path="/manage-permissions" element={<ManagePermissions />} />
           <Route path="/audit-logs" element={<AuditLog />} />
 

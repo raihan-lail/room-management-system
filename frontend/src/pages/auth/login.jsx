@@ -13,7 +13,10 @@ export default function Login() {
 
   return (
     <div className="login-page">
+      <div className="login-wrapper">
+
       <div className="login-card login-card-branded">
+       
         <p className="app-title">ROOM MANAGEMENT SYSTEMS</p>
         <h1 className="login-title">LOGIN</h1>
 
@@ -66,6 +69,14 @@ export default function Login() {
 
           <button type="submit">login</button>
         </form>
+       
+
+       
+      </div>
+
+      <div className="login-image-wrapper">
+        <img src="/logo.png" alt="" className="login-image" />
+      </div>
       </div>
     </div>
   );
