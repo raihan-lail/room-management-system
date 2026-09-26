@@ -52,8 +52,8 @@ export default function SiteManagement() {
     if (!sortConfig.key) return filteredSites;
 
     return [...filteredSites].sort((a, b) => {
-      let aValue = "";
-      let bValue = "";
+      let aValue;
+      let bValue;
 
       switch (sortConfig.key) {
         case "name":

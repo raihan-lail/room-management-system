@@ -93,6 +93,7 @@ export default function Navbar({
         <span className="navbar__title">DONGGI</span>
 
       </div>
+      <p>MOCKUP BUILD, NOT REAL DEVELOPMENT</p>
       <div className="navbar__actions">
 
        <div className="navbar-date-time" aria-label="Current date and time">

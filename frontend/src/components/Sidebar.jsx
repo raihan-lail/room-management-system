@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function Sidebar({
@@ -11,29 +11,6 @@ export default function Sidebar({
   const location = useLocation();
 
   const [openMenus, setOpenMenus] = useState({});
-
-  // Automatically open the parent when one of its
-  // submenu items is currently active.
-  useEffect(() => {
-    const activeMenus = {};
-
-    menuItems.forEach((item) => {
-      if (!item.items?.length) return;
-
-      const hasActiveChild = item.items.some(
-        (child) => child.path === location.pathname
-      );
-
-      if (hasActiveChild) {
-        activeMenus[item.path] = true;
-      }
-    });
-
-    setOpenMenus((prev) => ({
-      ...prev,
-      ...activeMenus,
-    }));
-  }, [location.pathname, menuItems]);
 
   const toggleMenu = (path) => {
     // If sidebar is collapsed, open it first.
@@ -116,7 +93,7 @@ export default function Sidebar({
             isParentActive || isChildActive;
 
           const isOpen =
-            openMenus[item.path];
+            openMenus[item.path] || isChildActive;
 
           return (
             <div

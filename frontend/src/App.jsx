@@ -20,6 +20,7 @@ import ManagePermissions from "./pages/settings/ManagePermissions";
 import AuditLog from "./pages/settings/AuditLogs";
 import Login from "./pages/auth/login";
 import MealType from "./pages/guest/MealType";
+import NotFound from "./pages/NotFound";
 import RoleManagement from "./pages/settings/RoleManagement";
 
 function App() {
@@ -45,7 +46,8 @@ function App() {
 
 
 
-          <Route path="*" element={<Navigate to="/login" replace />} />
+          <Route path="/" element={<Navigate to="/login" replace />} />
+          <Route path="*" element={<NotFound />} />
         </Routes>
       </div>
     </Router>

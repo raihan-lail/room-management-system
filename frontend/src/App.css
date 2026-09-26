@@ -2429,6 +2429,104 @@ textarea,
 
 
 /* =========================
+   NOT FOUND
+========================= */
+
+.not-found {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 60vh;
+}
+
+.not-found__card {
+  width: 100%;
+  max-width: 520px;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 12px;
+
+  padding: 32px;
+
+  background-color: #ffffff;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+
+  text-align: center;
+}
+
+.not-found__code {
+  font-size: 44px;
+  line-height: 50px;
+  font-weight: 700;
+
+  color: var(--brand-bold);
+
+  letter-spacing: 0;
+}
+
+.not-found__title {
+  margin: 0;
+
+  font-size: 18px;
+  line-height: 24px;
+  font-weight: 700;
+
+  color: #111827;
+}
+
+.not-found__description {
+  margin: 0;
+
+  max-width: 420px;
+
+  font-size: 12px;
+  line-height: 17px;
+
+  color: #64748b;
+}
+
+.not-found__path {
+  margin: 0;
+
+  width: 100%;
+
+  padding: 8px 10px;
+
+  background-color: #f8fafc;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 7px;
+
+  font-size: 11px;
+  line-height: 16px;
+
+  color: #64748b;
+
+  overflow-wrap: anywhere;
+}
+
+.not-found__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 4px;
+}
+
+
+/* =========================
    TOOLTIP
 ========================= */
 
@@ -2817,6 +2915,33 @@ textarea,
 
   .login-form {
     gap: 14px;
+  }
+}
+
+/* =========================
+   NOT FOUND RESPONSIVE
+========================= */
+
+@media (max-width: 480px) {
+  .not-found__card {
+    padding: 24px 20px;
+  }
+
+  .not-found__code {
+    font-size: 36px;
+    line-height: 42px;
+  }
+
+  .not-found__actions {
+    width: 100%;
+
+    flex-direction: column;
+  }
+
+  .not-found__actions .btn {
+    width: 100%;
+
+    justify-content: center;
   }
 }
 
