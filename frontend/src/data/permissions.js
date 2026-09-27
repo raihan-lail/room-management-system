@@ -1,12 +1,17 @@
 
 export const permissions = [
     {
-        name: "manage bookings (table)",
-        route: "bookings/table"
+        name: "manage frontdesk",
+        route: "/frontdesk"
     },
     {
+        name: "manage bookings (table)",
+        route: "/bookings/table"
+    },
+
+    {
         name: "manage bookings (calendar)",
-        route: "bookings/calendar"
+        route: "/bookings/calendar"
     },
     {
         name: "manage rooms",
@@ -18,7 +23,7 @@ export const permissions = [
     },
     {
         name: "room map view",
-        route: "rooms/map"
+        route: "/rooms/map"
     },
     {
         name: "manage residents",

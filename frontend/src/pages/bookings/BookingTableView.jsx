@@ -262,6 +262,7 @@ export default function BookingTableView() {
                       ></i>
                     </button>
                   </th>
+                  <th>Booked At</th>
                   <th>Started At</th>
                   <th>Ended At</th>
                   <th>
@@ -306,6 +307,7 @@ export default function BookingTableView() {
                       <td>{booking.guest?.dept || "-"}</td>
 
                       <td>{booking.guest?.meal_type || "-"}</td>
+                        <td>{booking.booked_at || "-"}</td>
 
                       <td>{booking.started_at || "-"}</td>
 

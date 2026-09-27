@@ -22,6 +22,7 @@ import Login from "./pages/auth/login";
 import MealType from "./pages/guest/MealType";
 import NotFound from "./pages/NotFound";
 import RoleManagement from "./pages/settings/RoleManagement";
+import FrontDesk from "./pages/FrontDesk";
 
 function App() {
   return (
@@ -30,6 +31,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login/>} />
           <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/frontdesk" element={<FrontDesk />} />
           <Route path="/bookings/calendar" element={<BookingCalendarView />} />
           <Route path="/rooms/map" element={<BookingMapView />} />
           <Route path="/bookings/table" element={<BookingTableView />} />

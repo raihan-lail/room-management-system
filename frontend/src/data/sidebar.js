@@ -6,6 +6,12 @@ export const sidebarMenu = [
     
   },
   {
+    label: "Frontdesk",
+    path: "/frontdesk",
+    icon: "bi-credit-card-2-front",
+    
+  },
+  {
     label: "Bookings",
     path: "/bookings",
     icon: "bi-calendar-check",
