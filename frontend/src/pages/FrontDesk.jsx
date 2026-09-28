@@ -6,9 +6,9 @@ import bookings from "../data/bookings";
 const PAGE_SIZE = 10;
 
 const SEGMENTS = [
-  { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down" },
-  { id: "in_house", label: "In House", icon: "bi-house-door" },
-  { id: "departure", label: "Departure", icon: "bi-box-arrow-right" },
+  { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
+  { id: "in_house", label: "In House", icon: "bi-house-door", title: "Current In House" },
+  { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 
 const todayFormatter = new Intl.DateTimeFormat("en-US", {
@@ -217,11 +217,9 @@ export default function FrontDesk() {
         {/* HEADER */}
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">Frontdesk</h1>
+            <h1 className="dashboard-header__title">  {activeSegment?.title || "Arrival Schedule"}</h1>
 
-            <p className="dashboard-header__subtitle">
-              View and manage room bookings
-            </p>
+           
 
             <div className="frontdesk-filters">
               <span className="frontdesk-today">

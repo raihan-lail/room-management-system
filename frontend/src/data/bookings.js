@@ -299,14 +299,14 @@ export const bookings = [
   {
     room: "202",
     guest: {
-      name: "Hasbolla",
+      name: "Hasbulla",
       gender: "male",
       country: "Iran",
       dept: "Research",
       meal_type: "Middle East",
     },
     booked_at: "2026-09-20",
-    started_at: "2026-09-27",
+    started_at: "2026-09-28",
     ended_at: "2026-10-18",
     status: "CONFIRMED",
     notes: "Arrival details not confirmed",

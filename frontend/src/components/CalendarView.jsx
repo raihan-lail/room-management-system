@@ -1259,6 +1259,12 @@ function BookingTooltip({ booking }) {
           {booking?.guest?.meal_type}
         </strong>
       </div>
+         <div className="booking-tooltip__row">
+        <span>Booked At</span>
+        <strong>
+          {booking?.booked_at}
+        </strong>
+      </div>
 
       <div className="booking-tooltip__row">
         <span>Start</span>
