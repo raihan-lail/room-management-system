@@ -5,6 +5,40 @@
   --brand-danger: #ec242c;
   --brand-danger-soft: #ffe5e7;
   --page-padding: 20px;
+
+  /*
+   * Booking status palette.
+   * Shared by the calendar blocks, the calendar
+   * legend dots and the booking tooltip pills.
+   * Only brand and neutral tones are used.
+   */
+  --status-in_house-bg: var(--brand-nav);
+  --status-in_house-fg: #ffffff;
+  --status-in_house-border: var(--brand-nav);
+
+  --status-confirmed-bg: var(--brand-soft);
+  --status-confirmed-fg: var(--brand-bold);
+  --status-confirmed-border: var(--brand-bold);
+
+  --status-in_request-bg: var(--brand-soft);
+  --status-in_request-fg: var(--brand-bold);
+  --status-in_request-border: var(--brand-bold);
+
+  --status-checked_out-bg: #e2e8f0;
+  --status-checked_out-fg: #334155;
+  --status-checked_out-border: #94a3b8;
+
+  --status-no_show-bg: var(--brand-danger-soft);
+  --status-no_show-fg: var(--brand-danger);
+  --status-no_show-border: var(--brand-danger);
+
+  --status-archived-bg: #f4f6f8;
+  --status-archived-fg: #64748b;
+  --status-archived-border: #94a3b8;
+
+  --status-unknown-bg: #f1f5f9;
+  --status-unknown-fg: #64748b;
+  --status-unknown-border: #94a3b8;
 }
 
 /* =========================
@@ -1769,6 +1803,9 @@ textarea,
   align-items: center;
   justify-content: center;
   min-width: 0;
+  background-color: var(--brand-nav);
+  border-radius: 50%;
+ 
 }
 
 .login-image {
@@ -1776,6 +1813,8 @@ textarea,
   max-width: 480px;
   height: auto;
   object-fit: contain;
+   border: var(--brand-nav);
+   padding: 20px;
 }
 /* =========================
    BUTTONS
@@ -2187,46 +2226,58 @@ textarea,
 }
 
 .calendar-legend__dot {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
 
-  border-radius: 999px;
+  border-radius: 3px;
+
+  border: 1px solid transparent;
+
+  flex-shrink: 0;
 }
 
 .calendar-legend__dot--in_house {
-  background-color: #273896;
+  background-color: var(--status-in_house-bg);
+  border-color: var(--status-in_house-border);
 }
+
 .calendar-legend__dot--confirmed {
-  background-color: #008000;
+  background-color: var(--status-confirmed-bg);
+  border-color: var(--status-confirmed-border);
+}
+
+.calendar-legend__dot--in_request {
+  background-color: var(--status-in_request-bg);
+  border-color: var(--status-in_request-border);
+  border-style: dashed;
 }
 
 .calendar-legend__dot--checked_out {
-  background-color: #FF0000;
-}
-
-
-
-.calendar-legend__dot--in_request {
-  background-color: #e7ebff;
-  border: 1px solid #FFFF00;
+  background-color: var(--status-checked_out-bg);
+  border-color: var(--status-checked_out-border);
 }
 
 .calendar-legend__dot--no_show {
-  background-color: #B2BEB5;
+  background-color: var(--status-no_show-bg);
+  border-color: var(--status-no_show-border);
 }
 
-.calendar-legend__dot--pending {
-  background-color: #ffe5e7;
-  border: 1px solid #ec242c;
+.calendar-legend__dot--archived {
+  background-color: var(--status-archived-bg);
+  border-color: var(--status-archived-border);
+  border-style: dashed;
 }
 
-.calendar-legend__dot--cancelled {
-  background-color: #f4f6f8;
-  border: 1px dashed #94a3b8;
+.calendar-view {
+  position: relative;
 }
 
 
 .booking-calendar {
+  --room-width: 64px;
+
+  position: relative;
+
   width: 100%;
   min-width: 0;
   max-width: 100%;
@@ -2245,6 +2296,24 @@ textarea,
    HEADER
 ========================= */
 
+/*
+ * The header and every row are as wide as the
+ * full scrollable timeline. This keeps the sticky
+ * room column pinned while scrolling to the far
+ * right, because its containing block now spans
+ * the whole scroll range.
+ */
+.calendar-header,
+.calendar-row {
+  width: max(
+    100%,
+    calc(
+      var(--room-width) +
+        var(--calendar-days-width, 0px)
+    )
+  );
+}
+
 .calendar-header {
   display: flex;
 
@@ -2259,8 +2328,10 @@ textarea,
 }
 
 .calendar-room-header {
-  width: 64px;
-  min-width: 64px;
+  width: var(--room-width);
+  min-width: var(--room-width);
+
+  flex: 0 0 var(--room-width);
 
   position: sticky;
   left: 0;
@@ -2271,10 +2342,16 @@ textarea,
   align-items: center;
   justify-content: center;
 
+  padding: 0 6px;
+
+  box-sizing: border-box;
+
   font-size: 10px;
   font-weight: 700;
 
   color: #64748b;
+
+  text-align: center;
 
   border-right: 1px solid #e2e8f0;
 
@@ -2283,6 +2360,8 @@ textarea,
 
 .calendar-dates {
   display: flex;
+
+  flex: 0 0 auto;
 }
 
 .calendar-date {
@@ -2340,8 +2419,10 @@ textarea,
 /* ROOM */
 
 .calendar-room {
-  width: 64px;
-  min-width: 64px;
+  width: var(--room-width);
+  min-width: var(--room-width);
+
+  flex: 0 0 var(--room-width);
 
   position: sticky;
   left: 0;
@@ -2351,6 +2432,10 @@ textarea,
   display: flex;
   align-items: center;
   justify-content: center;
+
+  padding: 0 6px;
+
+  box-sizing: border-box;
 
   background: #f8fafc;
 
@@ -2362,6 +2447,12 @@ textarea,
   line-height: 14px;
 
   color: #334155;
+
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  max-width: 100%;
 }
 
 
@@ -2375,6 +2466,8 @@ textarea,
   display: flex;
 
   min-height: 46px;
+
+  flex: 0 0 auto;
 }
 
 .calendar-grid-cell {
@@ -2395,9 +2488,18 @@ textarea,
   background: #f8fafc;
 }
 
+.calendar-grid-cell.is-booked {
+  cursor: not-allowed;
+}
+
 .calendar-grid-cell.is-selected {
   background-color: var(--brand-soft);
   box-shadow: inset 0 0 0 1.5px var(--brand-bold);
+}
+
+.calendar-grid-cell.is-blocked {
+  background-color: var(--brand-danger-soft);
+  box-shadow: inset 0 0 0 1.5px var(--brand-danger);
 }
 
 
@@ -2416,7 +2518,7 @@ textarea,
 
   border-radius: 5px;
 
-  padding: 3px 6px;
+  padding: 3px 6px 3px 9px;
 
   box-sizing: border-box;
 
@@ -2428,19 +2530,41 @@ textarea,
   flex-direction: column;
   justify-content: center;
 
+  background: var(--status-unknown-bg);
+  color: var(--status-unknown-fg);
+
+  border: 1px solid var(--status-unknown-border);
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+
   transition:
     transform 0.15s ease,
     box-shadow 0.15s ease;
 }
 
+/*
+ * Status accent bar on the left edge
+ */
+.booking-block::before {
+  content: "";
+
+  position: absolute;
+
+  left: 0;
+  top: 0;
+  bottom: 0;
+
+  width: 4px;
+
+  background: var(--status-unknown-border);
+}
+
 .booking-block:hover {
   transform: translateY(-1px);
 
-  box-shadow: 0 4px 12px rgba(15, 23, 42, 0.18);
+  box-shadow: 0 6px 16px rgba(15, 23, 42, 0.22);
 
   z-index: 50;
-
-  overflow: visible;
 }
 
 .booking-block__name {
@@ -2458,9 +2582,12 @@ textarea,
   line-height: 10px;
   font-weight: 600;
 
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+
   margin-top: 1px;
 
-  opacity: 0.9;
+  opacity: 0.75;
 
   white-space: nowrap;
   overflow: hidden;
@@ -2468,70 +2595,76 @@ textarea,
 }
 
 
-/* OCCUPIED */
+/* =========================
+   STATUS COLORS
+========================= */
 
-.booking-occupied {
-  background: #273896;
-  color: #ffffff;
-}
 .booking-in_house {
-  background: #273896;
-  color: #ffffff;
+  background: var(--status-in_house-bg);
+  color: var(--status-in_house-fg);
+
+  border-color: var(--status-in_house-border);
 }
 
-
-/* BOOKED */
-
-.booking-booked {
-  background: #e7ebff;
-  color: #273896;
-
-  border: 1px solid #273896;
+.booking-in_house::before {
+  background: var(--status-in_house-border);
 }
 
-
-
-
-.booking-completed {
-  background: #e2e8f0;
-  color: #0f172a;
-
-  border: 1px solid #94a3b8;
-}
-.booking-in_request {
-  background: #f4f4f5;
-  color: #0f172a;
-
-  border: 3px solid #FFFF00;
-}
 .booking-confirmed {
-  background: green;
-  color: white;
+  background: var(--status-confirmed-bg);
+  color: var(--status-confirmed-fg);
+
+  border-color: var(--status-confirmed-border);
+}
+
+.booking-confirmed::before {
+  background: var(--status-confirmed-border);
+}
+
+.booking-in_request {
+  background: var(--status-in_request-bg);
+  color: var(--status-in_request-fg);
+
+  border-color: var(--status-in_request-border);
+  border-style: dashed;
+}
+
+.booking-in_request::before {
+  background: var(--status-in_request-border);
 }
 
 .booking-checked_out {
-  background: red;
-  color: white;
+  background: var(--status-checked_out-bg);
+  color: var(--status-checked_out-fg);
+
+  border-color: var(--status-checked_out-border);
 }
 
-
-/* PENDING */
-
-.booking-pending {
-  background: #ffe5e7;
-  color: #ec242c;
-
-  border: 1px solid #ec242c;
+.booking-checked_out::before {
+  background: var(--status-checked_out-border);
 }
 
+.booking-no_show {
+  background: var(--status-no_show-bg);
+  color: var(--status-no_show-fg);
 
-/* CANCELLED */
+  border-color: var(--status-no_show-border);
+}
 
-.booking-cancelled {
-  background: #f4f6f8;
-  color: #64748b;
+.booking-no_show::before {
+  background: var(--status-no_show-border);
+}
 
-  border: 1px dashed #94a3b8;
+.booking-archived {
+  background: var(--status-archived-bg);
+  color: var(--status-archived-fg);
+
+  border-color: var(--status-archived-border);
+  border-style: dashed;
+}
+
+.booking-archived::before {
+  background: var(--status-archived-border);
 }
 
 
@@ -2656,17 +2789,19 @@ textarea,
    TOOLTIP
 ========================= */
 
+/*
+ * The tooltip is a fixed overlay rendered
+ * outside the scroll container, so it is never
+ * clipped by the calendar edges. Left / top are
+ * computed in JS, which also flips the tooltip
+ * below the booking when there is no room above.
+ */
 .booking-tooltip {
-  position: absolute;
+  position: fixed;
 
-  left: 50%;
-  bottom: calc(100% + 10px);
+  width: 264px;
 
-  transform: translateX(-50%);
-
-  width: 260px;
-
-  padding: 14px;
+  padding: 12px 14px;
 
   background: #ffffff;
 
@@ -2680,9 +2815,19 @@ textarea,
     0 12px 30px
       rgba(15, 23, 42, 0.18);
 
-  z-index: 99999;
+  z-index: 900;
 
   pointer-events: none;
+
+  visibility: hidden;
+
+  opacity: 0;
+}
+
+.booking-tooltip.is-ready {
+  visibility: visible;
+
+  opacity: 1;
 }
 
 
@@ -2693,8 +2838,7 @@ textarea,
 
   position: absolute;
 
-  left: 50%;
-  bottom: -6px;
+  left: var(--tooltip-arrow-left, 50%);
 
   width: 10px;
   height: 10px;
@@ -2703,8 +2847,18 @@ textarea,
 
   border-right: 1px solid #e2e8f0;
   border-bottom: 1px solid #e2e8f0;
+}
+
+.booking-tooltip--top::after {
+  bottom: -6px;
 
   transform: translateX(-50%) rotate(45deg);
+}
+
+.booking-tooltip--bottom::after {
+  top: -6px;
+
+  transform: translateX(-50%) rotate(-135deg);
 }
 
 
@@ -2728,37 +2882,66 @@ textarea,
 
 .tooltip-status {
   font-size: 9px;
+  line-height: 12px;
 
   font-weight: 700;
 
-  padding: 3px 6px;
+  letter-spacing: 0.3px;
+  text-transform: uppercase;
+
+  padding: 3px 7px;
+
+  white-space: nowrap;
 
   border-radius: 999px;
+
+  border: 1px solid transparent;
+
+  flex-shrink: 0;
 }
 
-.tooltip-status--occupied {
-  background: #273896;
-  color: #ffffff;
+.tooltip-status--in_house {
+  background: var(--status-in_house-bg);
+  color: var(--status-in_house-fg);
+  border-color: var(--status-in_house-border);
 }
 
-.tooltip-status--booked {
-  background: #e7ebff;
-  color: #273896;
+.tooltip-status--confirmed {
+  background: var(--status-confirmed-bg);
+  color: var(--status-confirmed-fg);
+  border-color: var(--status-confirmed-border);
 }
 
-.tooltip-status--completed {
-  background: #e2e8f0;
-  color: #0f172a;
+.tooltip-status--in_request {
+  background: var(--status-in_request-bg);
+  color: var(--status-in_request-fg);
+  border-color: var(--status-in_request-border);
+  border-style: dashed;
 }
 
-.tooltip-status--pending {
-  background: #ffe5e7;
-  color: #ec242c;
+.tooltip-status--checked_out {
+  background: var(--status-checked_out-bg);
+  color: var(--status-checked_out-fg);
+  border-color: var(--status-checked_out-border);
 }
 
-.tooltip-status--cancelled {
-  background: #f4f6f8;
-  color: #64748b;
+.tooltip-status--no_show {
+  background: var(--status-no_show-bg);
+  color: var(--status-no_show-fg);
+  border-color: var(--status-no_show-border);
+}
+
+.tooltip-status--archived {
+  background: var(--status-archived-bg);
+  color: var(--status-archived-fg);
+  border-color: var(--status-archived-border);
+  border-style: dashed;
+}
+
+.tooltip-status--unknown {
+  background: var(--status-unknown-bg);
+  color: var(--status-unknown-fg);
+  border-color: var(--status-unknown-border);
 }
 
 
@@ -2843,10 +3026,8 @@ textarea,
     flex: 1 1 auto;
   }
 
-  .calendar-room,
-  .calendar-room-header {
-    width: 56px;
-    min-width: 56px;
+  .booking-calendar {
+    --room-width: 56px;
   }
 
   .calendar-date {

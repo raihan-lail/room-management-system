@@ -1,6 +1,8 @@
 import {
+  forwardRef,
   useCallback,
   useEffect,
+  useLayoutEffect,
   useMemo,
   useRef,
   useState,
@@ -25,6 +27,14 @@ const DRAG_EDGE = 80;
 
 const SCROLL_SPEED = 14;
 
+const TOOLTIP_WIDTH = 264;
+
+const TOOLTIP_GAP = 10;
+
+const TOOLTIP_MARGIN = 8;
+
+const BLOCKED_FLASH_MS = 400;
+
 const DEFAULT_SETTINGS = {
   calendarStart: "2026-09-01",
   calendarEnd: "2026-10-28",
@@ -37,14 +47,47 @@ const VIEW_DAYS = {
   BIWEEKLY: 13,
 };
 
-const STATUSES = [
-  "CONFIRMED",
-  "IN_REQUEST",
-  "IN_HOUSE",
-  "CHECKED_OUT",
-  "NO_SHOW",
-  "ARCHIVED"
+/*
+ * Booking statuses.
+ * The key is the normalized status and is used to
+ * build every status class name:
+ *   .booking-block.booking-<key>
+ *   .calendar-legend__dot--<key>
+ *   .tooltip-status--<key>
+ * Colors live in App.css as --status-<key>-*
+ */
+const STATUS_META = {
+  in_house: { label: "In house" },
+  confirmed: { label: "Confirmed" },
+  in_request: { label: "In request" },
+  checked_out: { label: "Checked out" },
+  no_show: { label: "No show" },
+  archived: { label: "Archived" },
+  unknown: { label: "Unknown" },
+};
+
+const STATUS_ORDER = [
+  "in_house",
+  "confirmed",
+  "in_request",
+  "checked_out",
+  "no_show",
+  "archived",
 ];
+
+function normalizeStatus(status) {
+  const key = String(
+    status || ""
+  )
+    .toLowerCase()
+    .replace(/[\s-]+/g, "_");
+
+  return key in STATUS_META ? key : "unknown";
+}
+
+function statusLabel(status) {
+  return STATUS_META[normalizeStatus(status)].label;
+}
 
 function parseDate(dateStr) {
   if (!dateStr) return null;
@@ -166,7 +209,10 @@ function bookingOverlaps(
 
 export default function CalendarView() {
    
-  const [hoveredBooking, setHoveredBooking] =
+  const [hovered, setHovered] =
+    useState(null);
+
+  const [tooltipPosition, setTooltipPosition] =
     useState(null);
 
   const [roomFilter, setRoomFilter] =
@@ -210,13 +256,27 @@ export default function CalendarView() {
   const [dragScrollDirection, setDragScrollDirection] =
     useState(0);
 
+  const [blockedCell, setBlockedCell] =
+    useState(null);
+
   const dragRangeRef = useRef(null);
   const dragActiveRef = useRef(false);
   const lastXRef = useRef(0);
+  const tooltipRef = useRef(null);
+  const tooltipAnchorRef = useRef(null);
+  const blockedTimerRef = useRef(null);
 
   useEffect(() => {
     dragRangeRef.current = dragRange;
   }, [dragRange]);
+
+  useEffect(() => {
+    return () => {
+      if (blockedTimerRef.current) {
+        clearTimeout(blockedTimerRef.current);
+      }
+    };
+  }, []);
 
   /*
    * Calendar bounds
@@ -279,6 +339,135 @@ export default function CalendarView() {
       windowEnd
     );
   }, [windowStart, windowEnd]);
+
+  /*
+   * Booked days per room (all bookings, not the
+   * filtered ones, so text filters can never
+   * unlock an already occupied date)
+   */
+  const blockedDays = useMemo(() => {
+    const map = new Map();
+
+    if (dates.length === 0) {
+      return map;
+    }
+
+    const lastIndex = dates.length - 1;
+
+    bookings.forEach((booking) => {
+      const roomName = booking?.room;
+
+      if (
+        !roomName ||
+        !bookingOverlaps(
+          windowStart,
+          windowEnd,
+          booking
+        )
+      ) {
+        return;
+      }
+
+      const start = parseDate(booking.started_at);
+      const end = parseDate(booking.ended_at);
+
+      if (!start || !end) return;
+
+      const from = Math.max(
+        0,
+        dayCount(windowStart, start)
+      );
+
+      const to = Math.min(
+        lastIndex,
+        dayCount(windowStart, end)
+      );
+
+      if (to < from) return;
+
+      let days = map.get(roomName);
+
+      if (!days) {
+        days = new Set();
+        map.set(roomName, days);
+      }
+
+      for (let i = from; i <= to; i += 1) {
+        days.add(i);
+      }
+    });
+
+    return map;
+  }, [bookings, windowStart, windowEnd, dates]);
+
+  const isDayBooked = useCallback(
+    (roomName, index) => {
+      const days =
+        blockedDays.get(roomName);
+
+      return days ? days.has(index) : false;
+    },
+    [blockedDays]
+  );
+
+  /*
+   * Contiguous free span of a room around
+   * a given day index. A selection can never
+   * cross an occupied date.
+   */
+  const getFreeSpan = useCallback(
+    (roomName, index) => {
+      const days =
+        blockedDays.get(roomName);
+
+      const lastIndex = dates.length - 1;
+
+      if (!days || dates.length === 0) {
+        return [0, lastIndex];
+      }
+
+      let low = index;
+
+      while (low - 1 >= 0 && !days.has(low - 1)) {
+        low -= 1;
+      }
+
+      let high = index;
+
+      while (
+        high + 1 < dates.length &&
+        !days.has(high + 1)
+      ) {
+        high += 1;
+      }
+
+      return [low, high];
+    },
+    [blockedDays, dates]
+  );
+
+  const hasBookedDay = useCallback(
+    (roomName, from, to) => {
+      if (dates.length === 0) {
+        return false;
+      }
+
+      const low = Math.max(0, Math.min(from, to));
+      const high = Math.min(
+        dates.length - 1,
+        Math.max(from, to)
+      );
+
+      for (let i = low; i <= high; i += 1) {
+        if (isDayBooked(roomName, i)) {
+          return true;
+        }
+      }
+
+      return false;
+    },
+    [dates.length, isDayBooked]
+  );
 
   /*
    * Visible date range (changes on scroll/resize)
@@ -345,6 +534,112 @@ export default function CalendarView() {
         onResize
       );
   }, [updateVisibleRange]);
+
+  /*
+   * Tooltip anchoring
+   *
+   * The tooltip is rendered as a fixed overlay
+   * outside the scroll container so it is never
+   * clipped. It flips below the booking when
+   * there is not enough room above and is
+   * clamped horizontally inside the viewport.
+   */
+  const updateTooltipPosition = useCallback(() => {
+    const node = tooltipRef.current;
+    const anchor = tooltipAnchorRef.current;
+
+    if (!node || !anchor) return;
+
+    const box = node.getBoundingClientRect();
+    const anchorBox = anchor.getBoundingClientRect();
+
+    const width = box.width || TOOLTIP_WIDTH;
+    const height = box.height;
+
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    const roomAbove =
+      anchorBox.top - TOOLTIP_GAP - height;
+
+    const placement =
+      roomAbove >= TOOLTIP_MARGIN ? "top" : "bottom";
+
+    const top = Math.min(
+      Math.max(
+        placement === "top"
+          ? roomAbove
+          : anchorBox.bottom + TOOLTIP_GAP,
+        TOOLTIP_MARGIN
+      ),
+      Math.max(
+        TOOLTIP_MARGIN,
+        viewportHeight - height - TOOLTIP_MARGIN
+      )
+    );
+
+    const centered =
+      anchorBox.left +
+      anchorBox.width / 2 -
+      width / 2;
+
+    const left = Math.min(
+      Math.max(centered, TOOLTIP_MARGIN),
+      Math.max(
+        TOOLTIP_MARGIN,
+        viewportWidth - width - TOOLTIP_MARGIN
+      )
+    );
+
+    const arrowCenter =
+      anchorBox.left + anchorBox.width / 2 - left;
+
+    const arrowLeft = Math.min(
+      Math.max(arrowCenter, 16),
+      Math.max(16, width - 16)
+    );
+
+    setTooltipPosition({
+      left,
+      top,
+      placement,
+      arrowLeft,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!hovered?.booking) {
+      return;
+    }
+
+    tooltipAnchorRef.current = hovered.anchor;
+
+    updateTooltipPosition();
+
+    window.addEventListener(
+      "scroll",
+      updateTooltipPosition,
+      true
+    );
+
+    window.addEventListener(
+      "resize",
+      updateTooltipPosition
+    );
+
+    return () => {
+      window.removeEventListener(
+        "scroll",
+        updateTooltipPosition,
+        true
+      );
+
+      window.removeEventListener(
+        "resize",
+        updateTooltipPosition
+      );
+    };
+  }, [hovered, updateTooltipPosition]);
 
   /*
    * Filter bookings
@@ -535,6 +830,20 @@ export default function CalendarView() {
   /*
    * Cell drag-to-book selection
    */
+  const flashBlockedCell = (roomName, index) => {
+    if (blockedTimerRef.current) {
+      clearTimeout(blockedTimerRef.current);
+    }
+
+    setBlockedCell({ room: roomName, index });
+
+    blockedTimerRef.current =
+      setTimeout(() => {
+        blockedTimerRef.current = null;
+        setBlockedCell(null);
+      }, BLOCKED_FLASH_MS);
+  };
+
   const handleCellMouseDown = (
     roomName,
     index,
@@ -543,6 +852,16 @@ export default function CalendarView() {
     if (event.button !== 0) return;
 
     event.preventDefault();
+
+    setHovered(null);
+
+    /*
+     * Occupied dates cannot be selected
+     */
+    if (isDayBooked(roomName, index)) {
+      flashBlockedCell(roomName, index);
+      return;
+    }
 
     dragActiveRef.current = true;
 
@@ -583,16 +902,38 @@ export default function CalendarView() {
         Math.min(dates.length - 1, rawIndex)
       );
 
-      setDragRange((prev) =>
-        prev
-          ? {
-              ...prev,
-              end: { ...prev.end, index },
-            }
-          : prev
-      );
+      setDragRange((prev) => {
+        if (!prev) return prev;
+
+        const roomName = prev.start.room;
+        const anchor = prev.start.index;
+
+        if (isDayBooked(roomName, anchor)) {
+          return prev;
+        }
+
+        /*
+         * Keep the selection inside the free
+         * span so it never overlaps a booking
+         */
+        const [low, high] = getFreeSpan(
+          roomName,
+          anchor
+        );
+
+        return {
+          ...prev,
+          end: {
+            ...prev.end,
+            index: Math.min(
+              high,
+              Math.max(low, index)
+            ),
+          },
+        };
+      });
     },
-    [dates]
+    [dates, getFreeSpan, isDayBooked]
   );
 
   const handleWindowMouseMove = useCallback(
@@ -678,6 +1019,24 @@ export default function CalendarView() {
 
     if (!startedAt || !endedAt) return;
 
+    /*
+     * Last safety net: never open the modal for
+     * a range that touches an occupied date
+     */
+    if (
+      hasBookedDay(
+        range.start.room,
+        minIndex,
+        maxIndex
+      )
+    ) {
+      flashBlockedCell(
+        range.start.room,
+        minIndex
+      );
+      return;
+    }
+
     setBookingDraft({
       room: range.start.room,
       started_at:
@@ -685,7 +1044,7 @@ export default function CalendarView() {
       ended_at:
         endedAt.toISOString().slice(0, 10),
     });
-  }, [dates]);
+  }, [dates, hasBookedDay]);
 
   useEffect(() => {
     window.addEventListener(
@@ -768,6 +1127,32 @@ export default function CalendarView() {
         notes: "",
       },
     ]);
+  };
+
+  /*
+   * Draft guard: reject a booking that would
+   * overlap an existing one in the same room
+   */
+  const isDraftBookable = (draft) => {
+    if (!draft?.room) return false;
+
+    const from = dayCount(
+      windowStart,
+      draft.started_at
+    );
+
+    const to = dayCount(
+      windowStart,
+      draft.ended_at
+    );
+
+    if (from < 0 || to < from) return false;
+
+    return !hasBookedDay(
+      draft.room,
+      from,
+      to
+    );
   };
 
   return (
@@ -885,17 +1270,17 @@ export default function CalendarView() {
 
         <div className="calendar-legend">
 
-          {STATUSES.map((status) => (
+          {STATUS_ORDER.map((key) => (
             <span
               className="calendar-legend__item"
-              key={status}
+              key={key}
             >
               <i
-                className={`calendar-legend__dot calendar-legend__dot--${status.toLowerCase()}`}
+                className={`calendar-legend__dot calendar-legend__dot--${key}`}
                 aria-hidden="true"
               />
 
-              {status}
+              {STATUS_META[key].label}
             </span>
           ))}
 
@@ -986,6 +1371,10 @@ export default function CalendarView() {
         className="booking-calendar"
         ref={calendarRef}
         onScroll={updateVisibleRange}
+        style={{
+          "--calendar-days-width":
+            `${dates.length * DAY_WIDTH}px`,
+        }}
       >
 
         {/* HEADER */}
@@ -1086,33 +1475,49 @@ export default function CalendarView() {
                     }}
                   >
 
-                    {dates.map((date, index) => (
-                      <div
-                        key={date.toISOString()}
-                        className={`calendar-grid-cell ${
-                          isWeekend(date)
-                            ? "is-weekend"
-                            : ""
-                        } ${
-                          isCellSelected(
-                            room.name,
-                            index
-                          )
-                            ? "is-selected"
-                            : ""
-                        }`}
-                        style={{
-                          width: DAY_WIDTH,
-                        }}
-                        onMouseDown={(event) =>
-                          handleCellMouseDown(
-                            room.name,
-                            index,
-                            event
-                          )
-                        }
-                      />
-                    ))}
+                    {dates.map((date, index) => {
+                      const booked = isDayBooked(
+                        room.name,
+                        index
+                      );
+
+                      return (
+                        <div
+                          key={date.toISOString()}
+                          className={`calendar-grid-cell ${
+                            isWeekend(date)
+                              ? "is-weekend"
+                              : ""
+                          } ${
+                            booked ? "is-booked" : ""
+                          } ${
+                            isCellSelected(
+                              room.name,
+                              index
+                            )
+                              ? "is-selected"
+                              : ""
+                          } ${
+                            blockedCell?.room ===
+                              room.name &&
+                            blockedCell?.index ===
+                              index
+                              ? "is-blocked"
+                              : ""
+                          }`}
+                          style={{
+                            width: DAY_WIDTH,
+                          }}
+                          onMouseDown={(event) =>
+                            handleCellMouseDown(
+                              room.name,
+                              index,
+                              event
+                            )
+                          }
+                        />
+                      );
+                    })}
 
                     {/* BOOKINGS */}
 
@@ -1124,9 +1529,10 @@ export default function CalendarView() {
                             booking
                           );
 
-                        const statusClass = String(
-  booking?.status ?? ""
-).toLowerCase();
+                        const statusClass =
+                          normalizeStatus(
+                            booking?.status
+                          );
 
                         return (
                           <div
@@ -1141,15 +1547,15 @@ export default function CalendarView() {
                               width:
                                 style.width,
                             }}
-                            onMouseEnter={() =>
-                              setHoveredBooking(
-                                booking
-                              )
+                            onMouseEnter={(event) =>
+                              setHovered({
+                                booking,
+                                anchor:
+                                  event.currentTarget,
+                              })
                             }
                             onMouseLeave={() =>
-                              setHoveredBooking(
-                                null
-                              )
+                              setHovered(null)
                             }
                           >
 
@@ -1159,17 +1565,10 @@ export default function CalendarView() {
                             </div>
 
                             <div className="booking-block__status">
-                              {booking?.status}
+                              {statusLabel(
+                                booking?.status
+                              )}
                             </div>
-
-                            {hoveredBooking ===
-                              booking && (
-                              <BookingTooltip
-                                booking={
-                                  booking
-                                }
-                              />
-                            )}
 
                           </div>
                         );
@@ -1187,13 +1586,30 @@ export default function CalendarView() {
 
       </div>
 
+      {/*
+       * Rendered outside the scroll container so
+       * it can never be clipped by the calendar
+       */}
+      <BookingTooltip
+        ref={tooltipRef}
+        booking={hovered?.booking}
+        position={tooltipPosition}
+      />
+
       {bookingDraft && (
         <BookingModal
           room={bookingDraft.room}
           startedAt={bookingDraft.started_at}
           endedAt={bookingDraft.ended_at}
           onClose={() => setBookingDraft(null)}
-          onSubmit={handleCreateBooking}
+          onSubmit={(draft) => {
+            if (!isDraftBookable(draft)) {
+              setBookingDraft(null);
+              return;
+            }
+
+            handleCreateBooking(draft);
+          }}
         />
       )}
     </div>
@@ -1202,98 +1618,130 @@ export default function CalendarView() {
 
 
 
-function BookingTooltip({ booking }) {
-  const statusClass = String(
-    booking?.status || ""
-  ).toLowerCase();
+const BookingTooltip = forwardRef(
+  function BookingTooltip(
+    { booking, position },
+    ref
+  ) {
+    if (!booking) {
+      return null;
+    }
 
-  return (
-    <div className="booking-tooltip">
+    const statusClass =
+      normalizeStatus(booking?.status);
 
-      <div className="booking-tooltip__header">
+    /*
+     * The node mounts before it is measured, so it
+     * stays hidden until a position is resolved.
+     */
+    const style = {
+      left: position
+        ? `${position.left}px`
+        : "0px",
+      top: position
+        ? `${position.top}px`
+        : "0px",
+      "--tooltip-arrow-left": position
+        ? `${position.arrowLeft}px`
+        : "50%",
+    };
 
-        <strong>
-          {booking?.guest?.name ||
-            "Guest"}
-        </strong>
+    return (
+      <div
+        ref={ref}
+        className={`booking-tooltip booking-tooltip--${
+          position?.placement || "top"
+        }${position ? " is-ready" : ""}`}
+        style={style}
+        role="tooltip"
+      >
 
-        <span
-          className={`tooltip-status tooltip-status--${statusClass}`}
-        >
-          {booking?.status}
-        </span>
+        <div className="booking-tooltip__header">
+
+          <strong>
+            {booking?.guest?.name ||
+              "Guest"}
+          </strong>
+
+          <span
+            className={`tooltip-status tooltip-status--${statusClass}`}
+          >
+            {statusLabel(booking?.status)}
+          </span>
+
+        </div>
+
+        <div className="booking-tooltip__divider" />
+
+        <div className="booking-tooltip__row">
+          <span>Room</span>
+          <strong>{booking?.room}</strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Gender</span>
+          <strong>
+            {booking?.guest?.gender}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Country</span>
+          <strong>
+            {booking?.guest?.country}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Department</span>
+          <strong>
+            {booking?.guest?.dept}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Meal</span>
+          <strong>
+            {booking?.guest?.meal_type}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Booked At</span>
+          <strong>
+            {booking?.booked_at}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>Start</span>
+          <strong>
+            {booking?.started_at}
+          </strong>
+        </div>
+
+        <div className="booking-tooltip__row">
+          <span>End</span>
+          <strong>
+            {booking?.ended_at}
+          </strong>
+        </div>
+
+        {booking?.notes && (
+          <>
+            <div className="booking-tooltip__divider" />
+
+            <div className="booking-tooltip__notes">
+              <span>Notes</span>
+
+              <p>
+                {booking.notes}
+              </p>
+            </div>
+          </>
+        )}
 
       </div>
-
-      <div className="booking-tooltip__divider" />
-
-      <div className="booking-tooltip__row">
-        <span>Room</span>
-        <strong>{booking?.room}</strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>Gender</span>
-        <strong>
-          {booking?.guest?.gender}
-        </strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>Country</span>
-        <strong>
-          {booking?.guest?.country}
-        </strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>Department</span>
-        <strong>
-          {booking?.guest?.dept}
-        </strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>Meal</span>
-        <strong>
-          {booking?.guest?.meal_type}
-        </strong>
-      </div>
-         <div className="booking-tooltip__row">
-        <span>Booked At</span>
-        <strong>
-          {booking?.booked_at}
-        </strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>Start</span>
-        <strong>
-          {booking?.started_at}
-        </strong>
-      </div>
-
-      <div className="booking-tooltip__row">
-        <span>End</span>
-        <strong>
-          {booking?.ended_at}
-        </strong>
-      </div>
-
-      {booking?.notes && (
-        <>
-          <div className="booking-tooltip__divider" />
-
-          <div className="booking-tooltip__notes">
-            <span>Notes</span>
-
-            <p>
-              {booking.notes}
-            </p>
-          </div>
-        </>
-      )}
-
-    </div>
-  );
-}
+    );
+  }
+);

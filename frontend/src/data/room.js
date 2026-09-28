@@ -1,6 +1,6 @@
 export const rooms = [
-  { name: "101", desc: "room", location: "EAST WING", status: "VACANT" },
-  { name: "102", desc: "room", location: "EAST WING", status: "BOOKED" },
+  { name: "101", desc: "room", location: "EAST WING", status: "VACANT", cleaning_status: "No" },
+  { name: "102", desc: "room", location: "EAST WING", status: "BOOKED", cleaning_status: "No" },
   { name: "103", desc: "room", location: "EAST WING", status: "OCCUPIED" },
   { name: "104", desc: "room", location: "EAST WING", status: "HOME_LEAVE" },
   { name: "105", desc: "room", location: "EAST WING", status: "ALLOCATED" },

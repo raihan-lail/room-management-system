@@ -21,6 +21,7 @@ export default function Login() {
         <h1 className="login-title">LOGIN</h1>
 
         <form className="login-form" onSubmit={handleSubmit}>
+          <p>Enter random email and password for login.</p>
           <label className="form-field">
             <span>Email</span>
             <input
@@ -75,7 +76,7 @@ export default function Login() {
       </div>
 
       <div className="login-image-wrapper">
-        <img src="/logo.png" alt="" className="login-image" />
+        <img src="/logo.jpeg" alt="" className="login-image" />
       </div>
       </div>
     </div>
