@@ -223,7 +223,7 @@ export default function FrontDesk() {
 
             <div className="frontdesk-filters">
               <span className="frontdesk-today">
-                <i className="bi bi-calendar3" aria-hidden="true" />
+               
                 {todayLabel}
               </span>
 

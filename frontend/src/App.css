@@ -335,6 +335,28 @@
   padding: 5px 6px;
 }
 
+.map-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.map-title {
+  font-size: large;
+  color: var(--brand-nav);
+  font-weight: bold;
+}
+.map-header {
+  display: flex;
+  justify-content: space-between;
+}
+.map-legend {
+   display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+}
 
 /* =========================
    NAVBAR
@@ -366,20 +388,10 @@
 }
 
 .navbar__logo {
-  width: 32px;
-  height: 32px;
-
-  flex: 0 0 32px;
-
-  padding: 4px;
-
-  background: #ffffff;
-  border-radius: 7px;
-
-  box-sizing: border-box;
-  object-fit: contain;
-  display: block;
+  max-width: 100px;
+  padding: -20px;
 }
+
 
 .navbar__title {
   font-size: 14px;
@@ -1803,18 +1815,17 @@ textarea,
   align-items: center;
   justify-content: center;
   min-width: 0;
-  background-color: var(--brand-nav);
-  border-radius: 50%;
+  
  
 }
 
 .login-image {
   width: 100%;
-  max-width: 480px;
+  max-width: 2000px;
   height: auto;
   object-fit: contain;
    border: var(--brand-nav);
-   padding: 20px;
+   padding: 10px;
 }
 /* =========================
    BUTTONS
@@ -2073,6 +2084,58 @@ textarea,
 
   color: #111827;
 
+  word-break: break-word;
+}
+
+/* =========================
+   COMPLAINS
+   ========================= */
+
+.complain-type {
+  display: inline-flex;
+  align-items: center;
+
+  padding: 3px 10px;
+
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+  border: 1px solid var(--brand-nav);
+  border-radius: 999px;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.table-empty {
+  padding: 28px 14px;
+
+  text-align: center;
+
+  color: #64748b;
+}
+
+.complain-notes {
+  padding: 14px 16px 16px;
+}
+
+.complain-notes__text {
+  margin: 0;
+
+  padding: 12px 14px;
+
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  font-size: 13px;
+  line-height: 20px;
+
+  color: #334155;
+
+  white-space: pre-wrap;
   word-break: break-word;
 }
 

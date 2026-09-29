@@ -86,7 +86,8 @@ export default function Sidebar({
             hasChildren &&
             item.items.some(
               (child) =>
-                child.path === location.pathname
+                location.pathname === child.path ||
+                location.pathname.startsWith(`${child.path}/`)
             );
 
           const isActive =

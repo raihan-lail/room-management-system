@@ -37,6 +37,7 @@ export default function RoomManagement() {
             room.desc,
             room.location,
             room.status,
+            room.cleaning_status
         ].some((value) =>
         (value || "").toString().toLowerCase().includes(query)
     )

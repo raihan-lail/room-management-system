@@ -76,7 +76,7 @@ export default function Login() {
       </div>
 
       <div className="login-image-wrapper">
-        <img src="/logo.jpeg" alt="" className="login-image" />
+        <img src="/logo.png" alt="" className="login-image" />
       </div>
       </div>
     </div>

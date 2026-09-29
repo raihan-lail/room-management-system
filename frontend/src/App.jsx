@@ -23,6 +23,9 @@ import MealType from "./pages/guest/MealType";
 import NotFound from "./pages/NotFound";
 import RoleManagement from "./pages/settings/RoleManagement";
 import FrontDesk from "./pages/FrontDesk";
+import Complains from "./pages/bookings/Complains";
+import ComplainDetails from "./pages/bookings/ComplainDetails";
+import Ratings from "./pages/bookings/Ratings";
 
 function App() {
   return (
@@ -33,6 +36,12 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/frontdesk" element={<FrontDesk />} />
           <Route path="/bookings/calendar" element={<BookingCalendarView />} />
+            <Route path="/bookings/complains" element={<Complains />} />
+              <Route path="/bookings/ratings" element={<Ratings/>} />
+          <Route
+            path="/bookings/complains/:complainId"
+            element={<ComplainDetails />}
+          />
           <Route path="/rooms/map" element={<BookingMapView />} />
           <Route path="/bookings/table" element={<BookingTableView />} />
           <Route path="/rooms/management" element={<RoomManagement />} />
