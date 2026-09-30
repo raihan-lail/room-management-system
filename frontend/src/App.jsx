@@ -26,6 +26,9 @@ import FrontDesk from "./pages/FrontDesk";
 import Complains from "./pages/bookings/Complains";
 import ComplainDetails from "./pages/bookings/ComplainDetails";
 import Ratings from "./pages/bookings/Ratings";
+import BookingHistory from "./pages/resident-front-office/BookingHistory";
+import BookingRating from "./pages/resident-front-office/BookingRating";
+import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
 
 function App() {
   return (
@@ -54,6 +57,17 @@ function App() {
            <Route path="/roles" element={<RoleManagement/>} />
           <Route path="/manage-permissions" element={<ManagePermissions />} />
           <Route path="/audit-logs" element={<AuditLog />} />
+          <Route path="/resident/history" element={<BookingHistory />} />
+          <Route
+            path="/resident/rating/:bookingId"
+            element={<BookingRating />}
+          />
+          <Route
+            path="/resident/complaints/:bookingId"
+            element={<BookingComplaints />}
+          />
+
+
 
 
 

@@ -7,3 +7,5 @@ frontend:
 - always use and follow root color rules in App.css, and font used in index.css. DO NOT use any other colors and fonts
 - DO NOT use tailwind css, use default css in App.css
 - always put css classes in order
+- do not use any color gradations
+- always aim on minimalism and simplicity, but provides clear and complete informations

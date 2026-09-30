@@ -19,7 +19,7 @@ export const sidebarMenu = [
       { label: 'Calendar View', path: '/bookings/calendar', icon: 'bi-calendar-date' },
      
        { label: 'Table View', path: '/bookings/table', icon: 'bi-table' },
-       { label: 'Complains', path: '/bookings/complains', icon: 'bi-chat-dots' },
+       { label: 'Complaints', path: '/bookings/complains', icon: 'bi-chat-dots' },
         { label: 'Ratings', path: '/bookings/ratings', icon: 'bi-star' },
     ],
   },
@@ -54,6 +54,17 @@ export const sidebarMenu = [
        { label: 'Role Management', path: '/roles', icon: 'bi-universal-access' },
        { label: 'Manage Permissions', path: '/manage-permissions', icon: 'bi-house' },
         { label: 'Audit Logs', path: '/audit-logs', icon: 'bi-clock-history' },
+    ],
+  },
+  {
+    label: "Resident's front office",
+    path: "/residents",
+    icon: "bi-building",
+     items: [
+      { label: 'Booking History', path: '/resident/history', icon: 'bi-clock-history' },
+     
+       { label: 'Change Password', path: '/change-password', icon: ' bi-pencil' },
+      
     ],
   },
 ];

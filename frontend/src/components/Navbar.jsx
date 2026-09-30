@@ -82,10 +82,12 @@ export default function Navbar({
     <header className="navbar">
       <div className="navbar__brand">
         <button
+          type="button"
           className="navbar-menu-toggle"
+          aria-label="Toggle side navigation"
           onClick={onToggleSidebar}
         >
-          <i className="bi bi-list" />
+          <i className="bi bi-list" aria-hidden="true" />
         </button>
 
         <i className="bi bi-geo-alt"></i>

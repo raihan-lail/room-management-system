@@ -1,12 +1,10 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
 import { ratingsData } from "../../data/ratings";
 
 const PAGE_SIZE = 10;
 
 export default function Ratings() {
-  const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -165,9 +163,7 @@ export default function Ratings() {
   /*
    * VIEW RATING
    */
-  const handleViewRating = (ratingId) => {
-    navigate(`/bookings/ratings/${ratingId}`);
-  };
+  
 
   /*
    * RENDER STARS

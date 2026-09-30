@@ -3316,8 +3316,333 @@ textarea,
 }
 
 /* =========================
+   RESIDENT BOOKING HISTORY
+   ========================= */
+
+.resident-profile {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 12px 20px;
+
+  padding: 14px 16px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.resident-profile__avatar {
+  width: 40px;
+  height: 40px;
+
+  flex: 0 0 40px;
+
+  display: grid;
+  place-items: center;
+
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+
+  border-radius: 8px;
+
+  font-size: 18px;
+  line-height: 1;
+  font-weight: 700;
+}
+
+.resident-profile__text {
+  min-width: 0;
+  flex: 1 1 160px;
+}
+
+.resident-profile__label {
+  margin: 0;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #64748b;
+}
+
+.resident-profile__name {
+  margin: 2px 0 0;
+
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+
+  color: #111827;
+}
+
+.resident-profile__meta {
+  margin: 0;
+
+  min-width: 0;
+  flex: 1 1 320px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(130px, 100%), 1fr));
+
+  gap: 10px 16px;
+}
+
+.resident-profile__item {
+  min-width: 0;
+}
+
+.resident-profile__item dt {
+  font-size: 10px;
+  line-height: 14px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #64748b;
+}
+
+.resident-profile__item dd {
+  margin: 1px 0 0;
+
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+
+  color: #111827;
+
+  word-break: break-word;
+}
+
+
+/* Booking cards */
+
+.history-list {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+}
+
+.history-card {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  padding: 14px 16px;
+
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+}
+
+.history-card__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+
+  flex-wrap: wrap;
+
+  gap: 10px;
+}
+
+.history-card__text {
+  min-width: 0;
+}
+
+.history-card__label {
+  margin: 0;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #64748b;
+}
+
+.history-card__name {
+  margin: 2px 0 0;
+
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 700;
+
+  color: var(--brand-bold);
+}
+
+.history-card__location {
+  margin: 4px 0 0;
+
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 6px;
+
+  font-size: 12px;
+  line-height: 17px;
+
+  color: #64748b;
+}
+
+.history-card__divider-dot {
+  width: 3px;
+  height: 3px;
+
+  border-radius: 999px;
+
+  background-color: #94a3b8;
+}
+
+
+/* Booking detail groups */
+
+.history-card__group-label {
+  margin: 0 0 6px;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+
+  color: #64748b;
+}
+
+.history-card__group .detail-grid {
+  padding: 0;
+
+  grid-template-columns: repeat(auto-fit, minmax(min(180px, 100%), 1fr));
+
+  gap: 12px 20px;
+}
+
+
+/* Notes */
+
+.history-card__notes-text {
+  margin: 0;
+
+  padding: 10px 12px;
+
+  background-color: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  font-size: 12px;
+  line-height: 18px;
+
+  color: #334155;
+
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+
+/* Card actions */
+
+.history-card__actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  padding-top: 12px;
+
+  border-top: 1px solid #e2e8f0;
+}
+
+@media (max-width: 992px) {
+  .resident-profile__meta {
+    flex: 1 1 100%;
+  }
+}
+
+@media (max-width: 768px) {
+  .resident-profile {
+    align-items: flex-start;
+  }
+
+  .resident-profile__meta {
+    padding-top: 12px;
+
+    border-top: 1px solid #e2e8f0;
+  }
+
+  .history-card__head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
+@media (max-width: 480px) {
+  .resident-profile {
+    padding: 12px;
+  }
+
+  .resident-profile__avatar {
+    width: 34px;
+    height: 34px;
+
+    flex: 0 0 34px;
+
+    font-size: 15px;
+  }
+
+  .resident-profile__name {
+    font-size: 15px;
+    line-height: 20px;
+  }
+
+  .resident-profile__meta {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+
+    gap: 10px 12px;
+  }
+
+  .history-card {
+    padding: 12px;
+  }
+
+  .history-card__name {
+    font-size: 18px;
+    line-height: 24px;
+  }
+
+  .history-card__group .detail-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .history-card__actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .history-card__actions .btn {
+    justify-content: center;
+  }
+}
+
+/* =========================
    BOOKING MODAL
-========================= */
+   ========================= */
 
 .booking-modal-overlay {
   position: fixed;
@@ -3412,4 +3737,467 @@ textarea,
   justify-content: flex-end;
 
   gap: 8px;
+}
+
+/* =========================
+   RESIDENT FORMS
+   ========================= */
+
+.rating-stars {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 2px;
+
+  color: var(--brand-bold);
+}
+
+.rating-stars i {
+  font-size: 14px;
+  line-height: 1;
+}
+
+.rating-stars i.bi-star {
+  color: #94a3b8;
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+
+  gap: 18px;
+
+  padding: 14px 16px 16px;
+}
+
+.form-stack .form-field {
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+  color: #64748b;
+}
+
+.form-stack textarea {
+  width: 100%;
+
+  padding: 10px 12px;
+
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  font-size: 13px;
+  line-height: 20px;
+  font-weight: 400;
+
+  color: #111827;
+  background-color: #ffffff;
+
+  resize: vertical;
+}
+
+.form-stack textarea:focus {
+  outline: 2px solid var(--brand-nav);
+  border-color: var(--brand-nav);
+}
+
+.choice-input {
+  position: absolute;
+
+  width: 1px;
+  height: 1px;
+
+  margin: -1px;
+  padding: 0;
+
+  overflow: hidden;
+
+  clip-path: inset(50%);
+  white-space: nowrap;
+
+  border: 0;
+}
+
+
+/* Likert scale */
+
+.rating-likert {
+  margin: 0;
+  padding: 0;
+
+  min-width: 0;
+
+  border: 0;
+}
+
+.rating-likert__scale {
+  margin: 0 0 8px;
+
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 10px;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  color: #64748b;
+}
+
+.rating-likert__options {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+
+  gap: 8px;
+}
+
+.rating-likert__option {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 12px 6px;
+
+  background-color: #ffffff;
+  
+  border-radius: 10px;
+
+  cursor: pointer;
+  text-align: center;
+
+  transition:
+    background-color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+
+
+
+
+.rating-likert__option:has(.choice-input:focus-visible) {
+  outline: 2px solid var(--brand-nav);
+  outline-offset: 2px;
+}
+
+.rating-likert__star {
+  font-size: 24px;
+  line-height: 1;
+
+  color: var(--brand-bold);
+}
+
+.rating-likert__option.is-active .rating-likert__star {
+  color: var(--brand-bold);
+}
+
+.rating-likert__label {
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  color: #64748b;
+
+  word-break: break-word;
+}
+
+.rating-likert__option.is-active .rating-likert__label {
+  color: var(--brand-bold);
+}
+
+
+/* Submitted state */
+
+.form-done {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 32px 16px;
+}
+
+.form-done__icon {
+  font-size: 36px;
+  line-height: 1;
+
+  color: var(--brand-bold);
+}
+
+.form-done__title {
+  margin: 4px 0 0;
+
+  font-size: 16px;
+  line-height: 22px;
+  font-weight: 700;
+
+  color: #111827;
+
+  text-align: center;
+}
+
+.form-done__caption {
+  margin: 0;
+
+  max-width: 360px;
+
+  font-size: 12px;
+  line-height: 17px;
+
+  color: #64748b;
+
+  text-align: center;
+}
+
+.form-done__actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+
+  gap: 8px;
+
+  margin-top: 8px;
+}
+
+
+/* Complaint type selector */
+
+.complaint-types-field {
+  display: flex;
+  flex-direction: column;
+
+  gap: 8px;
+
+  margin: 0;
+  padding: 0;
+
+  min-width: 0;
+
+  border: 0;
+}
+
+.complaint-types-field__label {
+  margin: 0;
+
+  font-size: 12px;
+  line-height: 17px;
+  font-weight: 600;
+
+  color: #64748b;
+}
+
+.complaint-types {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
+
+  gap: 8px;
+}
+
+.complaint-type-option {
+  min-width: 0;
+
+  display: flex;
+  align-items: center;
+
+  gap: 7px;
+
+  padding: 9px 12px;
+
+  background-color: #f8fafc;
+  border-radius: 8px;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.complaint-type-option:hover {
+  background-color: var(--brand-soft);
+}
+
+.complaint-type-option.is-active {
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+}
+
+.complaint-type-option:has(.choice-input:focus-visible) {
+  outline: 2px solid var(--brand-nav);
+  outline-offset: 2px;
+}
+
+.complaint-type-option__icon {
+  font-size: 14px;
+  line-height: 1;
+
+  flex-shrink: 0;
+}
+
+.complaint-type-option__label {
+  min-width: 0;
+
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+
+  color: #334155;
+
+  word-break: break-word;
+}
+
+.complaint-type-option.is-active .complaint-type-option__label {
+  color: var(--brand-bold);
+}
+
+.complaint-type-option__check {
+  margin-left: auto;
+
+  font-size: 12px;
+  line-height: 1;
+
+  color: var(--brand-bold);
+}
+
+@media (max-width: 768px) {
+  .form-stack {
+    padding: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .rating-likert__options {
+    gap: 5px;
+  }
+
+  .rating-likert__option {
+    gap: 4px;
+
+    padding: 10px 3px;
+  }
+
+  .rating-likert__star {
+    font-size: 19px;
+  }
+
+  .rating-likert__label {
+    font-size: 10px;
+    line-height: 13px;
+  }
+
+  .form-stack .form-actions {
+    flex-direction: column-reverse;
+  }
+
+  .form-stack .form-actions .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .complaint-types {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .form-done {
+    padding: 24px 12px;
+  }
+}
+
+/* =========================
+   SIDEBAR RESPONSIVE
+   ========================= */
+/*
+ * On mobile the sidebar becomes an off canvas
+ * drawer. It starts hidden and only slides in
+ * when the navbar or sidebar toggle is clicked.
+ */
+@media (max-width: 768px) {
+  .navbar-menu-toggle {
+    display: inline-grid;
+  }
+
+  /*
+   * The navbar can no longer hold every item on
+   * one line, so it wraps and the brand keeps its
+   * full width to keep the toggle clickable.
+   */
+  .navbar {
+    flex-wrap: wrap;
+
+    gap: 8px;
+
+    overflow-x: hidden;
+  }
+
+  .navbar > p {
+    display: none;
+  }
+
+  .navbar__brand {
+    flex: 0 0 auto;
+  }
+
+  .navbar__actions {
+    min-width: 0;
+    flex: 0 0 auto;
+
+    gap: 6px;
+
+    margin-left: auto;
+  }
+
+  .navbar__actions > * {
+    flex-shrink: 0;
+  }
+
+  .navbar-date-time__date {
+    display: none;
+  }
+
+  .navbar-user-button {
+    gap: 6px;
+
+    padding: 4px 6px;
+  }
+
+  .navbar-user__info {
+    display: none;
+  }
+
+  .app-sidebar {
+    position: fixed;
+
+    top: 0;
+    bottom: 0;
+    left: 0;
+
+    width: 240px;
+    min-height: 100vh;
+
+    z-index: 80;
+
+    transform: translateX(-100%);
+    visibility: hidden;
+
+    transition:
+      transform 0.2s ease,
+      visibility 0.2s ease;
+  }
+
+  .layout.is-sidebar-collapsed .app-sidebar {
+    width: 240px;
+  }
+
+  .layout:not(.is-sidebar-collapsed) .app-sidebar {
+    transform: none;
+    visibility: visible;
+
+    box-shadow: 6px 0 20px rgba(15, 23, 42, 0.18);
+  }
 }
