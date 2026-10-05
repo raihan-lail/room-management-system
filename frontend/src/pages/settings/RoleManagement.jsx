@@ -1,6 +1,8 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -16,12 +18,26 @@ const roleSchema = addFormSchemas.role;
 export default function RoleManagement() {
   const [roleList, setRoleList] = useState(initialRoles);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
 
   const handleAddRole = (values) => {
     setRoleList((prev) => [...prev, buildRow(roleSchema, values)]);
     setCurrentPage(1);
+  };
+
+  const handleEditRole = (values) => {
+    setRoleList((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(roleSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteRole = () => {
+    setRoleList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const filteredRoles = useMemo(() => {
@@ -141,29 +157,12 @@ export default function RoleManagement() {
                      
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            
-                          >
-                            <i
-                              className="bi bi-eye"
-                              aria-hidden="true"
-                            />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                           
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="role"
+                          rowLabel={role.name}
+                          onEdit={() => setEditingRow(role)}
+                          onDelete={() => setDeletingRow(role)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -213,11 +212,30 @@ export default function RoleManagement() {
 
       {isAddModalOpen && (
         <AddModal
-          title={roleSchema.title}
-          submitLabel={roleSchema.submitLabel}
-          fields={roleSchema.fields}
+          schema={roleSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddRole}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={roleSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditRole}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Role"
+          message={`Delete ${deletingRow.name || "this role"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteRole}
         />
       )}
     </MainLayout>

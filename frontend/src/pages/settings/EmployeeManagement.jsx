@@ -1,6 +1,8 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -14,12 +16,26 @@ const employeeSchema = addFormSchemas.employee;
 export default function EmployeeManagement() {
   const [employees, setEmployees] = useState(initialEmployee);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
 
   const handleAddEmployee = (values) => {
     setEmployees((prev) => [...prev, buildRow(employeeSchema, values)]);
     setCurrentPage(1);
+  };
+
+  const handleEditEmployee = (values) => {
+    setEmployees((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(employeeSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteEmployee = () => {
+    setEmployees((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const filteredEmployee = useMemo(() => {
@@ -158,35 +174,13 @@ export default function EmployeeManagement() {
                      
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View employee ${employee.name || "guest"}`}
-                            onClick={() =>
-                              console.log("View employee:", employee)
-                            }
-                          >
-                            <i
-                              className="bi bi-eye"
-                              aria-hidden="true"
-                            />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit employee ${employee.name || "guest"}`}
-                            onClick={() =>
-                              console.log("Edit booking:", employee)
-                            }
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="employee"
+                          rowLabel={employee.name}
+                          onView={() => console.log("View employee:", employee)}
+                          onEdit={() => setEditingRow(employee)}
+                          onDelete={() => setDeletingRow(employee)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -236,11 +230,30 @@ export default function EmployeeManagement() {
 
       {isAddModalOpen && (
         <AddModal
-          title={employeeSchema.title}
-          submitLabel={employeeSchema.submitLabel}
-          fields={employeeSchema.fields}
+          schema={employeeSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddEmployee}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={employeeSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditEmployee}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Employee"
+          message={`Delete ${deletingRow.name || "this employee"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteEmployee}
         />
       )}
     </MainLayout>

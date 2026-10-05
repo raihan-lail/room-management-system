@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
+import TableRowActions from "../components/TableRowActions";
+import AddModal from "../components/modals/AddModal";
+import ConfirmModal from "../components/modals/ConfirmModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../components/modals/addFormSchemas";
 import bookings from "../data/bookings";
 import { homeLeaveData } from "../data/homeLeaves";
 
@@ -65,9 +72,6 @@ const matchesSegment = (booking, segment, today) => {
  * The home leave segment reads its own records
  * instead of the booking list.
  */
-const getSegmentSource = (segment) =>
-  segment === "home_leave" ? homeLeaveData : bookings;
-
 export default function FrontDesk() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
@@ -76,6 +80,10 @@ export default function FrontDesk() {
     key: null,
     direction: "asc",
   });
+  const [bookingList, setBookingList] = useState(bookings);
+  const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
 
   const today = useMemo(() => getTodayKey(), []);
   const todayLabel = useMemo(() => todayFormatter.format(new Date()), []);
@@ -87,22 +95,50 @@ export default function FrontDesk() {
 
   const segmentCounts = useMemo(() => {
     return SEGMENTS.reduce((counts, item) => {
-      counts[item.id] = getSegmentSource(item.id).filter((booking) =>
+      const source =
+        item.id === "home_leave" ? homeLeaveList : bookingList;
+
+      counts[item.id] = source.filter((booking) =>
         matchesSegment(booking, item.id, today),
       ).length;
 
       return counts;
     }, {});
-  }, [today]);
+  }, [bookingList, homeLeaveList, today]);
 
   const segmentBookings = useMemo(() => {
-    return getSegmentSource(segment).filter((booking) =>
+    const source = segment === "home_leave" ? homeLeaveList : bookingList;
+
+    return source.filter((booking) =>
       matchesSegment(booking, segment, today),
     );
-  }, [segment, today]);
+  }, [bookingList, homeLeaveList, segment, today]);
 
   const activeSegment = SEGMENTS.find((item) => item.id === segment);
   const isHomeLeave = segment === "home_leave";
+
+  /*
+   * Both segments are edited and deleted through the
+   * same modals, so only the schema and the list that
+   * owns the row change between them.
+   */
+  const activeSchema = isHomeLeave
+    ? addFormSchemas.homeLeave
+    : addFormSchemas.booking;
+
+  const setActiveList = isHomeLeave ? setHomeLeaveList : setBookingList;
+
+  const handleEditRow = (values) => {
+    setActiveList((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(activeSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteRow = () => {
+    setActiveList((prev) => prev.filter((row) => row !== deletingRow));
+  };
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -547,18 +583,15 @@ aria-label={
                           <td>{booking.approved_by || "-"}</td>
 
                           <td>
-                            <div className="table-actions">
-                              <button
-                                type="button"
-                                className="btn btn-neutral"
-                                title={`View home leave for ${booking.name || "guest"}`}
-                                onClick={() =>
-                                  console.log("View home leave:", booking)
-                                }
-                              >
-                                <i className="bi bi-eye" aria-hidden="true" />
-                              </button>
-                            </div>
+                            <TableRowActions
+                              label="home leave"
+                              rowLabel={booking.name}
+                              onView={() =>
+                                console.log("View home leave:", booking)
+                              }
+                              onEdit={() => setEditingRow(booking)}
+                              onDelete={() => setDeletingRow(booking)}
+                            />
                           </td>
                         </>
                       ) : (
@@ -594,32 +627,15 @@ aria-label={
                           <td>{booking.notes || "-"}</td>
 
                           <td>
-                            <div className="table-actions">
-                              <button
-                                type="button"
-                                className="btn btn-neutral"
-                                title={`View booking for ${booking.guest?.name || "guest"}`}
-                                onClick={() =>
-                                  console.log("View booking:", booking)
-                                }
-                              >
-                                <i className="bi bi-eye" aria-hidden="true" />
-                              </button>
-
-                              <button
-                                type="button"
-                                className="btn btn-neutral"
-                                title={`Edit booking for ${booking.guest?.name || "guest"}`}
-                                onClick={() =>
-                                  console.log("Edit booking:", booking)
-                                }
-                              >
-                                <i
-                                  className="bi bi-pencil-square"
-                                  aria-hidden="true"
-                                />
-                              </button>
-                            </div>
+                            <TableRowActions
+                              label="booking"
+                              rowLabel={booking.guest?.name}
+                              onView={() =>
+                                console.log("View booking:", booking)
+                              }
+                              onEdit={() => setEditingRow(booking)}
+                              onDelete={() => setDeletingRow(booking)}
+                            />
                           </td>
                         </>
                       )}
@@ -667,6 +683,27 @@ aria-label={
           </div>
         </section>
       </div>
+
+      {editingRow && (
+        <AddModal
+          schema={activeSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditRow}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title={`Delete ${activeSchema.entity}`}
+          message={`Delete this ${activeSchema.entity.toLowerCase()}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteRow}
+        />
+      )}
     </MainLayout>
   );
 }

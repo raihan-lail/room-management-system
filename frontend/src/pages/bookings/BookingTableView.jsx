@@ -1,9 +1,17 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
-import BookingModal from "../../components/modals/BookingModal";
+import TableRowActions from "../../components/TableRowActions";
+import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
 import bookingsData from "../../data/bookings";
 
 const PAGE_SIZE = 10;
+
+const bookingSchema = addFormSchemas.booking;
 
 const initialBookings = Array.isArray(bookingsData)
   ? bookingsData
@@ -18,8 +26,10 @@ export default function BookingTableView() {
   });
   const [bookings, setBookings] =
     useState(initialBookings);
-  const [bookingDraft, setBookingDraft] =
-    useState(null);
+  const [isAddModalOpen, setIsAddModalOpen] =
+    useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -144,30 +154,22 @@ export default function BookingTableView() {
     setCurrentPage(1);
   };
 
-  const handleCreateBooking = (draft) => {
-    setBookings((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        room: draft.room,
-        guest: {
-          name: draft.guestName,
-          gender: "",
-          country: "",
-          dept: "",
-          meal_type: "",
-        },
-        booked_at: new Date()
-          .toISOString()
-          .slice(0, 10),
-        started_at: draft.started_at,
-        ended_at: draft.ended_at,
-        status: draft.status,
-        notes: draft.notes,
-      },
-    ]);
+  const handleCreateBooking = (values) => {
+    setBookings((prev) => [...prev, buildRow(bookingSchema, values)]);
 
     setCurrentPage(1);
+  };
+
+  const handleEditBooking = (values) => {
+    setBookings((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(bookingSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteBooking = () => {
+    setBookings((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   return (
@@ -201,13 +203,7 @@ export default function BookingTableView() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() =>
-                setBookingDraft({
-                  room: "",
-                  started_at: "",
-                  ended_at: "",
-                })
-              }
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Booking
@@ -373,32 +369,15 @@ export default function BookingTableView() {
                       <td>{booking.notes || "-"}</td>
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View booking for ${booking.guest?.name || "guest"}`}
-                            onClick={() =>
-                              console.log("View booking:", booking)
-                            }
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit booking for ${booking.guest?.name || "guest"}`}
-                            onClick={() =>
-                              console.log("Edit booking:", booking)
-                            }
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="booking"
+                          rowLabel={booking.guest?.name}
+                          onView={() =>
+                            console.log("View booking:", booking)
+                          }
+                          onEdit={() => setEditingRow(booking)}
+                          onDelete={() => setDeletingRow(booking)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -444,18 +423,32 @@ export default function BookingTableView() {
         </section>
       </div>
 
-      {/*
-       * Rendered outside the dashboard so the
-       * fixed overlay is never clipped by the
-       * table scroll container
-       */}
-      {bookingDraft && (
-        <BookingModal
-          room={bookingDraft.room}
-          startedAt={bookingDraft.started_at}
-          endedAt={bookingDraft.ended_at}
-          onClose={() => setBookingDraft(null)}
+      {isAddModalOpen && (
+        <AddModal
+          schema={bookingSchema}
+          onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleCreateBooking}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={bookingSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditBooking}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Booking"
+          message={`Delete the booking for ${deletingRow.guest?.name || "this guest"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteBooking}
         />
       )}
     </MainLayout>

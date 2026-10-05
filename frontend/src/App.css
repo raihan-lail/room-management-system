@@ -1908,6 +1908,69 @@ textarea,
   line-height: 1;
 }
 
+/*
+ * Row action menu.
+ * Portalled to the body and placed with fixed
+ * coordinates, so the table scroll container
+ * can never clip it.
+ */
+
+.table-action-menu {
+  position: fixed;
+  z-index: 1000;
+
+  width: 150px;
+  padding: 6px;
+
+  box-sizing: border-box;
+
+  background-color: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.table-action-menu__item {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+  width: 100%;
+  padding: 8px 12px;
+
+  border: none;
+  background-color: transparent;
+
+  color: #111827;
+
+  font-size: 14px;
+  font-weight: 500;
+
+  border-radius: 6px;
+
+  cursor: pointer;
+  text-align: left;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.table-action-menu__item:hover {
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+}
+
+.table-action-menu__item--danger {
+  color: var(--brand-danger);
+}
+
+.table-action-menu__item--danger:hover {
+  background-color: var(--brand-danger-soft);
+  color: var(--brand-danger);
+}
+
 .btn-disabled {
   opacity: 0.55;
   cursor: not-allowed;
@@ -3737,6 +3800,15 @@ textarea,
   justify-content: flex-end;
 
   gap: 8px;
+}
+
+.modal__message {
+  margin: 0 0 20px;
+
+  font-size: 14px;
+  line-height: 22px;
+
+  color: #475569;
 }
 
 /* =========================

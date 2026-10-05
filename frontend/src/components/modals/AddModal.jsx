@@ -1,6 +1,9 @@
 import { useState } from "react";
+import { toFormValues } from "./addFormSchemas";
 
 const DEFAULT_TEXTAREA_ROWS = 3;
+
+const EDIT_SUBMIT_LABEL = "Save Changes";
 
 function normalizeOption(option) {
   if (option && typeof option === "object") {
@@ -10,7 +13,12 @@ function normalizeOption(option) {
   return { value: option, label: option };
 }
 
-
+/*
+ * Every add and edit form is described by a plain
+ * field list, so this modal only has to render inputs
+ * and hand the raw values back to the page that
+ * opened it.
+ */
 function buildInitialValues(fields, initialValues) {
   return fields.reduce((values, field) => {
     const provided = initialValues?.[field.name];
@@ -99,15 +107,22 @@ function ModalField({ field, value, onChange }) {
 }
 
 export default function AddModal({
-  title,
-  submitLabel = "Save",
-  fields = [],
+  schema,
+  mode = "add",
   initialValues,
   onClose,
   onSubmit,
 }) {
+  const isEdit = mode === "edit";
+
+  const title = isEdit ? `Edit ${schema.entity}` : schema.title;
+  const submitLabel = isEdit ? EDIT_SUBMIT_LABEL : schema.submitLabel;
+
   const [values, setValues] = useState(() =>
-    buildInitialValues(fields, initialValues),
+    buildInitialValues(
+      schema.fields,
+      initialValues ? toFormValues(schema, initialValues) : undefined,
+    ),
   );
 
   const handleChange = (name, value) => {
@@ -145,7 +160,7 @@ export default function AddModal({
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
-          {fields.map((field) => (
+          {schema.fields.map((field) => (
             <ModalField
               key={field.name}
               field={field}

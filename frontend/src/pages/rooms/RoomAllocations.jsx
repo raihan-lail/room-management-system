@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -16,6 +18,8 @@ const allocationSchema = addFormSchemas.roomAllocation;
 export default function RoomAllocation() {
   const [allocationList, setAllocationList] = useState(initialRoomAllocations);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -29,6 +33,18 @@ export default function RoomAllocation() {
       buildRow(allocationSchema, values),
     ]);
     setCurrentPage(1);
+  };
+
+  const handleEditAllocation = (values) => {
+    setAllocationList((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(allocationSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteAllocation = () => {
+    setAllocationList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const handleSort = (key) => {
@@ -253,27 +269,12 @@ export default function RoomAllocation() {
                       
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                           
-                            
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="allocation"
+                          rowLabel={roomAllocation.name}
+                          onEdit={() => setEditingRow(roomAllocation)}
+                          onDelete={() => setDeletingRow(roomAllocation)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -321,11 +322,30 @@ export default function RoomAllocation() {
 
       {isAddModalOpen && (
         <AddModal
-          title={allocationSchema.title}
-          submitLabel={allocationSchema.submitLabel}
-          fields={allocationSchema.fields}
+          schema={allocationSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddAllocation}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={allocationSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditAllocation}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Allocation"
+          message={`Delete the allocation for room ${deletingRow.name || ""}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteAllocation}
         />
       )}
     </MainLayout>

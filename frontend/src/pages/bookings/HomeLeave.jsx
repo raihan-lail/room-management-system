@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -14,6 +16,8 @@ const homeLeaveSchema = addFormSchemas.homeLeave;
 export default function HomeLeave() {
   const [homeLeaveList, setHomeLeaveList] = useState(initialHomeLeaves);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
 
@@ -25,6 +29,18 @@ export default function HomeLeave() {
   const handleAddHomeLeave = (values) => {
     setHomeLeaveList((prev) => [...prev, buildRow(homeLeaveSchema, values)]);
     setCurrentPage(1);
+  };
+
+  const handleEditHomeLeave = (values) => {
+    setHomeLeaveList((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(homeLeaveSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteHomeLeave = () => {
+    setHomeLeaveList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const handleSort = (key) => {
@@ -296,32 +312,15 @@ export default function HomeLeave() {
                       <td>{homeLeave.approved_by || "-"}</td>
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View home leave for ${homeLeave.name || "guest"}`}
-                            onClick={() =>
-                              console.log("View home leave:", homeLeave)
-                            }
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit home leave for ${homeLeave.name || "guest"}`}
-                            onClick={() =>
-                              console.log("Edit home leave:", homeLeave)
-                            }
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="home leave"
+                          rowLabel={homeLeave.name}
+                          onView={() =>
+                            console.log("View home leave:", homeLeave)
+                          }
+                          onEdit={() => setEditingRow(homeLeave)}
+                          onDelete={() => setDeletingRow(homeLeave)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -370,11 +369,30 @@ export default function HomeLeave() {
 
       {isAddModalOpen && (
         <AddModal
-          title={homeLeaveSchema.title}
-          submitLabel={homeLeaveSchema.submitLabel}
-          fields={homeLeaveSchema.fields}
+          schema={homeLeaveSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddHomeLeave}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={homeLeaveSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditHomeLeave}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Home Leave"
+          message={`Delete the home leave for ${deletingRow.name || "this resident"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteHomeLeave}
         />
       )}
     </MainLayout>

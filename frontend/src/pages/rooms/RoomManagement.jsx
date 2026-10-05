@@ -1,7 +1,9 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -17,6 +19,8 @@ export default function RoomManagement() {
      const navigate = useNavigate();
      const [roomList, setRoomList] = useState(initialRooms);
      const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+     const [editingRow, setEditingRow] = useState(null);
+     const [deletingRow, setDeletingRow] = useState(null);
      const [currentPage, setCurrentPage] = useState(1);
      const [search, setSearch] = useState("");
      const [sortConfig, setSortConfig] = useState({
@@ -27,6 +31,18 @@ export default function RoomManagement() {
  const handleAddRoom = (values) => {
   setRoomList((prev) => [...prev, buildRow(roomSchema, values)]);
   setCurrentPage(1);
+};
+
+ const handleEditRoom = (values) => {
+  setRoomList((prev) =>
+    prev.map((row) =>
+      row === editingRow ? buildRow(roomSchema, values, row) : row,
+    ),
+  );
+};
+
+ const handleDeleteRoom = () => {
+  setRoomList((prev) => prev.filter((row) => row !== deletingRow));
 };
 
  const handleSort = (key) => {
@@ -241,37 +257,15 @@ export default function RoomManagement() {
                       
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View room  ${room.name || "guest"}`}
-                            onClick={() =>
-                              navigate(
-                                `/rooms/${room.name}/booking-details`
-                              )
-                            }
-                          >
-                            <i
-                              className="bi bi-eye"
-                              aria-hidden="true"
-                            />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit room  ${room.name || "guest"}`}
-                            onClick={() =>
-                              console.log("Edit room:", room)
-                            }
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="room"
+                          rowLabel={room.name}
+                          onView={() =>
+                            navigate(`/rooms/${room.name}/booking-details`)
+                          }
+                          onEdit={() => setEditingRow(room)}
+                          onDelete={() => setDeletingRow(room)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -321,11 +315,30 @@ export default function RoomManagement() {
 
         {isAddModalOpen && (
           <AddModal
-            title={roomSchema.title}
-            submitLabel={roomSchema.submitLabel}
-            fields={roomSchema.fields}
+            schema={roomSchema}
             onClose={() => setIsAddModalOpen(false)}
             onSubmit={handleAddRoom}
+          />
+        )}
+
+        {editingRow && (
+          <AddModal
+            schema={roomSchema}
+            mode="edit"
+            initialValues={editingRow}
+            onClose={() => setEditingRow(null)}
+            onSubmit={handleEditRoom}
+          />
+        )}
+
+        {deletingRow && (
+          <ConfirmModal
+            title="Delete Room"
+            message={`Delete room ${deletingRow.name || ""}? This cannot be undone.`}
+            confirmLabel="Delete"
+            danger
+            onClose={() => setDeletingRow(null)}
+            onConfirm={handleDeleteRoom}
           />
         )}
 

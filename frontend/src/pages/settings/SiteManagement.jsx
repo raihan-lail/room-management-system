@@ -1,7 +1,9 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import {
   addFormSchemas,
   buildRow,
@@ -16,6 +18,8 @@ export default function SiteManagement() {
   const navigate = useNavigate();
   const [siteList, setSiteList] = useState(initialSites);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -26,6 +30,18 @@ export default function SiteManagement() {
   const handleAddSite = (values) => {
     setSiteList((prev) => [...prev, buildRow(siteSchema, values)]);
     setCurrentPage(1);
+  };
+
+  const handleEditSite = (values) => {
+    setSiteList((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(siteSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteSite = () => {
+    setSiteList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const handleSort = (key) => {
@@ -242,30 +258,15 @@ export default function SiteManagement() {
                       <td>{site.timezone}</td>
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View site ${site.name}`}
-                            onClick={() =>
-                              navigate(`/sites/${site.name.toLowerCase()}`)
-                            }
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit site ${site.name}`}
-                            onClick={() => console.log("Edit site:", site)}
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="site"
+                          rowLabel={site.name}
+                          onView={() =>
+                            navigate(`/sites/${site.name.toLowerCase()}`)
+                          }
+                          onEdit={() => setEditingRow(site)}
+                          onDelete={() => setDeletingRow(site)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -315,11 +316,30 @@ export default function SiteManagement() {
 
       {isAddModalOpen && (
         <AddModal
-          title={siteSchema.title}
-          submitLabel={siteSchema.submitLabel}
-          fields={siteSchema.fields}
+          schema={siteSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddSite}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={siteSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditSite}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Site"
+          message={`Delete ${deletingRow.name || "this site"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteSite}
         />
       )}
     </MainLayout>

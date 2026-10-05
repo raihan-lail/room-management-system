@@ -1,6 +1,8 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
+import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import { addFormSchemas, buildRow } from "../../components/modals/addFormSchemas";
 
 import { guests as initialGuests } from "../../data/guest";
@@ -13,6 +15,8 @@ const residentSchema = addFormSchemas.resident;
 export default function GuestManagement() {
   const [guests, setGuests] = useState(initialGuests);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -23,6 +27,18 @@ export default function GuestManagement() {
   const handleAddResident = (values) => {
     setGuests((prev) => [...prev, buildRow(residentSchema, values)]);
     setCurrentPage(1);
+  };
+
+  const handleEditResident = (values) => {
+    setGuests((prev) =>
+      prev.map((row) =>
+        row === editingRow ? buildRow(residentSchema, values, row) : row,
+      ),
+    );
+  };
+
+  const handleDeleteResident = () => {
+    setGuests((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const handleSort = (key) => {
@@ -307,27 +323,12 @@ export default function GuestManagement() {
                       
 
                       <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                           
-                            
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
-
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
+                        <TableRowActions
+                          label="resident"
+                          rowLabel={guests.name}
+                          onEdit={() => setEditingRow(guests)}
+                          onDelete={() => setDeletingRow(guests)}
+                        />
                       </td>
                     </tr>
                   ))
@@ -380,11 +381,30 @@ export default function GuestManagement() {
        */}
       {isAddModalOpen && (
         <AddModal
-          title={residentSchema.title}
-          submitLabel={residentSchema.submitLabel}
-          fields={residentSchema.fields}
+          schema={residentSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddResident}
+        />
+      )}
+
+      {editingRow && (
+        <AddModal
+          schema={residentSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditResident}
+        />
+      )}
+
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Resident"
+          message={`Delete ${deletingRow.name || "this resident"}? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger
+          onClose={() => setDeletingRow(null)}
+          onConfirm={handleDeleteResident}
         />
       )}
     </MainLayout>
