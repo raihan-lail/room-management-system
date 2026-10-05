@@ -1,8 +1,13 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
-import bookings from "../../data/bookings";
+import BookingModal from "../../components/modals/BookingModal";
+import bookingsData from "../../data/bookings";
 
 const PAGE_SIZE = 10;
+
+const initialBookings = Array.isArray(bookingsData)
+  ? bookingsData
+  : [];
 
 export default function BookingTableView() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -11,6 +16,10 @@ export default function BookingTableView() {
     key: null,
     direction: "asc",
   });
+  const [bookings, setBookings] =
+    useState(initialBookings);
+  const [bookingDraft, setBookingDraft] =
+    useState(null);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -38,7 +47,7 @@ export default function BookingTableView() {
         booking.notes,
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search]);
+  }, [bookings, search]);
 
   const sortedBookings = useMemo(() => {
     if (!sortConfig.key) return filteredBookings;
@@ -135,6 +144,32 @@ export default function BookingTableView() {
     setCurrentPage(1);
   };
 
+  const handleCreateBooking = (draft) => {
+    setBookings((prev) => [
+      ...prev,
+      {
+        id: Date.now(),
+        room: draft.room,
+        guest: {
+          name: draft.guestName,
+          gender: "",
+          country: "",
+          dept: "",
+          meal_type: "",
+        },
+        booked_at: new Date()
+          .toISOString()
+          .slice(0, 10),
+        started_at: draft.started_at,
+        ended_at: draft.ended_at,
+        status: draft.status,
+        notes: draft.notes,
+      },
+    ]);
+
+    setCurrentPage(1);
+  };
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -166,7 +201,13 @@ export default function BookingTableView() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Create new booking")}
+              onClick={() =>
+                setBookingDraft({
+                  room: "",
+                  started_at: "",
+                  ended_at: "",
+                })
+              }
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Booking
@@ -178,7 +219,15 @@ export default function BookingTableView() {
               onClick={() => console.log("Import Excel")}
             >
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Import Excel
+              Bulk Import
+            </button>
+              <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={() => console.log("Import Excel")}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export Excel
             </button>
           </div>
         </div>
@@ -394,6 +443,21 @@ export default function BookingTableView() {
           </div>
         </section>
       </div>
+
+      {/*
+       * Rendered outside the dashboard so the
+       * fixed overlay is never clipped by the
+       * table scroll container
+       */}
+      {bookingDraft && (
+        <BookingModal
+          room={bookingDraft.room}
+          startedAt={bookingDraft.started_at}
+          endedAt={bookingDraft.ended_at}
+          onClose={() => setBookingDraft(null)}
+          onSubmit={handleCreateBooking}
+        />
+      )}
     </MainLayout>
   );
 }

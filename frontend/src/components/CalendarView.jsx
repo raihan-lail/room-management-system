@@ -10,7 +10,7 @@ import {
 
 import bookingsData from "../data/bookings";
 import { rooms as roomsData } from "../data/room";
-import BookingModal from "./BookingModal";
+import BookingModal from "./modals/BookingModal";
 
 const initialBookings = Array.isArray(bookingsData)
     ? bookingsData

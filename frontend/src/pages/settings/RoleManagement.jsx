@@ -1,28 +1,42 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
+import AddModal from "../../components/modals/AddModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
 
-import { roles } from "../../data/roles";
+import { roles as initialRoles } from "../../data/roles";
 
 
 const PAGE_SIZE = 10;
 
+const roleSchema = addFormSchemas.role;
+
 export default function RoleManagement() {
+  const [roleList, setRoleList] = useState(initialRoles);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+
+  const handleAddRole = (values) => {
+    setRoleList((prev) => [...prev, buildRow(roleSchema, values)]);
+    setCurrentPage(1);
+  };
 
   const filteredRoles = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return roles;
+    if (!query) return roleList;
 
-    return roles.filter((role) =>
+    return roleList.filter((role) =>
       [
-        
+       
        role.name,
        role.site
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search]);
+  }, [roleList, search]);
 
   const totalPages = Math.max(
     1,
@@ -71,7 +85,7 @@ export default function RoleManagement() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Add New Employee")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Add New Role
@@ -196,6 +210,16 @@ export default function RoleManagement() {
           </div>
         </section>
       </div>
+
+      {isAddModalOpen && (
+        <AddModal
+          title={roleSchema.title}
+          submitLabel={roleSchema.submitLabel}
+          fields={roleSchema.fields}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddRole}
+        />
+      )}
     </MainLayout>
   );
 }

@@ -1,18 +1,32 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { sites } from "../../data/sites";
+import AddModal from "../../components/modals/AddModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
+import { sites as initialSites } from "../../data/sites";
 
 const PAGE_SIZE = 10;
 
+const siteSchema = addFormSchemas.site;
+
 export default function SiteManagement() {
   const navigate = useNavigate();
+  const [siteList, setSiteList] = useState(initialSites);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
+
+  const handleAddSite = (values) => {
+    setSiteList((prev) => [...prev, buildRow(siteSchema, values)]);
+    setCurrentPage(1);
+  };
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -25,9 +39,9 @@ export default function SiteManagement() {
 
   const filteredSites = useMemo(() => {
     const query = search.trim().toLowerCase();
-    if (!query) return sites;
+    if (!query) return siteList;
 
-    return sites.filter((site) => {
+    return siteList.filter((site) => {
       const siteNameMatch = (site.name || "").toLowerCase().includes(query);
       const locationsMatch = site.locations?.some((loc) =>
         loc.title.toLowerCase().includes(query)
@@ -46,7 +60,7 @@ export default function SiteManagement() {
         bookingStatusMatch
       );
     });
-  }, [search]);
+  }, [siteList, search]);
 
   const sortedSites = useMemo(() => {
     if (!sortConfig.key) return filteredSites;
@@ -122,7 +136,7 @@ export default function SiteManagement() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Create new site")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Site
@@ -298,6 +312,16 @@ export default function SiteManagement() {
           </div>
         </section>
       </div>
+
+      {isAddModalOpen && (
+        <AddModal
+          title={siteSchema.title}
+          submitLabel={siteSchema.submitLabel}
+          fields={siteSchema.fields}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddSite}
+        />
+      )}
     </MainLayout>
   );
 }

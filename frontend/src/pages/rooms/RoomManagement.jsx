@@ -1,19 +1,33 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { rooms } from "../../data/room";
+import AddModal from "../../components/modals/AddModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
+import { rooms as initialRooms } from "../../data/room";
 
 const PAGE_SIZE = 10;
+
+const roomSchema = addFormSchemas.room;
 
 
 export default function RoomManagement() {
      const navigate = useNavigate();
+     const [roomList, setRoomList] = useState(initialRooms);
+     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
      const [currentPage, setCurrentPage] = useState(1);
      const [search, setSearch] = useState("");
      const [sortConfig, setSortConfig] = useState({
   key: null,
   direction: "asc",
 });
+
+ const handleAddRoom = (values) => {
+  setRoomList((prev) => [...prev, buildRow(roomSchema, values)]);
+  setCurrentPage(1);
+};
 
  const handleSort = (key) => {
   setSortConfig((prev) => ({
@@ -29,9 +43,9 @@ export default function RoomManagement() {
 
      const filteredRooms = useMemo(() => {
         const query = search.trim().toLowerCase();
-        if (!query) return rooms;
+        if (!query) return roomList;
 
-        return rooms.filter((room) =>
+        return roomList.filter((room) =>
         [
             room.name,
             room.desc,
@@ -42,7 +56,7 @@ export default function RoomManagement() {
         (value || "").toString().toLowerCase().includes(query)
     )
     )
-     }, [search]);
+     }, [roomList, search]);
 
       const sortedRoom = useMemo(() => {
   if (!sortConfig.key) return filteredRooms;
@@ -131,7 +145,7 @@ export default function RoomManagement() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Create new room")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Room
@@ -304,6 +318,16 @@ export default function RoomManagement() {
           </div>
         </section>
             </div>
+
+        {isAddModalOpen && (
+          <AddModal
+            title={roomSchema.title}
+            submitLabel={roomSchema.submitLabel}
+            fields={roomSchema.fields}
+            onClose={() => setIsAddModalOpen(false)}
+            onSubmit={handleAddRoom}
+          />
+        )}
 
         </MainLayout>
     )

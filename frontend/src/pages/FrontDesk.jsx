@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import bookings from "../data/bookings";
+import { homeLeaveData } from "../data/homeLeaves";
 
 
 const PAGE_SIZE = 10;
@@ -8,6 +9,7 @@ const PAGE_SIZE = 10;
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
   { id: "in_house", label: "In House", icon: "bi-house-door", title: "Current In House" },
+   { id: "home_leave", label: "Home Leave", icon: "bi-door-open", title: "Current Home Leave" },
   { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 
@@ -49,11 +51,22 @@ const matchesSegment = (booking, segment, today) => {
     return isSameDay(endedAt, today);
   }
 
+  if (segment === "home_leave") {
+    return isWithinStay(startedAt, endedAt, today);
+  }
+
   return (
     normalizeStatus(booking.status) === "in_house" ||
     isWithinStay(startedAt, endedAt, today)
   );
 };
+
+/*
+ * The home leave segment reads its own records
+ * instead of the booking list.
+ */
+const getSegmentSource = (segment) =>
+  segment === "home_leave" ? homeLeaveData : bookings;
 
 export default function FrontDesk() {
   const [currentPage, setCurrentPage] = useState(1);
@@ -74,7 +87,7 @@ export default function FrontDesk() {
 
   const segmentCounts = useMemo(() => {
     return SEGMENTS.reduce((counts, item) => {
-      counts[item.id] = bookings.filter((booking) =>
+      counts[item.id] = getSegmentSource(item.id).filter((booking) =>
         matchesSegment(booking, item.id, today),
       ).length;
 
@@ -83,10 +96,13 @@ export default function FrontDesk() {
   }, [today]);
 
   const segmentBookings = useMemo(() => {
-    return bookings.filter((booking) => matchesSegment(booking, segment, today));
+    return getSegmentSource(segment).filter((booking) =>
+      matchesSegment(booking, segment, today),
+    );
   }, [segment, today]);
 
   const activeSegment = SEGMENTS.find((item) => item.id === segment);
+  const isHomeLeave = segment === "home_leave";
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -104,17 +120,19 @@ export default function FrontDesk() {
 
     return segmentBookings.filter((booking) =>
       [
-        booking.room,
-        booking.guest?.name,
-        booking.guest?.gender,
-        booking.guest?.country,
-        booking.guest?.dept,
-        booking.guest?.meal_type,
-        booking.status,
-        booking.notes,
+        isHomeLeave ? booking.booking_id : booking.room,
+        isHomeLeave ? booking.name : booking.guest?.name,
+        isHomeLeave ? booking.reason : booking.guest?.gender,
+        isHomeLeave ? booking.approved_by : booking.guest?.country,
+        isHomeLeave ? null : booking.guest?.dept,
+        isHomeLeave ? null : booking.guest?.meal_type,
+        isHomeLeave ? null : booking.status,
+        isHomeLeave ? null : booking.notes,
+        booking.started_at,
+        booking.ended_at,
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search, segmentBookings]);
+  }, [search, isHomeLeave, segmentBookings]);
 
   const sortedBookings = useMemo(() => {
     if (!sortConfig.key) return filteredBookings;
@@ -125,31 +143,39 @@ export default function FrontDesk() {
 
       switch (sortConfig.key) {
         case "room":
-          aValue = a.room;
-          bValue = b.room;
+          aValue = isHomeLeave ? a.booking_id : a.room;
+          bValue = isHomeLeave ? b.booking_id : b.room;
           break;
 
         case "guest":
-          aValue = a.guest?.name;
-          bValue = b.guest?.name;
+          aValue = a.guest?.name ?? a.name;
+          bValue = b.guest?.name ?? b.name;
           break;
 
         case "gender":
+          if (isHomeLeave) return 0;
+
           aValue = a.guest?.gender;
           bValue = b.guest?.gender;
           break;
 
         case "country":
+          if (isHomeLeave) return 0;
+
           aValue = a.guest?.country;
           bValue = b.guest?.country;
           break;
 
         case "dept":
+          if (isHomeLeave) return 0;
+
           aValue = a.guest?.dept;
           bValue = b.guest?.dept;
           break;
 
         case "meal_type":
+          if (isHomeLeave) return 0;
+
           aValue = a.guest?.meal_type;
           bValue = b.guest?.meal_type;
           break;
@@ -165,13 +191,31 @@ export default function FrontDesk() {
           break;
 
         case "status":
+          if (isHomeLeave) return 0;
+
           aValue = a.status;
           bValue = b.status;
           break;
 
         case "notes":
+          if (isHomeLeave) return 0;
+
           aValue = a.notes;
           bValue = b.notes;
+          break;
+
+        case "reason":
+          if (!isHomeLeave) return 0;
+
+          aValue = a.reason;
+          bValue = b.reason;
+          break;
+
+        case "approved_by":
+          if (!isHomeLeave) return 0;
+
+          aValue = a.approved_by;
+          bValue = b.approved_by;
           break;
 
         default:
@@ -191,7 +235,7 @@ export default function FrontDesk() {
 
       return 0;
     });
-  }, [filteredBookings, sortConfig]);
+  }, [filteredBookings, isHomeLeave, sortConfig]);
 
   const totalPages = Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -259,8 +303,16 @@ export default function FrontDesk() {
             <i className="bi bi-search" aria-hidden="true" />
             <input
               type="search"
-              aria-label="Search bookings"
-              placeholder="Search by room, guest, country, status..."
+aria-label={
+                  isHomeLeave
+                    ? "Search home leaves"
+                    : "Search bookings"
+                }
+                placeholder={
+                isHomeLeave
+                  ? "Search by booking ID, name, reason, approver..."
+                  : "Search by room, guest, country, status..."
+              }
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
@@ -276,167 +328,301 @@ export default function FrontDesk() {
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("room")}
-                    >
-                      Room
-                      <i className="bi bi-sort-alpha-down" column="room">
-                        {" "}
-                      </i>
-                    </button>
-                  </th>
 
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("guest")}
-                    >
-                      Guest
-                      <i className="bi bi-sort-alpha-down" column="guest">
-                        {" "}
-                      </i>
-                    </button>
-                  </th>
+                  {isHomeLeave ? (
+                    <>
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("room")}
+                        >
+                          Booking ID
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
 
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("gender")}
-                    >
-                      Gender
-                      <i className="bi bi-sort-alpha-down" column="gender"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("country")}
-                    >
-                      Country
-                      <i className="bi bi-sort-alpha-down" column="country"></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("department")}
-                    >
-                      Department
-                      <i
-                        className="bi bi-sort-alpha-down"
-                        column="department"
-                      ></i>
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("meal_type")}
-                    >
-                      Meal Type
-                      <i
-                        className="bi bi-sort-alpha-down"
-                        column="meal_type"
-                      ></i>
-                    </button>
-                  </th>
-                  <th>Booked At</th>
-                  <th>Started At</th>
-                  <th>Ended At</th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("status")}
-                    >
-                      Status
-                      <i className="bi bi-sort-alpha-down" column="status"></i>
-                    </button>
-                  </th>
-                  <th>Notes</th>
-                  <th>Action</th>
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("guest")}
+                        >
+                          Name
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("started_at")}
+                        >
+                          Started At
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("ended_at")}
+                        >
+                          Ended At
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("reason")}
+                        >
+                          Reason
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("approved_by")}
+                        >
+                          Approved By
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>Action</th>
+                    </>
+                  ) : (
+                    <>
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("room")}
+                        >
+                          Room
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("guest")}
+                        >
+                          Guest
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("gender")}
+                        >
+                          Gender
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("country")}
+                        >
+                          Country
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("dept")}
+                        >
+                          Department
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("meal_type")}
+                        >
+                          Meal Type
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>Booked At</th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("started_at")}
+                        >
+                          Started At
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("ended_at")}
+                        >
+                          Ended At
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("status")}
+                        >
+                          Status
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>Notes</th>
+
+                      <th>Action</th>
+                    </>
+                  )}
                 </tr>
               </thead>
 
               <tbody>
                 {pagedBookings.length === 0 ? (
                   <tr>
-                    <td colSpan="12" className="muted">
-                      No {activeSegment.label.toLowerCase()} bookings found.
+                    <td colSpan={isHomeLeave ? "7" : "12"} className="muted">
+                      No {activeSegment.label.toLowerCase()} found.
                     </td>
                   </tr>
                 ) : (
                   pagedBookings.map((booking, index) => (
-                    <tr key={`${booking.room}-${booking.started_at}-${index}`}>
+                    <tr
+                      key={
+                        isHomeLeave
+                          ? booking.booking_id
+                          : `${booking.room}-${booking.started_at}-${index}`
+                      }
+                    >
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}
                       </td>
 
-                      <td>
-                        <strong>{booking.room || "-"}</strong>
-                      </td>
+                      {isHomeLeave ? (
+                        <>
+                          <td>
+                            <strong>{booking.booking_id || "-"}</strong>
+                          </td>
 
-                      <td>{booking.guest?.name || "-"}</td>
+                          <td>{booking.name || "-"}</td>
 
-                      <td>{booking.guest?.gender || "-"}</td>
+                          <td>{booking.started_at || "-"}</td>
 
-                      <td>{booking.guest?.country || "-"}</td>
+                          <td>{booking.ended_at || "-"}</td>
 
-                      <td>{booking.guest?.dept || "-"}</td>
+                          <td>{booking.reason || "-"}</td>
 
-                      <td>{booking.guest?.meal_type || "-"}</td>
-                        <td>{booking.booked_at || "-"}</td>
+                          <td>{booking.approved_by || "-"}</td>
 
-                      <td>{booking.started_at || "-"}</td>
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn btn-neutral"
+                                title={`View home leave for ${booking.name || "guest"}`}
+                                onClick={() =>
+                                  console.log("View home leave:", booking)
+                                }
+                              >
+                                <i className="bi bi-eye" aria-hidden="true" />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      ) : (
+                        <>
+                          <td>
+                            <strong>{booking.room || "-"}</strong>
+                          </td>
 
-                      <td>{booking.ended_at || "-"}</td>
+                          <td>{booking.guest?.name || "-"}</td>
 
-                      <td>
-                        <span
-                          className={`booking-status booking-status--${booking.status?.toLowerCase()}`}
-                        >
-                          {booking.status || "-"}
-                        </span>
-                      </td>
+                          <td>{booking.guest?.gender || "-"}</td>
 
-                      <td>{booking.notes || "-"}</td>
+                          <td>{booking.guest?.country || "-"}</td>
 
-                      <td>
-                        <div className="table-actions">
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`View booking for ${booking.guest?.name || "guest"}`}
-                            onClick={() =>
-                              console.log("View booking:", booking)
-                            }
-                          >
-                            <i className="bi bi-eye" aria-hidden="true" />
-                          </button>
+                          <td>{booking.guest?.dept || "-"}</td>
 
-                          <button
-                            type="button"
-                            className="btn btn-neutral"
-                            title={`Edit booking for ${booking.guest?.name || "guest"}`}
-                            onClick={() =>
-                              console.log("Edit booking:", booking)
-                            }
-                          >
-                            <i
-                              className="bi bi-pencil-square"
-                              aria-hidden="true"
-                            />
-                          </button>
-                        </div>
-                      </td>
+                          <td>{booking.guest?.meal_type || "-"}</td>
+
+                          <td>{booking.booked_at || "-"}</td>
+
+                          <td>{booking.started_at || "-"}</td>
+
+                          <td>{booking.ended_at || "-"}</td>
+
+                          <td>
+                            <span
+                              className={`booking-status booking-status--${booking.status?.toLowerCase()}`}
+                            >
+                              {booking.status || "-"}
+                            </span>
+                          </td>
+
+                          <td>{booking.notes || "-"}</td>
+
+                          <td>
+                            <div className="table-actions">
+                              <button
+                                type="button"
+                                className="btn btn-neutral"
+                                title={`View booking for ${booking.guest?.name || "guest"}`}
+                                onClick={() =>
+                                  console.log("View booking:", booking)
+                                }
+                              >
+                                <i className="bi bi-eye" aria-hidden="true" />
+                              </button>
+
+                              <button
+                                type="button"
+                                className="btn btn-neutral"
+                                title={`Edit booking for ${booking.guest?.name || "guest"}`}
+                                onClick={() =>
+                                  console.log("Edit booking:", booking)
+                                }
+                              >
+                                <i
+                                  className="bi bi-pencil-square"
+                                  aria-hidden="true"
+                                />
+                              </button>
+                            </div>
+                          </td>
+                        </>
+                      )}
                     </tr>
                   ))
                 )}
@@ -448,7 +634,7 @@ export default function FrontDesk() {
           <div className="office-pagination">
             <span className="office-page-info">
               Showing {startRow}–{endRow} of {filteredBookings.length}{" "}
-              {activeSegment.label.toLowerCase()} bookings
+              {activeSegment.label.toLowerCase()}
             </span>
 
             <div className="office-page-nav">

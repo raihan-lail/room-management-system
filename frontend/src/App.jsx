@@ -29,6 +29,8 @@ import Ratings from "./pages/bookings/Ratings";
 import BookingHistory from "./pages/resident-front-office/BookingHistory";
 import BookingRating from "./pages/resident-front-office/BookingRating";
 import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
+import HomeLeave from "./pages/bookings/HomeLeave";
+import ChangePassword from "./pages/ChangePassword";
 
 function App() {
   return (
@@ -39,6 +41,7 @@ function App() {
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/frontdesk" element={<FrontDesk />} />
           <Route path="/bookings/calendar" element={<BookingCalendarView />} />
+            <Route path="/bookings/home-leave" element={<HomeLeave />} />
             <Route path="/bookings/complains" element={<Complains />} />
               <Route path="/bookings/ratings" element={<Ratings/>} />
           <Route
@@ -57,6 +60,7 @@ function App() {
            <Route path="/roles" element={<RoleManagement/>} />
           <Route path="/manage-permissions" element={<ManagePermissions />} />
           <Route path="/audit-logs" element={<AuditLog />} />
+          <Route path="/change-password" element={<ChangePassword />} />
           <Route path="/resident/history" element={<BookingHistory />} />
           <Route
             path="/resident/rating/:bookingId"

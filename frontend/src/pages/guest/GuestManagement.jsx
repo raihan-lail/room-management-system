@@ -1,18 +1,29 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
+import AddModal from "../../components/modals/AddModal";
+import { addFormSchemas, buildRow } from "../../components/modals/addFormSchemas";
 
-import { guests } from "../../data/guest";
+import { guests as initialGuests } from "../../data/guest";
 
 
 const PAGE_SIZE = 10;
 
+const residentSchema = addFormSchemas.resident;
+
 export default function GuestManagement() {
+  const [guests, setGuests] = useState(initialGuests);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
+
+  const handleAddResident = (values) => {
+    setGuests((prev) => [...prev, buildRow(residentSchema, values)]);
+    setCurrentPage(1);
+  };
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -40,7 +51,7 @@ export default function GuestManagement() {
         guest.meal_type,
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search]);
+  }, [guests, search]);
 
   const sortedGuests = useMemo(() => {
     if (!sortConfig.key) return filteredGuests;
@@ -150,7 +161,7 @@ export default function GuestManagement() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Create new resident")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Add New Resident
@@ -162,7 +173,15 @@ export default function GuestManagement() {
               onClick={() => console.log("Import Excel")}
             >
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Import Excel
+              Bulk Import
+            </button>
+             <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={() => console.log("Import Excel")}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export Excel
             </button>
           </div>
         </div>
@@ -353,6 +372,21 @@ export default function GuestManagement() {
           </div>
         </section>
       </div>
+
+      {/*
+       * Rendered outside the dashboard so the
+       * fixed overlay is never clipped by the
+       * table scroll container
+       */}
+      {isAddModalOpen && (
+        <AddModal
+          title={residentSchema.title}
+          submitLabel={residentSchema.submitLabel}
+          fields={residentSchema.fields}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddResident}
+        />
+      )}
     </MainLayout>
   );
 }

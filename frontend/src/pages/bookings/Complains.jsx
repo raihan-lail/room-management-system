@@ -186,6 +186,19 @@ export default function Complains() {
               }
             />
           </label>
+
+          <div className="bookings-toolbar__actions">
+           
+
+            <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={() => console.log("Import Excel")}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export Excel
+            </button>
+          </div>
         </div>
 
         {/* TABLE CARD */}

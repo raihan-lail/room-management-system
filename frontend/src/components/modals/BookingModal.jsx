@@ -1,5 +1,12 @@
 import { useState } from "react";
 
+const BOOKING_STATUSES = [
+  "IN_REQUEST",
+  "CONFIRMED",
+  "IN_HOUSE",
+  "CHECKED_OUT",
+];
+
 export default function BookingModal({
   room,
   startedAt,
@@ -7,23 +14,41 @@ export default function BookingModal({
   onClose,
   onSubmit,
 }) {
+  /*
+   * A room passed in comes from a calendar cell
+   * and must stay fixed. Without one, the room
+   * is typed by the user instead.
+   */
+  const isRoomLocked = Boolean(room);
+
+  const [selectedRoom, setSelectedRoom] =
+    useState(room ?? "");
+
   const [guestName, setGuestName] =
     useState("");
 
+  const [status, setStatus] =
+    useState("IN_REQUEST");
+
   const [start, setStart] =
-    useState(startedAt);
+    useState(startedAt ?? "");
 
   const [end, setEnd] =
-    useState(endedAt);
+    useState(endedAt ?? "");
+
+  const [notes, setNotes] =
+    useState("");
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
     onSubmit({
-      room,
+      room: selectedRoom,
       guestName,
+      status,
       started_at: start,
       ended_at: end,
+      notes,
     });
 
     onClose();
@@ -31,30 +56,29 @@ export default function BookingModal({
 
   return (
     <div
-      className="booking-modal-overlay"
+      className="modal-overlay"
       onMouseDown={onClose}
     >
       <div
-        className="booking-modal"
+        className="modal"
         role="dialog"
         aria-modal="true"
-        aria-labelledby="booking-modal-title"
+        aria-label="New Booking"
         onMouseDown={(event) =>
           event.stopPropagation()
         }
       >
-        <div className="booking-modal__header">
+        <div className="modal__header">
 
           <h2
-            className="booking-modal__title"
-            id="booking-modal-title"
+            className="modal__title"
           >
             New Booking
           </h2>
 
           <button
             type="button"
-            className="booking-modal__close"
+            className="modal__close"
             onClick={onClose}
             aria-label="Close"
           >
@@ -67,7 +91,7 @@ export default function BookingModal({
         </div>
 
         <form
-          className="booking-modal__form"
+          className="modal__form"
           onSubmit={handleSubmit}
         >
           <label className="form-field">
@@ -75,8 +99,13 @@ export default function BookingModal({
 
             <input
               type="text"
-              value={room}
-              readOnly
+              value={selectedRoom}
+              onChange={(event) =>
+                setSelectedRoom(event.target.value)
+              }
+              placeholder="Room number"
+              readOnly={isRoomLocked}
+              required
             />
           </label>
 
@@ -98,11 +127,23 @@ export default function BookingModal({
             <span>Status</span>
 
             <select
-              type="text"
-              
-              placeholder="select status"
+              value={status}
+              onChange={(event) =>
+                setStatus(event.target.value)
+              }
               required
-            />
+            >
+              {BOOKING_STATUSES.map(
+                (option) => (
+                  <option
+                    key={option}
+                    value={option}
+                  >
+                    {option}
+                  </option>
+                ),
+              )}
+            </select>
           </label>
 
           <label className="form-field">
@@ -134,15 +175,17 @@ export default function BookingModal({
            <label className="form-field">
             <span>Notes</span>
 
-            <input
-              type="textArea"
-              
+            <textarea
+              rows="3"
+              value={notes}
+              onChange={(event) =>
+                setNotes(event.target.value)
+              }
               placeholder="add notes (optional)"
-              
             />
           </label>
 
-          <div className="booking-modal__actions">
+          <div className="modal__actions">
 
             <button
               type="button"

@@ -218,7 +218,7 @@ export default function BookingHistory() {
                       className="bi bi-star"
                       aria-hidden="true"
                     />
-                    Rate Booking
+                    Rate Your Experience
                   </button>
 
                   <button

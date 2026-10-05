@@ -223,10 +223,7 @@ export default function BookingComplaints() {
                       setIsSubmitted(true)
                     }
                   >
-                    <i
-                      className="bi bi-send"
-                      aria-hidden="true"
-                    />
+                    
                     Submit Complaint
                   </button>
                 </div>

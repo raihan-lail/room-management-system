@@ -1,19 +1,33 @@
 import MainLayout from "../../components/MainLayout";
 import { useMemo, useState } from "react";
-import { employee } from "../../data/employee";
+import AddModal from "../../components/modals/AddModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
+import { employee as initialEmployee } from "../../data/employee";
 
 const PAGE_SIZE = 10;
 
+const employeeSchema = addFormSchemas.employee;
+
 export default function EmployeeManagement() {
+  const [employees, setEmployees] = useState(initialEmployee);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+
+  const handleAddEmployee = (values) => {
+    setEmployees((prev) => [...prev, buildRow(employeeSchema, values)]);
+    setCurrentPage(1);
+  };
 
   const filteredEmployee = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return employee;
+    if (!query) return employees;
 
-    return employee.filter((employee) =>
+    return employees.filter((employee) =>
       [
         employee.name,
         employee.Role,
@@ -22,7 +36,7 @@ export default function EmployeeManagement() {
         employee.Phone,
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search]);
+  }, [employees, search]);
 
   const totalPages = Math.max(
     1,
@@ -71,7 +85,7 @@ export default function EmployeeManagement() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Add New Employee")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Add New Employee
@@ -83,8 +97,17 @@ export default function EmployeeManagement() {
               onClick={() => console.log("Import Excel")}
             >
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Import Excel
+              Bulk Import
             </button>
+             <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={() => console.log("Import Excel")}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export Excel
+            </button>
+            
           </div>
         </div>
 
@@ -210,6 +233,16 @@ export default function EmployeeManagement() {
           </div>
         </section>
       </div>
+
+      {isAddModalOpen && (
+        <AddModal
+          title={employeeSchema.title}
+          submitLabel={employeeSchema.submitLabel}
+          fields={employeeSchema.fields}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddEmployee}
+        />
+      )}
     </MainLayout>
   );
 }

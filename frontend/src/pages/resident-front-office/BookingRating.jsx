@@ -204,10 +204,7 @@ export default function BookingRating() {
                       setIsSubmitted(true)
                     }
                   >
-                    <i
-                      className="bi bi-send"
-                      aria-hidden="true"
-                    />
+                   
                     Submit Rating
                   </button>
                 </div>

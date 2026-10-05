@@ -19,6 +19,7 @@ export const sidebarMenu = [
       { label: 'Calendar View', path: '/bookings/calendar', icon: 'bi-calendar-date' },
      
        { label: 'Table View', path: '/bookings/table', icon: 'bi-table' },
+       { label: 'Home Leaves', path: '/bookings/home-leave', icon: 'bi-house-door' },
        { label: 'Complaints', path: '/bookings/complains', icon: 'bi-chat-dots' },
         { label: 'Ratings', path: '/bookings/ratings', icon: 'bi-star' },
     ],

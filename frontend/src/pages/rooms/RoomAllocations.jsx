@@ -1,18 +1,35 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
+import AddModal from "../../components/modals/AddModal";
+import {
+  addFormSchemas,
+  buildRow,
+} from "../../components/modals/addFormSchemas";
 
-import { roomAllocations } from "../../data/room";
+import { roomAllocations as initialRoomAllocations } from "../../data/room";
 
 
 const PAGE_SIZE = 10;
 
+const allocationSchema = addFormSchemas.roomAllocation;
+
 export default function RoomAllocation() {
+  const [allocationList, setAllocationList] = useState(initialRoomAllocations);
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
+
+  const handleAddAllocation = (values) => {
+    setAllocationList((prev) => [
+      ...prev,
+      buildRow(allocationSchema, values),
+    ]);
+    setCurrentPage(1);
+  };
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -26,9 +43,9 @@ export default function RoomAllocation() {
   const filteredRoomAllocation = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return roomAllocations;
+    if (!query) return allocationList;
 
-    return roomAllocations.filter((roomAllocation) =>
+    return allocationList.filter((roomAllocation) =>
       [
         roomAllocation.name,
         roomAllocation.type,
@@ -39,7 +56,7 @@ export default function RoomAllocation() {
         
       ].some((value) => (value || "").toString().toLowerCase().includes(query)),
     );
-  }, [search]);
+  }, [allocationList, search]);
 
   const sortedRoomAllocations = useMemo(() => {
     if (!sortConfig.key) return filteredRoomAllocation;
@@ -134,7 +151,7 @@ export default function RoomAllocation() {
             <button
               type="button"
               className="btn btn-primary"
-              onClick={() => console.log("Create new booking")}
+              onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Allocations
@@ -301,6 +318,16 @@ export default function RoomAllocation() {
           </div>
         </section>
       </div>
+
+      {isAddModalOpen && (
+        <AddModal
+          title={allocationSchema.title}
+          submitLabel={allocationSchema.submitLabel}
+          fields={allocationSchema.fields}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddAllocation}
+        />
+      )}
     </MainLayout>
   );
 }
