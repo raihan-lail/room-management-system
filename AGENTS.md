@@ -8,4 +8,13 @@ frontend:
 - DO NOT use tailwind css, use default css in App.css
 - always put css classes in order
 - do not use any color gradations
-- always aim on minimalism and simplicity, but provides clear and complete informations
+- always aim on minimalism and simplicity, but provides clear and complete informations.
+- No purple-blue gradient background.
+- No centered badge + headline + 3-card grid.
+- No fake dashboard mockups.
+- No floating icon pills.
+- No generic SaaS “BETA” badges.
+- always aim for speed, clarity, density, predictable navigations, and low cognitive load
+- Do not animate keyboard shortcuts, filters, search, or rapid actions.
+- Add only subtle hover and active states.
+- Keep interactions instant and useful.

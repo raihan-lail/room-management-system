@@ -13,6 +13,47 @@ const PAGE_SIZE = 10;
 
 const homeLeaveSchema = addFormSchemas.homeLeave;
 
+const getTodayKey = () => {
+  const now = new Date();
+  const month = `${now.getMonth() + 1}`.padStart(2, "0");
+  const day = `${now.getDate()}`.padStart(2, "0");
+
+  return `${now.getFullYear()}-${month}-${day}`;
+};
+
+const parseDay = (dateStr) => {
+  const [year, month, day] = (dateStr || "").split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return Date.UTC(year, month - 1, day);
+};
+
+const getDaysLeft = (endedAt, today) => {
+  const end = parseDay(endedAt);
+  const current = parseDay(today);
+
+  if (end === null || current === null) return null;
+
+  return Math.round((end - current) / 86400000);
+};
+
+const formatDaysLeft = (endedAt, today) => {
+  const days = getDaysLeft(endedAt, today);
+
+  if (days === null) return "-";
+
+  if (days === 0) return "Returns today";
+
+  if (days < 0) {
+    const overdue = Math.abs(days);
+
+    return `Overdue ${overdue} ${overdue === 1 ? "day" : "days"}`;
+  }
+
+  return `${days} ${days === 1 ? "day" : "days"} left`;
+};
+
 export default function HomeLeave() {
   const [homeLeaveList, setHomeLeaveList] = useState(initialHomeLeaves);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -25,6 +66,8 @@ export default function HomeLeave() {
     key: null,
     direction: "asc",
   });
+
+  const today = useMemo(() => getTodayKey(), []);
 
   const handleAddHomeLeave = (values) => {
     setHomeLeaveList((prev) => [...prev, buildRow(homeLeaveSchema, values)]);
@@ -105,6 +148,15 @@ export default function HomeLeave() {
           bValue = b.ended_at;
           break;
 
+        case "days_left": {
+          const aDays =
+            getDaysLeft(a.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
+          const bDays =
+            getDaysLeft(b.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
+
+          return sortConfig.direction === "asc" ? aDays - bDays : bDays - aDays;
+        }
+
         case "reason":
           aValue = a.reason;
           bValue = b.reason;
@@ -132,7 +184,7 @@ export default function HomeLeave() {
 
       return 0;
     });
-  }, [filteredHomeLeaves, sortConfig]);
+  }, [filteredHomeLeaves, sortConfig, today]);
 
   /*
    * PAGINATION
@@ -263,6 +315,16 @@ export default function HomeLeave() {
                     <button
                       type="button"
                       className="table-sort"
+                      onClick={() => handleSort("days_left")}
+                    >
+                      Expected Return
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
                       onClick={() => handleSort("reason")}
                     >
                       Reason
@@ -286,7 +348,7 @@ export default function HomeLeave() {
               <tbody>
                 {pagedHomeLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan="8" className="muted">
+                    <td colSpan="9" className="muted">
                       No home leaves found.
                     </td>
                   </tr>
@@ -306,6 +368,8 @@ export default function HomeLeave() {
                       <td>{homeLeave.started_at || "-"}</td>
 
                       <td>{homeLeave.ended_at || "-"}</td>
+
+                      <td>{formatDaysLeft(homeLeave.ended_at, today)}</td>
 
                       <td>{homeLeave.reason || "-"}</td>
 

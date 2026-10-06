@@ -40,6 +40,39 @@ const normalizeStatus = (status) =>
 
 const isSameDay = (value, today) => Boolean(value) && value === today;
 
+const parseDay = (dateStr) => {
+  const [year, month, day] = (dateStr || "").split("-").map(Number);
+
+  if (!year || !month || !day) return null;
+
+  return Date.UTC(year, month - 1, day);
+};
+
+const getDaysLeft = (endedAt, today) => {
+  const end = parseDay(endedAt);
+  const current = parseDay(today);
+
+  if (end === null || current === null) return null;
+
+  return Math.round((end - current) / 86400000);
+};
+
+const formatDaysLeft = (endedAt, today) => {
+  const days = getDaysLeft(endedAt, today);
+
+  if (days === null) return "-";
+
+  if (days === 0) return "Returns today";
+
+  if (days < 0) {
+    const overdue = Math.abs(days);
+
+    return `Overdue ${overdue} ${overdue === 1 ? "day" : "days"}`;
+  }
+
+  return `${days} ${days === 1 ? "day" : "days"} left`;
+};
+
 const isWithinStay = (startedAt, endedAt, today) =>
   Boolean(startedAt) &&
   Boolean(endedAt) &&
@@ -226,6 +259,15 @@ export default function FrontDesk() {
           bValue = b.ended_at;
           break;
 
+        case "days_left": {
+          const aDays =
+            getDaysLeft(a.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
+          const bDays =
+            getDaysLeft(b.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
+
+          return sortConfig.direction === "asc" ? aDays - bDays : bDays - aDays;
+        }
+
         case "status":
           if (isHomeLeave) return 0;
 
@@ -271,7 +313,7 @@ export default function FrontDesk() {
 
       return 0;
     });
-  }, [filteredBookings, isHomeLeave, sortConfig]);
+  }, [filteredBookings, isHomeLeave, sortConfig, today]);
 
   const totalPages = Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE));
   const safePage = Math.min(currentPage, totalPages);
@@ -302,10 +344,10 @@ export default function FrontDesk() {
            
 
             <div className="frontdesk-filters">
-              <span className="frontdesk-today">
+             
                
                 {todayLabel}
-              </span>
+              
 
               <div
                 className="frontdesk-segments"
@@ -407,6 +449,17 @@ aria-label={
                           onClick={() => handleSort("ended_at")}
                         >
                           Ended At
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
+                          onClick={() => handleSort("days_left")}
+                        >
+                          Expected Return
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
@@ -549,7 +602,7 @@ aria-label={
               <tbody>
                 {pagedBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={isHomeLeave ? "7" : "12"} className="muted">
+                    <td colSpan={isHomeLeave ? "9" : "13"} className="muted">
                       No {activeSegment.label.toLowerCase()} found.
                     </td>
                   </tr>
@@ -577,6 +630,8 @@ aria-label={
                           <td>{booking.started_at || "-"}</td>
 
                           <td>{booking.ended_at || "-"}</td>
+
+                          <td>{formatDaysLeft(booking.ended_at, today)}</td>
 
                           <td>{booking.reason || "-"}</td>
 

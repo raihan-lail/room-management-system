@@ -1159,10 +1159,7 @@ export default function CalendarView() {
     <div className="calendar-view">
 
       <div className="calendar-range">
-        <i
-          className="bi bi-calendar-range"
-          aria-hidden="true"
-        />
+       
 
         <span>
           {visibleStart && visibleEnd
@@ -1180,10 +1177,7 @@ export default function CalendarView() {
         <div className="calendar-filters__search">
 
           <label className="history-search">
-            <i
-              className="bi bi-door-open"
-              aria-hidden="true"
-            />
+            
 
             <input
               type="search"
@@ -1197,10 +1191,7 @@ export default function CalendarView() {
           </label>
 
           <label className="history-search">
-            <i
-              className="bi bi-person"
-              aria-hidden="true"
-            />
+           
 
             <input
               type="search"
