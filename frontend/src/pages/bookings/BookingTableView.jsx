@@ -47,6 +47,7 @@ export default function BookingTableView() {
 
     return bookings.filter((booking) =>
       [
+        booking.booking_id,
         booking.room,
         booking.guest?.name,
         booking.guest?.gender,
@@ -67,6 +68,10 @@ export default function BookingTableView() {
       let bValue;
 
       switch (sortConfig.key) {
+        case "booking_id":
+          aValue = a.booking_id;
+          bValue = b.booking_id;
+          break;
         case "room":
           aValue = a.room;
           bValue = b.room;
@@ -234,7 +239,18 @@ export default function BookingTableView() {
             <table className="office-table">
               <thead>
                 <tr>
-                  <th className="table-col-no">No</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("booking_id")}
+                    >
+                      Booking ID
+                      <i className="bi bi-sort-alpha-down" column="booking_id">
+                        {" "}
+                      </i>
+                    </button>
+                  </th>
                   <th>
                     <button
                       type="button"
@@ -335,8 +351,8 @@ export default function BookingTableView() {
                 ) : (
                   pagedBookings.map((booking, index) => (
                     <tr key={`${booking.room}-${booking.started_at}-${index}`}>
-                      <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                      <td>
+                        <strong>{booking.booking_id || "-"}</strong>
                       </td>
 
                       <td>

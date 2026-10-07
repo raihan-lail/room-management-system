@@ -1545,6 +1545,49 @@ textarea,
   white-space: nowrap;
 }
 
+.frontdesk-date {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 5px 10px;
+
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+
+  border: 1px solid var(--brand-nav);
+  border-radius: 999px;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  white-space: nowrap;
+}
+
+.frontdesk-date input[type="date"] {
+  border: 0;
+  padding: 0;
+
+  background: transparent;
+  color: inherit;
+
+  font-size: 11px;
+  line-height: 15px;
+  font-weight: 600;
+
+  outline: none;
+
+  cursor: pointer;
+}
+
+.frontdesk-date input[type="date"]::-webkit-calendar-picker-indicator {
+  cursor: pointer;
+
+  opacity: 0.6;
+}
+
 .frontdesk-today i {
   font-size: 12px;
   line-height: 1;

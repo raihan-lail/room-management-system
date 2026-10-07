@@ -1,5 +1,6 @@
 export const bookings = [
   {
+    booking_id: "SD00001",
     room: "101",
     guest: {
       name: "Ahmad Fauzan",
@@ -15,6 +16,7 @@ export const bookings = [
     notes: "Regular accommodation",
   },
   {
+    booking_id: "SD00001",
     room: "102",
     guest: {
       name: "Sarah Johnson",
@@ -30,6 +32,7 @@ export const bookings = [
     notes: "Late check-in requested",
   },
   {
+    booking_id: "SD00001",
     room: "103",
     guest: {
       name: "Muhammad Rizky",
@@ -45,6 +48,7 @@ export const bookings = [
     notes: "Needs workspace",
   },
   {
+    booking_id: "SD00001",
     room: "104",
     guest: {
       name: "Emily Carter",
@@ -59,6 +63,7 @@ export const bookings = [
     notes: "Vegetarian meal requested",
   },
   {
+    booking_id: "SD00001",
     room: "105",
     guest: {
       name: "Budi Santoso",
@@ -73,6 +78,7 @@ export const bookings = [
     notes: "",
   },
   {
+    booking_id: "SD00001",
     room: "106",
     guest: {
       name: "Olivia Martin",
@@ -87,6 +93,7 @@ export const bookings = [
     notes: "Allergy information provided",
   },
   {
+    booking_id: "SD00001",
     room: "107",
     guest: {
       name: "Andi Pratama",
@@ -101,6 +108,7 @@ export const bookings = [
     notes: "Booking extended by 3 days",
   },
   {
+    booking_id: "SD00001",
     room: "108",
     guest: {
       name: "Daniel Kim",
@@ -115,6 +123,7 @@ export const bookings = [
     notes: "Airport pickup required",
   },
   {
+    booking_id: "SD00001",
     room: "109",
     guest: {
       name: "Maria Santos",
@@ -129,6 +138,7 @@ export const bookings = [
     notes: "Early check-out",
   },
   {
+    booking_id: "SD00001",
     room: "110",
     guest: {
       name: "Thomas Müller",
@@ -143,6 +153,7 @@ export const bookings = [
     notes: "Conference participant",
   },
   {
+    booking_id: "SD00001",
     room: "111",
     guest: {
       name: "Siti Nurhaliza",
@@ -157,6 +168,7 @@ export const bookings = [
     notes: "",
   },
   {
+    booking_id: "SD00001",
     room: "112",
     guest: {
       name: "James Wilson",
@@ -171,6 +183,7 @@ export const bookings = [
     notes: "Requires quiet room",
   },
   {
+    booking_id: "SD00001",
     room: "113",
     guest: {
       name: "Nadia Putri",
@@ -185,6 +198,7 @@ export const bookings = [
     notes: "Home leave scheduled",
   },
   {
+    booking_id: "SD00001",
     room: "114",
     guest: {
       name: "Lucas Bernard",
@@ -199,6 +213,7 @@ export const bookings = [
     notes: "Long stay",
   },
   {
+    booking_id: "SD00001",
     room: "115",
     guest: {
       name: "Aisha Khan",
@@ -213,6 +228,7 @@ export const bookings = [
     notes: "Halal meal requested",
   },
   {
+    booking_id: "SD00001",
     room: "116",
     guest: {
       name: "Kevin Tan",
@@ -227,6 +243,7 @@ export const bookings = [
     notes: "Arrival after 18:00",
   },
   {
+    booking_id: "SD00001",
     room: "117",
     guest: {
       name: "Anna Kowalski",
@@ -241,6 +258,7 @@ export const bookings = [
     notes: "First-time guest",
   },
   {
+    booking_id: "SD00001",
     room: "118",
     guest: {
       name: "Rafi Hidayat",
@@ -255,6 +273,7 @@ export const bookings = [
     notes: "",
   },
   {
+    booking_id: "SD00001",
     room: "119",
     guest: {
       name: "Sophia Williams",
@@ -269,6 +288,7 @@ export const bookings = [
     notes: "Waiting for final confirmation",
   },
   {
+    booking_id: "SD00001",
     room: "120",
     guest: {
       name: "Yuki Tanaka",

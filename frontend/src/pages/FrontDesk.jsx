@@ -20,9 +20,8 @@ const SEGMENTS = [
   { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 
-const todayFormatter = new Intl.DateTimeFormat("en-US", {
-  weekday: "long",
-  month: "long",
+const selectedDateFormatter = new Intl.DateTimeFormat("en-US", {
+  month: "short",
   day: "numeric",
   year: "numeric",
 });
@@ -117,9 +116,21 @@ export default function FrontDesk() {
   const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
-  const today = useMemo(() => getTodayKey(), []);
-  const todayLabel = useMemo(() => todayFormatter.format(new Date()), []);
+  const today = selectedDate;
+  const isCurrentDate = selectedDate === getTodayKey();
+  const selectedDateLabel = useMemo(
+    () => selectedDateFormatter.format(new Date(`${selectedDate}T00:00:00`)),
+    [selectedDate],
+  );
+
+  const handleDateChange = (value) => {
+    if (!value) return;
+
+    setSelectedDate(value);
+    setCurrentPage(1);
+  };
 
   const handleSegmentChange = (nextSegment) => {
     setSegment(nextSegment);
@@ -339,15 +350,24 @@ export default function FrontDesk() {
         {/* HEADER */}
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">  {activeSegment?.title || "Arrival Schedule"}</h1>
+            <h1 className="dashboard-header__title">
+              {activeSegment?.title || "Arrival Schedule"}
+              {!isCurrentDate ? ` - ${selectedDateLabel}` : ""}
+            </h1>
 
            
 
-            <div className="frontdesk-filters">
-             
-               
-                {todayLabel}
-              
+<div className="frontdesk-filters">
+              <label className="frontdesk-date">
+                <i className="bi bi-calendar3" aria-hidden="true" />
+                <input
+                  type="date"
+                  aria-label="Filter by date"
+                  value={selectedDate}
+                  max={getTodayKey()}
+                  onChange={(event) => handleDateChange(event.target.value)}
+                />
+              </label>
 
               <div
                 className="frontdesk-segments"

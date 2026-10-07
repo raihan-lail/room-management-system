@@ -47,7 +47,7 @@ export const sidebarMenu = [
   },
   {
     label: "Settings",
-    path: "/settings",
+    path: "",
     icon: "bi-gear",
     items: [
       { label: 'Site Management', path: '/sites', icon: 'bi-door-open' },

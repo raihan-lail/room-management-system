@@ -23,6 +23,8 @@ export default function RoomManagement() {
      const [deletingRow, setDeletingRow] = useState(null);
      const [currentPage, setCurrentPage] = useState(1);
      const [search, setSearch] = useState("");
+     const [selectedLocation, setSelectedLocation] = useState("ALL");
+     const [selectedStatus, setSelectedStatus] = useState("ALL");
      const [sortConfig, setSortConfig] = useState({
   key: null,
   direction: "asc",
@@ -59,10 +61,13 @@ export default function RoomManagement() {
 
      const filteredRooms = useMemo(() => {
         const query = search.trim().toLowerCase();
-        if (!query) return roomList;
-
-        return roomList.filter((room) =>
-        [
+        return roomList.filter((room) => {
+            const locationMatch =
+              selectedLocation === "ALL" || room.location === selectedLocation;
+            const statusMatch =
+              selectedStatus === "ALL" || room.status === selectedStatus;
+            const matchesQuery = !query ||
+            [
             room.name,
             room.desc,
             room.location,
@@ -70,9 +75,20 @@ export default function RoomManagement() {
             room.cleaning_status
         ].some((value) =>
         (value || "").toString().toLowerCase().includes(query)
-    )
-    )
-     }, [roomList, search]);
+    );
+            return locationMatch && statusMatch && matchesQuery;
+        })
+     }, [roomList, search, selectedLocation, selectedStatus]);
+
+      const locationOptions = useMemo(() => [
+        "ALL",
+        ...[...new Set(roomList.map((room) => room.location).filter(Boolean))],
+      ], [roomList]);
+
+      const statusOptions = useMemo(() => [
+        "ALL",
+        ...[...new Set(roomList.map((room) => room.status).filter(Boolean))],
+      ], [roomList]);
 
       const sortedRoom = useMemo(() => {
   if (!sortConfig.key) return filteredRooms;
@@ -146,6 +162,7 @@ export default function RoomManagement() {
 
                 </div>
                  <div className="bookings-toolbar form-actions">
+                
           <label className="history-search">
             <i className="bi bi-search" aria-hidden="true" />
             <input
@@ -156,6 +173,40 @@ export default function RoomManagement() {
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
+
+          <div className="bookings-toolbar__actions">
+            <select
+              aria-label="Filter by location"
+              className="permission-role-selector"
+              value={selectedLocation}
+              onChange={(event) => {
+                setSelectedLocation(event.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              {locationOptions.map((location) => (
+                <option key={location} value={location}>
+                  {location === "ALL" ? "All Locations" : location}
+                </option>
+              ))}
+            </select>
+
+            <select
+              aria-label="Filter by status"
+              className="permission-role-selector"
+              value={selectedStatus}
+              onChange={(event) => {
+                setSelectedStatus(event.target.value);
+                setCurrentPage(1);
+              }}
+            >
+              {statusOptions.map((status) => (
+                <option key={status} value={status}>
+                  {status === "ALL" ? "All Statuses" : status}
+                </option>
+              ))}
+            </select>
+          </div>
 
           <div className="bookings-toolbar__actions">
             <button
