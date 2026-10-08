@@ -1,14 +1,34 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+
+import useAuth from "../../contexts/useAuth";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { status, login } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  if (status === "authenticated") {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your auth/API logic here if needed
-    navigate("/dashboard");
+    setError("");
+    setSubmitting(true);
+
+    try {
+      await login(email, password);
+      navigate("/dashboard", { replace: true });
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -21,13 +41,16 @@ export default function Login() {
         <h1 className="login-title">LOGIN</h1>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          <p>Enter random email and password for login.</p>
+          <p>Enter your email and password to login.</p>
           <label className="form-field">
             <span>Email</span>
             <input
               type="email"
               required
               placeholder="you@example.com"
+              autoComplete="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
             />
           </label>
 
@@ -38,6 +61,9 @@ export default function Login() {
                 type={showPassword ? "text" : "password"}
                 required
                 placeholder="********"
+                autoComplete="current-password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
               />
 
               <button
@@ -57,6 +83,8 @@ export default function Login() {
             </div>
           </label>
 
+          {error ? <p className="error-text">{error}</p> : null}
+
           <div className="auth-links">
             <label className="remember-me">
               <input type="checkbox" />
@@ -68,9 +96,12 @@ export default function Login() {
             </a>
           </div>
 
-          <button type="submit">login</button>
+          <button type="submit" disabled={submitting}>
+            {submitting ? "logging in..." : "login"}
+          </button>
         </form>
        
+
 
        
       </div>

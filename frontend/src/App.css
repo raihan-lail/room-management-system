@@ -6,12 +6,7 @@
   --brand-danger-soft: #ffe5e7;
   --page-padding: 20px;
 
-  /*
-   * Booking status palette.
-   * Shared by the calendar blocks, the calendar
-   * legend dots and the booking tooltip pills.
-   * Only brand and neutral tones are used.
-   */
+  
   --status-in_house-bg: var(--brand-nav);
   --status-in_house-fg: #ffffff;
   --status-in_house-border: var(--brand-nav);
