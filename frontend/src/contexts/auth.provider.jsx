@@ -27,10 +27,10 @@ export function AuthProvider({ children }) {
     };
   }, []);
 
-  const login = useCallback(async (email, password) => {
+  const login = useCallback(async (email, password, rememberMe) => {
     const data = await apiRequest("/api/auth/login", {
       method: "POST",
-      body: JSON.stringify({ email, password }),
+      body: JSON.stringify({ email, password, rememberMe: rememberMe }),
     });
 
     setUser(data.user);

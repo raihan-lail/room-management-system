@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Request, Response, CookieOptions } from "express";
 import argon2 from "argon2";
 
 import { prisma } from "../lib/prisma.js";
@@ -6,9 +6,16 @@ import { generateAccessToken } from "../lib/jwt.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 
 
-export async function login(req: Request, res: Response): Promise<void> {
+export async function login(
+  req: Request,
+  res: Response
+): Promise<void> {
   try {
-    const { email, password } = req.body;
+    const {
+      email,
+      password,
+      rememberMe = false,
+    } = req.body;
 
     if (!email || !password) {
       res.status(400).json({
@@ -41,7 +48,12 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const passwordValid = await argon2.verify(user.password, password);
+    
+
+    const passwordValid = await argon2.verify(
+      user.password,
+      password
+    );
 
     if (!passwordValid) {
       res.status(401).json({
@@ -57,15 +69,23 @@ export async function login(req: Request, res: Response): Promise<void> {
       return;
     }
 
-    const token = generateAccessToken(user.id);
+    const token = generateAccessToken(
+      user.id,
+      rememberMe
+    );
 
-    res.cookie("access_token", token, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
-      sameSite: "lax",
-      maxAge: 60 * 60 * 1000,
-      path: "/",
-    });
+    const cookieOptions: CookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax",
+  path: "/",
+};
+
+if (rememberMe) {
+  cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000;
+}
+
+res.cookie("access_token", token, cookieOptions);
 
     res.status(200).json({
       message: "Login successful",
@@ -75,10 +95,10 @@ export async function login(req: Request, res: Response): Promise<void> {
         employee: {
           id: user.employee.id,
           name: user.employee.name,
-
+          
           siteId: user.employee.siteId,
           roles: user.employee.roles.map(
-            (employeeRole) => employeeRole.role.name,
+            (employeeRole) => employeeRole.role.name
           ),
         },
       },
