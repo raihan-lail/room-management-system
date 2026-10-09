@@ -3,6 +3,7 @@ import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.route";
+import employeeRouter from "./routes/employee.route";
 
 const app = express();
 
@@ -16,6 +17,8 @@ app.use(express.json());
 app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
+app.use("/api/employee", employeeRouter);
+
 
 
 app.get("/", (_req, res) => {
