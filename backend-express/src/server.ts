@@ -4,6 +4,7 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 import authRouter from "./routes/auth.route";
 import employeeRouter from "./routes/employee.route";
+import roleRouter from "./routes/role.route";
 
 const app = express();
 
@@ -18,6 +19,7 @@ app.use(cookieParser());
 
 app.use("/api/auth", authRouter);
 app.use("/api/employee", employeeRouter);
+app.use("/api/role", roleRouter);
 
 
 
