@@ -1,0 +1,326 @@
+import type { Response } from "express";
+import { Prisma } from "../generated/prisma/client";
+
+import { prisma } from "../lib/prisma";
+import type { AuthRequest } from "../middleware/auth.middleware";
+
+type SiteInput = {
+  name?: string;
+  code?: string;
+  description?: string | null;
+};
+
+async function getActor(userId: string) {
+  return prisma.employee.findUnique({
+    where: { userId },
+    include: {
+      roles: {
+        include: {
+          role: true,
+        },
+      },
+    },
+  });
+}
+
+type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
+
+function isGlobalSuperadmin(employee: Actor): boolean {
+  return employee.roles.some(
+    ({ role }) =>
+      role.name === "superadmin" && role.siteId === null
+  );
+}
+
+async function getActorOrRespond(
+  req: AuthRequest,
+  res: Response
+): Promise<Actor | null> {
+  if (!req.userId) {
+    res.status(401).json({ message: "Authentication required" });
+    return null;
+  }
+
+  const actor = await getActor(req.userId);
+
+  if (!actor) {
+    res.status(403).json({ message: "Employee access required" });
+    return null;
+  }
+
+  return actor;
+}
+
+function handlePrismaError(error: unknown, res: Response): void {
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2002"
+  ) {
+    res.status(409).json({
+      message: "Site name or code already exists",
+    });
+    return;
+  }
+
+  if (
+    error instanceof Prisma.PrismaClientKnownRequestError &&
+    error.code === "P2025"
+  ) {
+    res.status(404).json({ message: "Site not found" });
+    return;
+  }
+
+  console.error("Site controller error:", error);
+  res.status(500).json({ message: "Internal server error" });
+}
+
+// GET /api/sites
+export async function listSites(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    const where = isGlobalSuperadmin(actor)
+      ? {}
+      : actor.siteId
+        ? { id: actor.siteId }
+        : { id: "__no_matching_site__" };
+
+    const sites = await prisma.site.findMany({
+      where,
+      orderBy: { name: "asc" },
+    });
+
+    res.json({ data: sites });
+  } catch (error) {
+    handlePrismaError(error, res);
+  }
+}
+
+export async function getSite(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    const where = isGlobalSuperadmin(actor)
+      ? { id: req.params.id as string }
+      : { id: req.params.id as string, siteId: actor.siteId ?? "__no_matching_site__" };
+
+    const site = await prisma.site.findFirst({ where });
+
+    if (!site) {
+      res.status(404).json({ message: "Site not found" });
+      return;
+    }
+
+    res.json({ data: site });
+  } catch (error) {
+    handlePrismaError(error, res);
+  }
+}
+
+// POST /api/sites
+// Only global Superadmin can create a site.
+export async function createSite(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    if (!isGlobalSuperadmin(actor)) {
+      res.status(403).json({
+        message: "Only the global Superadmin can create sites",
+      });
+      return;
+    }
+
+    const { name, code, description } = req.body as SiteInput;
+
+    if (
+      typeof name !== "string" ||
+      !name.trim() ||
+      typeof code !== "string" ||
+      !code.trim()
+    ) {
+      res.status(400).json({
+        message: "Name and code are required",
+      });
+      return;
+    }
+
+    if (
+      description !== undefined &&
+      description !== null &&
+      typeof description !== "string"
+    ) {
+      res.status(400).json({
+        message: "Description must be a string or null",
+      });
+      return;
+    }
+
+    const site = await prisma.site.create({
+      data: {
+        name: name.trim(),
+        code: code.trim(),
+        description: description?.trim() || null,
+      },
+    });
+
+    res.status(201).json({
+      message: "Site created successfully",
+      data: site,
+    });
+  } catch (error) {
+    handlePrismaError(error, res);
+  }
+}
+
+
+export async function updateSite(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    const superadmin = isGlobalSuperadmin(actor);
+
+    if (!superadmin && actor.siteId !== req.params.id) {
+      res.status(403).json({
+        message: "You can only update your own site",
+      });
+      return;
+    }
+
+    const { name, code, description } = req.body as SiteInput;
+
+    const data: {
+      name?: string;
+      code?: string;
+      description?: string | null;
+    } = {};
+
+    if (name !== undefined) {
+      if (typeof name !== "string" || !name.trim()) {
+        res.status(400).json({ message: "Name cannot be empty" });
+        return;
+      }
+      data.name = name.trim();
+    }
+
+    if (code !== undefined) {
+      if (typeof code !== "string" || !code.trim()) {
+        res.status(400).json({ message: "Code cannot be empty" });
+        return;
+      }
+      data.code = code.trim();
+    }
+
+    if (description !== undefined) {
+      if (
+        description !== null &&
+        typeof description !== "string"
+      ) {
+        res.status(400).json({
+          message: "Description must be a string or null",
+        });
+        return;
+      }
+      data.description = description?.trim() || null;
+    }
+
+    if (Object.keys(data).length === 0) {
+      res.status(400).json({
+        message: "Provide at least one field to update",
+      });
+      return;
+    }
+
+    const existingSite = await prisma.site.findUnique({
+      where: { id: req.params.id as string },
+    });
+
+    if (!existingSite) {
+      res.status(404).json({ message: "Site not found" });
+      return;
+    }
+
+    const site = await prisma.site.update({
+      where: { id: req.params.id as string },
+      data,
+    });
+
+    res.json({
+      message: "Site updated successfully",
+      data: site,
+    });
+  } catch (error) {
+    handlePrismaError(error, res);
+  }
+}
+
+
+export async function deleteSite(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    if (!isGlobalSuperadmin(actor)) {
+      res.status(403).json({
+        message: "Only the global Superadmin can delete sites",
+      });
+      return;
+    }
+
+    const site = await prisma.site.findUnique({
+      where: { id: req.params.id as string },
+      include: {
+        _count: {
+          select: {
+            employees: true,
+            roles: true,
+          },
+        },
+      },
+    });
+
+    if (!site) {
+      res.status(404).json({ message: "Site not found" });
+      return;
+    }
+
+    if (
+      site._count.employees > 0 ||
+      site._count.roles > 0
+    ) {
+      res.status(409).json({
+        message:
+          "Cannot delete a site that still has employees or roles assigned",
+        employees: site._count.employees,
+        roles: site._count.roles,
+      });
+      return;
+    }
+
+    await prisma.site.delete({
+      where: { id: site.id },
+    });
+
+    res.json({ message: "Site deleted successfully" });
+  } catch (error) {
+    handlePrismaError(error, res);
+  }
+}
