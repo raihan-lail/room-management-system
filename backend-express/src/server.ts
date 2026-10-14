@@ -6,6 +6,7 @@ import authRouter from "./routes/auth.route";
 import employeeRouter from "./routes/employee.route";
 import roleRouter from "./routes/role.route";
 import siteRouter from "./routes/site.route";
+import permissionRouter from "./routes/permission.route";
 
 const app = express();
 
@@ -22,6 +23,7 @@ app.use("/api/auth", authRouter);
 app.use("/api/employee", employeeRouter);
 app.use("/api/role", roleRouter);
 app.use("/api/site", siteRouter);
+app.use("/api/permission", permissionRouter)
 
 
 

@@ -29,6 +29,7 @@ export const sidebarMenu = [
     path: "/rooms",
     icon: "bi-door-open",
      items: [
+      { label: 'Locations and Floors', path: '/rooms/locations', icon: 'bi-crosshair' },
       { label: 'Room Management', path: '/rooms/management', icon: 'bi-door-open' },
       { label: 'Room Allocations', path: '/rooms/allocation', icon: 'bi-house' },
        { label: 'Map View', path: '/rooms/map', icon: 'bi-geo-alt' },

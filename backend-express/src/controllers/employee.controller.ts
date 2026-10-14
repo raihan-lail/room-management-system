@@ -266,61 +266,61 @@ export async function createEmployee(
       return;
     }
 
-   const employee = await prisma.$transaction(async (tx) => {
-  const user = await tx.user.create({
-    data: {
-      email: normalizedEmail,
-      password: passwordHash,
-    },
-  });
+    const employee = await prisma.$transaction(async (tx) => {
+      const user = await tx.user.create({
+        data: {
+          email: normalizedEmail,
+          password: passwordHash,
+        },
+      });
 
-  const employee = await tx.employee.create({
-    data: {
-      name: name.trim(),
-      userId: user.id,
-      siteId: assignedSiteId,
-    },
-  });
+      const employee = await tx.employee.create({
+        data: {
+          name: name.trim(),
+          userId: user.id,
+          siteId: assignedSiteId,
+        },
+      });
 
-  if (roleIds.length > 0) {
-    await tx.employeeRole.createMany({
-      data: roleIds.map((roleId) => ({
-        employeeId: employee.id,
-        roleId,
-      })),
-    });
-  }
+      if (roleIds.length > 0) {
+        await tx.employeeRole.createMany({
+          data: roleIds.map((roleId) => ({
+            employeeId: employee.id,
+            roleId,
+          })),
+        });
+      }
 
-  return tx.employee.findUniqueOrThrow({
-    where: { id: employee.id },
-    select: {
-      id: true,
-      name: true,
-      userId: true,
-      siteId: true,
-      createdAt: true,
-      updatedAt: true,
-      user: {
+      return tx.employee.findUniqueOrThrow({
+        where: { id: employee.id },
         select: {
           id: true,
-          email: true,
-        },
-      },
-      site: true,
-      roles: {
-        select: {
-          role: {
+          name: true,
+          userId: true,
+          siteId: true,
+          createdAt: true,
+          updatedAt: true,
+          user: {
             select: {
               id: true,
-              name: true,
-              description: true,
+              email: true,
+            },
+          },
+          site: true,
+          roles: {
+            select: {
+              role: {
+                select: {
+                  id: true,
+                  name: true,
+                  description: true,
+                },
+              },
             },
           },
         },
-      },
-    },
-  });
-});
+      });
+    });
 
     res.status(201).json({
       message: "Employee created successfully",
@@ -340,7 +340,8 @@ export async function updateEmployee(
     if (!actor) return;
 
     const superadmin = isGlobalSuperadmin(actor);
-    const { name, email, password, siteId, roleIds } = req.body as EmployeeInput;
+    const { name, email, password, siteId, roleIds } =
+      req.body as EmployeeInput;
 
     const target = await prisma.employee.findFirst({
       where: superadmin
@@ -361,48 +362,74 @@ export async function updateEmployee(
       return;
     }
 
-    if (name !== undefined && (typeof name !== "string" || !name.trim())) {
-      res.status(400).json({ message: "Name cannot be empty" });
+    if (name !== undefined && typeof name !== "string") {
+      res.status(400).json({ message: "Name must be a string" });
       return;
     }
 
-    if (email !== undefined && (typeof email !== "string" || !email.trim())) {
-      res.status(400).json({ message: "Email cannot be empty" });
+    // Blank means "not provided": only a non-blank name is changed.
+    const nextName =
+      typeof name === "string" && name.trim() ? name.trim() : undefined;
+
+    if (email !== undefined && typeof email !== "string") {
+      res.status(400).json({ message: "Email must be a string" });
+      return;
+    }
+
+    const normalizedEmail =
+      typeof email === "string" && email.trim()
+        ? email.trim().toLowerCase()
+        : undefined;
+
+    // Blank means "keep the current password".
+    let nextPassword: string | undefined;
+
+    if (password !== undefined && password !== "") {
+      if (typeof password !== "string" || password.length < 8) {
+        res.status(400).json({
+          message: "Password must be at least 8 characters",
+        });
+        return;
+      }
+
+      nextPassword = password;
+    }
+
+    // An empty siteId ("") means "not provided", while an explicit null
+    // clears the employee's site.
+    const nextSiteId =
+      siteId === "" ? undefined : (siteId as string | null | undefined);
+
+    if (
+      nextSiteId !== undefined &&
+      nextSiteId !== null &&
+      typeof nextSiteId !== "string"
+    ) {
+      res.status(400).json({ message: "Invalid siteId" });
       return;
     }
 
     if (
-      password !== undefined &&
-      (typeof password !== "string" || password.length < 12)
+      nextSiteId !== undefined &&
+      !superadmin &&
+      nextSiteId !== actor.siteId
     ) {
-      res.status(400).json({
-        message: "Password must be at least 12 characters",
-      });
-      return;
-    }
-    if (siteId !== undefined && !superadmin && siteId !== actor.siteId) {
       res.status(403).json({
         message: "Only the global Superadmin can change an employee's site",
       });
       return;
     }
 
-    let nextSiteId: string | null;
+    if (nextSiteId !== undefined && nextSiteId !== null) {
+      const site = await prisma.site.findUnique({
+        where: { id: nextSiteId },
+        select: { id: true },
+      });
 
-    if (siteId !== undefined) {
-      if (siteId !== null) {
-        const site = await prisma.site.findUnique({
-          where: { id: siteId },
-          select: { id: true },
-        });
-
-        if (!site) {
-          res.status(400).json({ message: "Invalid siteId" });
-          return;
-        }
+      if (!site) {
+        res.status(400).json({ message: "Invalid siteId" });
+        return;
       }
-
-      nextSiteId = siteId;
     }
 
     let nextRoleIds: string[] | undefined;
@@ -448,11 +475,19 @@ export async function updateEmployee(
       nextRoleIds = roleIds;
     }
 
-    const normalizedEmail =
-      email === undefined ? undefined : email.trim().toLowerCase();
+    if (
+      nextName === undefined &&
+      normalizedEmail === undefined &&
+      nextPassword === undefined &&
+      nextSiteId === undefined &&
+      nextRoleIds === undefined
+    ) {
+      res.status(400).json({ message: "No fields to update" });
+      return;
+    }
 
     const passwordHash =
-      password === undefined ? undefined : await argon2.hash(password);
+      nextPassword === undefined ? undefined : await argon2.hash(nextPassword);
 
     const updatedEmployee = await prisma.$transaction(async (tx) => {
       if (normalizedEmail !== undefined || passwordHash !== undefined) {
@@ -482,12 +517,21 @@ export async function updateEmployee(
         }
       }
 
-      return tx.employee.update({
+      const employeeData: Prisma.EmployeeUpdateInput = {
+        ...(nextName !== undefined ? { name: nextName } : {}),
+        ...(nextSiteId !== undefined ? { siteId: nextSiteId } : {}),
+      };
+
+      if (Object.keys(employeeData).length > 0) {
+        return tx.employee.update({
+          where: { id: target.id },
+          data: employeeData,
+          select: employeeSelect,
+        });
+      }
+
+      return tx.employee.findUniqueOrThrow({
         where: { id: target.id },
-        data: {
-          ...(name !== undefined ? { name: name.trim() } : {}),
-          ...(nextSiteId !== undefined ? { siteId: nextSiteId } : {}),
-        },
         select: employeeSelect,
       });
     });
