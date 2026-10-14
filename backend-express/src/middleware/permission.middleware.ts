@@ -5,7 +5,11 @@ import type {
   NextFunction,
 } from "express";
 
-import { prisma } from "../lib/prisma.js";
+import {
+  getActor,
+  getEffectivePermissions,
+  isGlobalSuperadmin,
+} from "../utils/actor.js";
 
 interface AuthRequest extends Request {
   userId?: string;
@@ -25,31 +29,7 @@ export function requirePermission(permissionName: string) {
         return;
       }
 
-      const employee = await prisma.employee.findUnique({
-        where: {
-          userId: req.userId,
-        },
-        include: {
-          roles: {
-            include: {
-              role: {
-                include: {
-                  permissions: {
-                    include: {
-                      permission: true,
-                    },
-                  },
-                },
-              },
-            },
-          },
-          permissions: {
-            include: {
-              permission: true,
-            },
-          },
-        },
-      });
+      const employee = await getActor(req.userId);
 
       if (!employee) {
         res.status(403).json({
@@ -60,34 +40,12 @@ export function requirePermission(permissionName: string) {
 
       // Global Superadmin bypasses ordinary permission checks.
       // Site-scoped roles named "superadmin" do not qualify.
-      const isGlobalSuperadmin = employee.roles.some(
-        ({ role }) =>
-          role.name === "superadmin" &&
-          role.siteId === null
-      );
-
-      if (isGlobalSuperadmin) {
+      if (isGlobalSuperadmin(employee)) {
         next();
         return;
       }
 
-      // Permissions inherited from roles.
-      const rolePermissions = employee.roles.flatMap(
-        ({ role }) =>
-          role.permissions.map(
-            ({ permission }) => permission.name
-          )
-      );
-
-      // Permissions assigned directly to the employee.
-      const directPermissions = employee.permissions.map(
-        ({ permission }) => permission.name
-      );
-
-      const effectivePermissions = new Set([
-        ...rolePermissions,
-        ...directPermissions,
-      ]);
+      const effectivePermissions = getEffectivePermissions(employee);
 
       if (!effectivePermissions.has(permissionName)) {
         res.status(403).json({

@@ -2,75 +2,12 @@
 import type { Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
-
-
-
-async function getActor(userId: string) {
-  return prisma.employee.findUnique({
-    where: { userId },
-    include: {
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: { permission: true },
-              },
-            },
-          },
-        },
-      },
-      permissions: {
-        include: { permission: true },
-      },
-    },
-  });
-}
-
-type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
-
-async function getActorOrRespond(
-  req: AuthRequest,
-  res: Response
-): Promise<Actor | null> {
-  if (!req.userId) {
-    res.status(401).json({ message: "Authentication required" });
-    return null;
-  }
-
-  const actor = await getActor(req.userId);
-
-  if (!actor) {
-    res.status(403).json({ message: "Employee access required" });
-    return null;
-  }
-
-  return actor;
-}
-function isGlobalSuperadmin(employee: Actor): boolean {
-  return employee.roles.some(
-    ({ role }) => role.name === "superadmin" && role.siteId === null,
-  );
-}
-function canGrantPermission(
-  actor: Actor,
-  permissionName: string
-): boolean {
-  if (isGlobalSuperadmin(actor)) return true;
-
-  const rolePermissions = actor.roles.flatMap(({ role }) =>
-    role.permissions.map(({ permission }) => permission.name)
-  );
-
-  const directPermissions = actor.permissions.map(
-    ({ permission }) => permission.name
-  );
-
-  return new Set([
-    ...rolePermissions,
-    ...directPermissions,
-  ]).has(permissionName);
-}
+import {
+  canGrantPermission,
+  findManageableEmployee,
+  getActorOrRespond,
+  isGlobalSuperadmin,
+} from "../utils/actor.js";
 
 // GET /api/roles/:id/permissions
 export async function getRolePermissions(
@@ -235,31 +172,6 @@ export async function disableRolePermission(
   }
 }
 
-
-async function findManageableEmployee(
-  req: AuthRequest,
-  res: Response,
-  actor: Actor
-) {
-  const superadmin = isGlobalSuperadmin(actor);
-
-  const employee = await prisma.employee.findFirst({
-    where: superadmin
-      ? { id: req.params.id as string }
-      : {
-          id: req.params.id as string,
-          siteId: actor.siteId ?? "__no_matching_site__",
-        },
-    select: { id: true },
-  });
-
-  if (!employee) {
-    res.status(404).json({ message: "Employee not found" });
-    return null;
-  }
-
-  return employee;
-}
 
 // GET /api/employees/:id/permissions
 export async function getEmployeePermissions(

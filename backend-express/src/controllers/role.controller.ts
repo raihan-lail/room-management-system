@@ -3,76 +3,16 @@ import { Prisma } from "../generated/prisma/client";
 
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
+import {
+  getActorOrRespond,
+  getEffectivePermissions,
+  isGlobalSuperadmin,
+} from "../utils/actor.js";
 
 type RoleInput = {
     name?: string;
     description?: string | null;
     siteId?: string | null;
-}
-
-
-async function getActor(userId: string) {
-  return prisma.employee.findUnique({
-    where: { userId },
-    include: {
-      roles: {
-        include: {
-          role: {
-            include: {
-              permissions: {
-                include: { permission: true },
-              },
-            },
-          },
-        },
-      },
-
-      
-      permissions: {
-        include: { permission: true },
-      },
-    },
-  });
-}
-
-type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
-
-function isGlobalSuperadmin(employee: Actor): boolean {
-  return employee.roles.some(
-    ({ role }) =>
-      role.name === "superadmin" && role.siteId === null
-  );
-}
-
-function getEffectivePermissions(employee: Actor): Set<string> {
-  const rolePermissions = employee.roles.flatMap(({ role }) =>
-    role.permissions.map(({ permission }) => permission.name)
-  );
-
-  const directPermissions = employee.permissions.map(
-    ({ permission }) => permission.name
-  );
-
-  return new Set([...rolePermissions, ...directPermissions]);
-}
-
-async function getActorOrRespond(
-    req: AuthRequest,
-    res: Response
-) {
-    if (!req.userId) {
-        res.status(401).json({ message: "Authentication required"});
-        return null;
-    }
-
-    const employee = await getActor(req.userId);
-
-    if (!employee) {
-        res.status(403).json({ message: "Employee access required"});
-        return null;
-    }
-
-    return employee;
 }
 
 export async function listRoles(

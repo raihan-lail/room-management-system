@@ -33,6 +33,7 @@ import BookingRating from "./pages/resident-front-office/BookingRating";
 import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
 import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
+import LocationManagement from "./pages/rooms/LocationManagement";
 
 function App() {
   return (
@@ -58,6 +59,7 @@ function App() {
               />
               <Route path="/rooms/map" element={<BookingMapView />} />
               <Route path="/bookings/table" element={<BookingTableView />} />
+               <Route path="/rooms/locations" element={<LocationManagement/>} />
               <Route path="/rooms/management" element={<RoomManagement />} />
               <Route
                 path="/rooms/:roomName/booking-details"

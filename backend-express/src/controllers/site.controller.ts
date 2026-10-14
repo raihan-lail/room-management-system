@@ -1,78 +1,18 @@
 import type { Response } from "express";
-import { Prisma } from "../generated/prisma/client";
 
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
+import {
+  getActorOrRespond,
+  handlePrismaError,
+  isGlobalSuperadmin,
+} from "../utils/actor.js";
 
 type SiteInput = {
   name?: string;
   code?: string;
   description?: string | null;
 };
-
-async function getActor(userId: string) {
-  return prisma.employee.findUnique({
-    where: { userId },
-    include: {
-      roles: {
-        include: {
-          role: true,
-        },
-      },
-    },
-  });
-}
-
-type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
-
-function isGlobalSuperadmin(employee: Actor): boolean {
-  return employee.roles.some(
-    ({ role }) =>
-      role.name === "superadmin" && role.siteId === null
-  );
-}
-
-async function getActorOrRespond(
-  req: AuthRequest,
-  res: Response
-): Promise<Actor | null> {
-  if (!req.userId) {
-    res.status(401).json({ message: "Authentication required" });
-    return null;
-  }
-
-  const actor = await getActor(req.userId);
-
-  if (!actor) {
-    res.status(403).json({ message: "Employee access required" });
-    return null;
-  }
-
-  return actor;
-}
-
-function handlePrismaError(error: unknown, res: Response): void {
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2002"
-  ) {
-    res.status(409).json({
-      message: "Site name or code already exists",
-    });
-    return;
-  }
-
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2025"
-  ) {
-    res.status(404).json({ message: "Site not found" });
-    return;
-  }
-
-  console.error("Site controller error:", error);
-  res.status(500).json({ message: "Internal server error" });
-}
 
 // GET /api/sites
 export async function listSites(
@@ -96,7 +36,10 @@ export async function listSites(
 
     res.json({ data: sites });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Site name or code already exists",
+      notFound: "Site not found",
+    });
   }
 }
 
@@ -121,7 +64,10 @@ export async function getSite(
 
     res.json({ data: site });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Site name or code already exists",
+      notFound: "Site not found",
+    });
   }
 }
 
@@ -180,7 +126,10 @@ export async function createSite(
       data: site,
     });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Site name or code already exists",
+      notFound: "Site not found",
+    });
   }
 }
 
@@ -265,7 +214,10 @@ export async function updateSite(
       data: site,
     });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Site name or code already exists",
+      notFound: "Site not found",
+    });
   }
 }
 
@@ -321,6 +273,9 @@ export async function deleteSite(
 
     res.json({ message: "Site deleted successfully" });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Site name or code already exists",
+      notFound: "Site not found",
+    });
   }
 }

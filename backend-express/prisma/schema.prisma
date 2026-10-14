@@ -28,6 +28,7 @@ model Site {
 
   employees Employee[]
   roles     Role[]
+  Locations Location[]
 }
 
 model Employee {
@@ -111,4 +112,52 @@ model EmployeePermission {
 
   @@id([employeeId, permissionId])
   @@index([permissionId])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site   Site    @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  floors Floor[]
+
+  @@unique([siteId, name])
+  @@index([siteId])
+}
+
+model Floor {
+  id          String   @id @default(cuid())
+  locationId  String
+  name        String
+  floorNumber Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  rooms    Room[]
+
+  @@unique([locationId, floorNumber])
+  @@index([locationId])
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  floorId     String
+  name        String
+  description String?
+  row         String?
+  isBookable  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  floor Floor @relation(fields: [floorId], references: [id], onDelete: Restrict)
+
+  @@unique([floorId, name])
+  @@index([floorId])
 }

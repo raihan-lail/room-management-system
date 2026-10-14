@@ -4,6 +4,11 @@ import argon2 from "argon2";
 
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
+import {
+  getActorOrRespond,
+  handlePrismaError,
+  isGlobalSuperadmin,
+} from "../utils/actor.js";
 
 type EmployeeInput = {
   name?: string;
@@ -14,66 +19,6 @@ type EmployeeInput = {
   userId?: string;
   roleIds?: string[];
 };
-
-async function getActor(userId: string) {
-  return prisma.employee.findUnique({
-    where: { userId },
-    include: {
-      roles: {
-        include: {
-          role: true,
-        },
-      },
-    },
-  });
-}
-
-type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
-
-function isGlobalSuperadmin(employee: Actor): boolean {
-  return employee.roles.some(
-    ({ role }) => role.name === "superadmin" && role.siteId === null,
-  );
-}
-
-async function getActorOrRespond(
-  req: AuthRequest,
-  res: Response,
-): Promise<Actor | null> {
-  if (!req.userId) {
-    res.status(401).json({ message: "Authentication required" });
-    return null;
-  }
-
-  const actor = await getActor(req.userId);
-
-  if (!actor) {
-    res.status(403).json({ message: "Employee access required" });
-    return null;
-  }
-
-  return actor;
-}
-
-function handlePrismaError(error: unknown, res: Response): void {
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2002"
-  ) {
-    res.status(409).json({ message: "Email already exists" });
-    return;
-  }
-
-  if (
-    error instanceof Prisma.PrismaClientKnownRequestError &&
-    error.code === "P2025"
-  ) {
-    res.status(404).json({ message: "Employee not found" });
-    return;
-  }
-  console.error("Employee controller error:", error);
-  res.status(500).json({ message: "Internal server error" });
-}
 const employeeSelect = {
   id: true,
   name: true,
@@ -125,7 +70,10 @@ export async function listEmployees(
 
     res.json({ data: employees });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Email already exists",
+      notFound: "Employee not found",
+    });
   }
 }
 
@@ -153,7 +101,10 @@ export async function getEmployee(
     }
     res.json({ data: employee });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Email already exists",
+      notFound: "Employee not found",
+    });
   }
 }
 
@@ -327,7 +278,10 @@ export async function createEmployee(
       data: employee,
     });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Email already exists",
+      notFound: "Employee not found",
+    });
   }
 }
 
@@ -541,7 +495,10 @@ export async function updateEmployee(
       data: updatedEmployee,
     });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Email already exists",
+      notFound: "Employee not found",
+    });
   }
 }
 
@@ -589,6 +546,9 @@ export async function deleteEmployee(
 
     res.json({ message: "Employee deleted successfully" });
   } catch (error) {
-    handlePrismaError(error, res);
+    handlePrismaError(error, res, {
+      duplicate: "Email already exists",
+      notFound: "Employee not found",
+    });
   }
 }

@@ -58,7 +58,10 @@ export const ModelName = {
   Permission: 'Permission',
   EmployeeRole: 'EmployeeRole',
   RolePermission: 'RolePermission',
-  EmployeePermission: 'EmployeePermission'
+  EmployeePermission: 'EmployeePermission',
+  Location: 'Location',
+  Floor: 'Floor',
+  Room: 'Room'
 } as const
 
 export type ModelName = (typeof ModelName)[keyof typeof ModelName]
@@ -159,6 +162,46 @@ export const EmployeePermissionScalarFieldEnum = {
 } as const
 
 export type EmployeePermissionScalarFieldEnum = (typeof EmployeePermissionScalarFieldEnum)[keyof typeof EmployeePermissionScalarFieldEnum]
+
+
+export const LocationScalarFieldEnum = {
+  id: 'id',
+  siteId: 'siteId',
+  name: 'name',
+  description: 'description',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type LocationScalarFieldEnum = (typeof LocationScalarFieldEnum)[keyof typeof LocationScalarFieldEnum]
+
+
+export const FloorScalarFieldEnum = {
+  id: 'id',
+  locationId: 'locationId',
+  name: 'name',
+  floorNumber: 'floorNumber',
+  description: 'description',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type FloorScalarFieldEnum = (typeof FloorScalarFieldEnum)[keyof typeof FloorScalarFieldEnum]
+
+
+export const RoomScalarFieldEnum = {
+  id: 'id',
+  floorId: 'floorId',
+  name: 'name',
+  description: 'description',
+  row: 'row',
+  isBookable: 'isBookable',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RoomScalarFieldEnum = (typeof RoomScalarFieldEnum)[keyof typeof RoomScalarFieldEnum]
 
 
 export const SortOrder = {

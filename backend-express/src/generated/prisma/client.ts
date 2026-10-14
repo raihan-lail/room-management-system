@@ -79,3 +79,18 @@ export type RolePermission = Prisma.RolePermissionModel
  * 
  */
 export type EmployeePermission = Prisma.EmployeePermissionModel
+/**
+ * Model Location
+ * 
+ */
+export type Location = Prisma.LocationModel
+/**
+ * Model Floor
+ * 
+ */
+export type Floor = Prisma.FloorModel
+/**
+ * Model Room
+ * 
+ */
+export type Room = Prisma.RoomModel
