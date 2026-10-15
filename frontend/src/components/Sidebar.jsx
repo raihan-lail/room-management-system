@@ -1,5 +1,52 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import useAuth from "../contexts/useAuth";
+
+
+function getItemPermission(item) {
+  return item.permission ?? item.permissions ?? null;
+}
+
+function isAllowed(item, hasPermission) {
+  const required = getItemPermission(item);
+
+  if (!required) return true;
+
+  if (Array.isArray(required)) {
+    if (required.length === 0) return true;
+    return required.some((name) => hasPermission(name));
+  }
+
+  return hasPermission(required);
+}
+
+function filterMenuItems(items, hasPermission) {
+  return items.reduce((visibleItems, item) => {
+    const hasChildren =
+      Array.isArray(item.items) && item.items.length > 0;
+
+    const visibleChildren = hasChildren
+      ? filterMenuItems(item.items, hasPermission)
+      : [];
+
+    const hasOwnPermission = isAllowed(item, hasPermission);
+
+    if (hasChildren) {
+      // Group headers (e.g. /bookings, /rooms, /settings) are not
+      // standalone pages, so hide them when no child is accessible.
+      if (visibleChildren.length > 0) {
+        visibleItems.push({
+          ...item,
+          items: visibleChildren,
+        });
+      }
+    } else if (hasOwnPermission) {
+      visibleItems.push(item);
+    }
+
+    return visibleItems;
+  }, []);
+}
 
 export default function Sidebar({
   isCollapsed,
@@ -9,8 +56,13 @@ export default function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
+  const { hasPermission } = useAuth();
 
   const [openMenus, setOpenMenus] = useState({});
+  const visibleMenuItems = useMemo(
+  () => filterMenuItems(menuItems, hasPermission),
+  [menuItems, hasPermission]
+);
 
   const toggleMenu = (path) => {
     // If sidebar is collapsed, open it first.
@@ -74,7 +126,7 @@ export default function Sidebar({
 
       {/* NAVIGATION */}
       <nav className="app-sidebar__nav">
-        {menuItems.map((item) => {
+        {visibleMenuItems.map((item) => {
           const hasChildren =
             Array.isArray(item.items) &&
             item.items.length > 0;

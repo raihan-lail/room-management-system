@@ -7,7 +7,9 @@ import {
 
 import "./App.css";
 import AuthProvider from "./contexts/auth.provider";
-import ProtectedRoute from "./components/ProtectedRoute";
+import useAuth from "./contexts/useAuth";
+import ProtectedRoute, { RequirePermission } from "./components/ProtectedRoute";
+import { getDefaultRoute } from "./utils/permissions";
 import Dashboard from "./pages/Dashboard";
 import BookingCalendarView from "./pages/bookings/BookingCalendarView";
 import BookingMapView from "./pages/bookings/BookingMapView";
@@ -23,6 +25,7 @@ import AuditLog from "./pages/settings/AuditLogs";
 import Login from "./pages/auth/login";
 import MealType from "./pages/guest/MealType";
 import NotFound from "./pages/NotFound";
+import Unauthorized from "./pages/Unauthorized";
 import RoleManagement from "./pages/settings/RoleManagement";
 import FrontDesk from "./pages/FrontDesk";
 import Complains from "./pages/bookings/Complains";
@@ -35,6 +38,20 @@ import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
 
+function DefaultRedirect() {
+  const { status, hasPermission } = useAuth();
+
+  if (status === "loading") {
+    return null;
+  }
+
+  if (status === "unauthenticated") {
+    return <Navigate to="/login" replace />;
+  }
+
+  return <Navigate to={getDefaultRoute(hasPermission)} replace />;
+}
+
 function App() {
   return (
     <Router>
@@ -44,38 +61,167 @@ function App() {
             <Route path="/login" element={<Login />} />
 
             <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/frontdesk" element={<FrontDesk />} />
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <RequirePermission permission="dashboard">
+                    <Dashboard />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/frontdesk"
+                element={
+                  <RequirePermission permission="frontdesk">
+                    <FrontDesk />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="/bookings/calendar"
-                element={<BookingCalendarView />}
+                element={
+                  <RequirePermission permission="bookings.calendar">
+                    <BookingCalendarView />
+                  </RequirePermission>
+                }
               />
-              <Route path="/bookings/home-leave" element={<HomeLeave />} />
-              <Route path="/bookings/complains" element={<Complains />} />
-              <Route path="/bookings/ratings" element={<Ratings />} />
+              <Route
+                path="/bookings/home-leave"
+                element={
+                  <RequirePermission permission="home.leaves">
+                    <HomeLeave />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/complains"
+                element={
+                  <RequirePermission permission="complaints">
+                    <Complains />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/ratings"
+                element={
+                  <RequirePermission permission="ratings">
+                    <Ratings />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="/bookings/complains/:complainId"
-                element={<ComplainDetails />}
+                element={
+                  <RequirePermission permission="complaints">
+                    <ComplainDetails />
+                  </RequirePermission>
+                }
               />
-              <Route path="/rooms/map" element={<BookingMapView />} />
-              <Route path="/bookings/table" element={<BookingTableView />} />
-               <Route path="/rooms/locations" element={<LocationManagement/>} />
-              <Route path="/rooms/management" element={<RoomManagement />} />
+              <Route
+                path="/rooms/map"
+                element={
+                  <RequirePermission permission="rooms.map">
+                    <BookingMapView />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/table"
+                element={
+                  <RequirePermission permission="bookings.read">
+                    <BookingTableView />
+                  </RequirePermission>
+                }
+              />
+               <Route
+                 path="/rooms/locations"
+                 element={
+                   <RequirePermission permission="location.read">
+                     <LocationManagement />
+                   </RequirePermission>
+                 }
+               />
+              <Route
+                path="/rooms/management"
+                element={
+                  <RequirePermission permission="rooms.read">
+                    <RoomManagement />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="/rooms/:roomName/booking-details"
-                element={<RoomBookingDetails />}
+                element={
+                  <RequirePermission permission="rooms.read">
+                    <RoomBookingDetails />
+                  </RequirePermission>
+                }
               />
-              <Route path="/rooms/allocation" element={<RoomAllocation />} />
-              <Route path="/guests/management" element={<GuestManagement />} />
-              <Route path="/guests/meal-type" element={<MealType />} />
-              <Route path="/sites" element={<SiteManagement />} />
-              <Route path="/employees" element={<EmployeeManagement />} />
-              <Route path="/roles" element={<RoleManagement />} />
+              <Route
+                path="/rooms/allocation"
+                element={
+                  <RequirePermission permission="rooms.allocations">
+                    <RoomAllocation />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/guests/management"
+                element={
+                  <RequirePermission permission="resident.view">
+                    <GuestManagement />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/guests/meal-type"
+                element={
+                  <RequirePermission permission="meal-type.read">
+                    <MealType />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/sites"
+                element={
+                  <RequirePermission permission="site.read">
+                    <SiteManagement />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/employees"
+                element={
+                  <RequirePermission permission="employees.read">
+                    <EmployeeManagement />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/roles"
+                element={
+                  <RequirePermission permission="roles.read">
+                    <RoleManagement />
+                  </RequirePermission>
+                }
+              />
               <Route
                 path="/manage-permissions"
-                element={<ManagePermissions />}
+                element={
+                  <RequirePermission permission="permissions.read">
+                    <ManagePermissions />
+                  </RequirePermission>
+                }
               />
-              <Route path="/audit-logs" element={<AuditLog />} />
+              <Route
+                path="/audit-logs"
+                element={
+                  <RequirePermission permission="audit.logs">
+                    <AuditLog />
+                  </RequirePermission>
+                }
+              />
               <Route path="/change-password" element={<ChangePassword />} />
               <Route path="/resident/history" element={<BookingHistory />} />
               <Route
@@ -89,7 +235,7 @@ function App() {
 
               <Route
                 path="/"
-                element={<Navigate to="/dashboard" replace />}
+                element={<DefaultRedirect />}
               />
               <Route path="*" element={<NotFound />} />
             </Route>

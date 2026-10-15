@@ -45,6 +45,33 @@ export function isGlobalSuperadmin(employee: MinimalRoleHolder): boolean {
   );
 }
 
+/**
+ * A "manage"/"create"/"update" permission implies its "read" counterpart,
+ * so granting e.g. `permissions.manage` alone is enough to view pages
+ * and call APIs guarded by `permissions.read`.
+ */
+export const IMPLIED_PERMISSIONS: Record<string, string[]> = {
+  "site.manage": ["site.read"],
+  "location.manage": ["location.read"],
+  "roles.manage": ["roles.read"],
+  "permissions.manage": ["permissions.read"],
+  "employees.create": ["employees.read"],
+  "employees.update": ["employees.read"],
+  "employees.deactivate": ["employees.read"],
+};
+
+export function expandPermissions(permissions: Iterable<string>): Set<string> {
+  const expanded = new Set(permissions);
+
+  for (const name of [...expanded]) {
+    for (const implied of IMPLIED_PERMISSIONS[name] ?? []) {
+      expanded.add(implied);
+    }
+  }
+
+  return expanded;
+}
+
 export function getEffectivePermissions(employee: Actor): Set<string> {
   const rolePermissions = employee.roles.flatMap(({ role }) =>
     role.permissions.map(({ permission }) => permission.name),
@@ -54,7 +81,7 @@ export function getEffectivePermissions(employee: Actor): Set<string> {
     ({ permission }) => permission.name,
   );
 
-  return new Set([...rolePermissions, ...directPermissions]);
+  return expandPermissions([...rolePermissions, ...directPermissions]);
 }
 
 export function canGrantPermission(

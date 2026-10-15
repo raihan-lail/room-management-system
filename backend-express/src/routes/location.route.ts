@@ -16,6 +16,6 @@ locationRouter.delete("/:id", requirePermission("location.manage"), deleteLocati
 // floors
 locationRouter.post("/:id/floor", requirePermission("location.manage"), createFloor);
 locationRouter.patch("/:id/floor/:floorId", requirePermission("location.manage"), updateFloor);
-locationRouter.delete("/:id/floor/:floorId", requirePermission("locstion.manage"), deleteFloor);
+locationRouter.delete("/:id/floor/:floorId", requirePermission("location.manage"), deleteFloor);
 
 export default locationRouter;

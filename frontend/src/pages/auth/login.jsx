@@ -2,6 +2,10 @@ import { useState } from "react";
 import { Navigate, useNavigate } from "react-router-dom";
 
 import useAuth from "../../contexts/useAuth";
+import {
+  getDefaultRoute,
+  getDefaultRouteForUser,
+} from "../../utils/permissions";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
@@ -10,11 +14,15 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { status, login } = useAuth();
+  const { status, login, hasPermission } = useAuth();
   const navigate = useNavigate();
 
+  if (status === "loading") {
+    return null;
+  }
+
   if (status === "authenticated") {
-    return <Navigate to="/dashboard" replace />;
+    return <Navigate to={getDefaultRoute(hasPermission)} replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -23,8 +31,8 @@ export default function Login() {
     setSubmitting(true);
 
     try {
-      await login(email, password, rememberMe);
-      navigate("/dashboard", { replace: true });
+      const loggedInUser = await login(email, password, rememberMe);
+      navigate(getDefaultRouteForUser(loggedInUser), { replace: true });
     } catch (err) {
       setError(err.message || "Login failed");
     } finally {

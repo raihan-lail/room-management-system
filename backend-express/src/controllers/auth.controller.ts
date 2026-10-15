@@ -4,6 +4,53 @@ import argon2 from "argon2";
 import { prisma } from "../lib/prisma.js";
 import { generateAccessToken } from "../lib/jwt.js";
 import { verifyAccessToken } from "../lib/jwt.js";
+import { getEmployeeEffectivePermissions } from "../lib/permission.js";
+
+async function buildAuthUser(userId: string) {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    include: {
+      employee: {
+        include: {
+          roles: {
+            include: {
+              role: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!user || !user.employee) {
+    return null;
+  }
+
+  const roleNames = user.employee.roles.map(
+    (employeeRole) => employeeRole.role.name
+  );
+
+  const permissions = await getEmployeeEffectivePermissions(user.id);
+
+  const superadmin = user.employee.roles.some(
+    ({ role }) => role.name === "superadmin" && role.siteId === null
+  );
+
+  return {
+    id: user.id,
+    email: user.email,
+    roles: roleNames,
+    permissions,
+    isSuperadmin: superadmin,
+    employee: {
+      id: user.employee.id,
+      name: user.employee.name,
+      siteId: user.employee.siteId,
+      roles: roleNames,
+      permissions,
+    },
+  };
+}
 
 
 export async function login(
@@ -48,8 +95,6 @@ export async function login(
       return;
     }
 
-    
-
     const passwordValid = await argon2.verify(
       user.password,
       password
@@ -87,21 +132,18 @@ if (rememberMe) {
 
 res.cookie("access_token", token, cookieOptions);
 
+    const authUser = await buildAuthUser(user.id);
+
+    if (!authUser) {
+      res.status(403).json({
+        message: "Employee account not found",
+      });
+      return;
+    }
+
     res.status(200).json({
       message: "Login successful",
-      user: {
-        id: user.id,
-        email: user.email,
-        employee: {
-          id: user.employee.id,
-          name: user.employee.name,
-          
-          siteId: user.employee.siteId,
-          roles: user.employee.roles.map(
-            (employeeRole) => employeeRole.role.name
-          ),
-        },
-      },
+      user: authUser,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -144,24 +186,9 @@ export async function me(
 
     const payload = verifyAccessToken(token);
 
-    const user = await prisma.user.findUnique({
-      where: {
-        id: payload.userId,
-      },
-      include: {
-        employee: {
-          include: {
-            roles: {
-              include: {
-                role: true,
-              },
-            },
-          },
-        },
-      },
-    });
+    const authUser = await buildAuthUser(payload.userId);
 
-    if (!user || !user.employee) {
+    if (!authUser) {
       res.status(401).json({
         message: "User not found",
       });
@@ -169,19 +196,7 @@ export async function me(
     }
 
     res.json({
-      user: {
-        id: user.id,
-        email: user.email,
-        employee: {
-          id: user.employee.id,
-          name: user.employee.name,
-         
-          siteId: user.employee.siteId,
-          roles: user.employee.roles.map(
-            (employeeRole) => employeeRole.role.name
-          ),
-        },
-      },
+      user: authUser,
     });
   } catch {
     res.status(401).json({
