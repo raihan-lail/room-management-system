@@ -7,6 +7,7 @@ import {
   handlePrismaError,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
 
 type SiteInput = {
   name?: string;
@@ -121,6 +122,12 @@ export async function createSite(
       },
     });
 
+    await notifyActor(req, {
+      title: "Site Created",
+      message: `Site ${site.name} was created successfully.`,
+      type: "SUCCESS",
+    });
+
     res.status(201).json({
       message: "Site created successfully",
       data: site,
@@ -209,6 +216,12 @@ export async function updateSite(
       data,
     });
 
+    await notifyActor(req, {
+      title: "Site Updated",
+      message: `Site ${site.name} was updated successfully.`,
+      type: "INFO",
+    });
+
     res.json({
       message: "Site updated successfully",
       data: site,
@@ -269,6 +282,12 @@ export async function deleteSite(
 
     await prisma.site.delete({
       where: { id: site.id },
+    });
+
+    await notifyActor(req, {
+      title: "Site Deleted",
+      message: `Site ${site.name} was deleted successfully.`,
+      type: "WARNING",
     });
 
     res.json({ message: "Site deleted successfully" });

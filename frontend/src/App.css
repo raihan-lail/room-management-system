@@ -444,6 +444,8 @@
 }
 
 .navbar-icon-button {
+  position: relative;
+
   width: 32px;
   height: 32px;
 
@@ -817,6 +819,8 @@ user-dropdown-toogle {
 }
 
 .notification-item {
+  width: 100%;
+
   padding: 8px 10px;
 
   border-radius: 8px;
@@ -824,6 +828,24 @@ user-dropdown-toogle {
   border: 1px solid #e2e8f0;
 
   background: #ffffff;
+
+  display: block;
+
+  font: inherit;
+
+  text-align: left;
+}
+
+button.notification-item {
+  cursor: pointer;
+}
+
+button.notification-item:hover {
+  background-color: #f8fafc;
+}
+
+div.notification-item {
+  cursor: default;
 }
 
 .notification-item.is-unread {

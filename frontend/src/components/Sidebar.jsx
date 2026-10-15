@@ -153,9 +153,7 @@ export default function Sidebar({
               className="side-nav-section"
               key={item.path}
             >
-              {/* =========================
-                  PARENT ITEM
-              ========================= */}
+             
               <button
                 type="button"
                 className={`side-nav-parent ${
@@ -179,7 +177,7 @@ export default function Sidebar({
                   {item.label}
                 </span>
 
-                {/* Chevron only if submenu exists */}
+               
                 {hasChildren && (
                   <i
                     className={`bi ${
@@ -192,9 +190,7 @@ export default function Sidebar({
                 )}
               </button>
 
-              {/* =========================
-                  SUBMENU
-              ========================= */}
+             
               {hasChildren && isOpen && (
                 <div className="side-nav-submenu">
                   {item.items.map((child) => {

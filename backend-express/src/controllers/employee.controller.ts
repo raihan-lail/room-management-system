@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { Prisma } from "../generated/prisma/client";
 import argon2 from "argon2";
 
+
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
 import {
@@ -9,6 +10,7 @@ import {
   handlePrismaError,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
 
 type EmployeeInput = {
   name?: string;
@@ -273,6 +275,12 @@ export async function createEmployee(
       });
     });
 
+    await notifyActor(req, {
+      title: "Employee Created",
+      message: `Employee ${employee.name} was created successfully.`,
+      type: "SUCCESS",
+    });
+
     res.status(201).json({
       message: "Employee created successfully",
       data: employee,
@@ -490,6 +498,12 @@ export async function updateEmployee(
       });
     });
 
+    await notifyActor(req, {
+      title: "Employee Updated",
+      message: `Employee ${updatedEmployee.name} was updated successfully.`,
+      type: "INFO",
+    });
+
     res.json({
       message: "Employee updated successfully",
       data: updatedEmployee,
@@ -519,7 +533,7 @@ export async function deleteEmployee(
             id: req.params.id as string,
             siteId: actor.siteId ?? "__no_matching_site__",
           },
-      select: { id: true, userId: true },
+      select: { id: true, userId: true, name: true },
     });
 
     if (!target) {
@@ -542,6 +556,12 @@ export async function deleteEmployee(
       await tx.user.delete({
         where: { id: target.userId },
       });
+    });
+
+    await notifyActor(req, {
+      title: "Employee Deleted",
+      message: `Employee ${target.name} was deleted successfully.`,
+      type: "WARNING",
     });
 
     res.json({ message: "Employee deleted successfully" });

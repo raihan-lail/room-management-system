@@ -8,6 +8,7 @@ import roleRouter from "./routes/role.route";
 import siteRouter from "./routes/site.route";
 import permissionRouter from "./routes/permission.route";
 import locationRouter from "./routes/location.route";
+import notificationRouter from "./routes/notification.route";
 
 const app = express();
 
@@ -26,6 +27,7 @@ app.use("/api/role", roleRouter);
 app.use("/api/site", siteRouter);
 app.use("/api/permission", permissionRouter);
 app.use("/api/location", locationRouter);
+app.use("/api/notification", notificationRouter);
 
 
 

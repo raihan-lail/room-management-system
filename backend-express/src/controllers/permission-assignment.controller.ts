@@ -8,6 +8,7 @@ import {
   getActorOrRespond,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
 
 // GET /api/roles/:id/permissions
 export async function getRolePermissions(
@@ -119,6 +120,12 @@ export async function enableRolePermission(
       update: {},
     });
 
+    await notifyActor(req, {
+      title: "Role Permission Enabled",
+      message: `Permission ${permission.name} was enabled for role ${role.name}.`,
+      type: "INFO",
+    });
+
     res.json({ message: "Role permission enabled" });
   } catch (error) {
     console.error("Enable role permission error:", error);
@@ -163,6 +170,12 @@ export async function disableRolePermission(
         roleId: role.id,
         permissionId: req.params.permissionId as string,
       },
+    });
+
+    await notifyActor(req, {
+      title: "Role Permission Disabled",
+      message: `A permission was disabled for role ${role.name}.`,
+      type: "WARNING",
     });
 
     res.json({ message: "Role permission disabled" });
@@ -249,6 +262,12 @@ export async function enableEmployeePermission(
       update: {},
     });
 
+    await notifyActor(req, {
+      title: "Employee Permission Enabled",
+      message: `Permission ${permission.name} was enabled for an employee.`,
+      type: "INFO",
+    });
+
     res.json({ message: "Employee permission enabled" });
   } catch (error) {
     console.error("Enable employee permission error:", error);
@@ -273,6 +292,12 @@ export async function disableEmployeePermission(
         employeeId: employee.id,
         permissionId: req.params.permissionId as string,
       },
+    });
+
+    await notifyActor(req, {
+      title: "Employee Permission Disabled",
+      message: `A permission was disabled for an employee.`,
+      type: "WARNING",
     });
 
     res.json({ message: "Employee permission disabled" });

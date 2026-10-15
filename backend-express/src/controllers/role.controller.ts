@@ -8,6 +8,7 @@ import {
   getEffectivePermissions,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
 
 type RoleInput = {
     name?: string;
@@ -139,6 +140,12 @@ export async function createRole(
             },
         });
 
+        await notifyActor(req, {
+            title: "Role Created",
+            message: `Role ${role.name} was created successfully.`,
+            type: "SUCCESS",
+        });
+
         res.status(201).json({
             message: "Role Created Successfully",
             data: role,
@@ -200,6 +207,13 @@ export async function updateRole(
 
             },
         });
+
+        await notifyActor(req, {
+            title: "Role Updated",
+            message: `Role ${role.name} was updated successfully.`,
+            type: "INFO",
+        });
+
         res.json({
             message: "Role updated successfully",
             data: role,
@@ -314,6 +328,12 @@ export async function replaceRolePermissions(
             },
         });
 
+        await notifyActor(req, {
+            title: "Role Permissions Updated",
+            message: `Permissions for role ${role.name} were updated successfully.`,
+            type: "INFO",
+        });
+
         res.json({
             message: "Role permissions updated successfully",
             data: updatedRole,
@@ -371,6 +391,13 @@ export async function deleteRole(
         await prisma.role.delete({
             where: {id: role.id},
         });
+
+        await notifyActor(req, {
+            title: "Role Deleted",
+            message: `Role ${role.name} was deleted successfully.`,
+            type: "WARNING",
+        });
+
         res.json({ message: "Role deleted successfully"});
     } catch (error) {
         console.error("Delete role error:", error);

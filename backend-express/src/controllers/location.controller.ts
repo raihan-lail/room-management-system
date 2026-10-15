@@ -11,6 +11,7 @@ import {
   handlePrismaError,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
 
 const LOCATION_ERROR_MESSAGES = {
   duplicate:
@@ -195,6 +196,12 @@ export async function createLocation(
       });
     });
 
+    await notifyActor(req, {
+      title: "Location Created",
+      message: `Location ${location.name} was created successfully.`,
+      type: "SUCCESS",
+    });
+
     res.status(201).json({
       message: "Location created successfully",
       data: location,
@@ -264,6 +271,12 @@ export async function updateLocation(
       },
     });
 
+    await notifyActor(req, {
+      title: "Location Updated",
+      message: `Location ${location.name} was updated successfully.`,
+      type: "INFO",
+    });
+
     res.json({
       message: "Location updated successfully",
       data: location,
@@ -305,6 +318,12 @@ export async function deleteLocation(
     }
 
     await prisma.location.delete({ where: { id: location.id } });
+
+    await notifyActor(req, {
+      title: "Location Deleted",
+      message: `Location ${location.name} was deleted successfully.`,
+      type: "WARNING",
+    });
 
     res.json({ message: "Location deleted successfully" });
   } catch (error) {
@@ -351,6 +370,12 @@ export async function createFloor(
         description: floor.description?.trim() || null,
         isActive: floor.isActive ?? true,
       },
+    });
+
+    await notifyActor(req, {
+      title: "Floor Created",
+      message: `Floor ${created.name} was created successfully.`,
+      type: "SUCCESS",
     });
 
     res.status(201).json({
@@ -457,6 +482,12 @@ export async function updateFloor(
       },
     });
 
+    await notifyActor(req, {
+      title: "Floor Updated",
+      message: `Floor ${updated.name} was updated successfully.`,
+      type: "INFO",
+    });
+
     res.json({
       message: "Floor updated successfully",
       data: updated,
@@ -503,6 +534,12 @@ export async function deleteFloor(
     }
 
     await prisma.floor.delete({ where: { id: floor.id } });
+
+    await notifyActor(req, {
+      title: "Floor Deleted",
+      message: `Floor ${floor.name} was deleted successfully.`,
+      type: "WARNING",
+    });
 
     res.json({ message: "Floor deleted successfully" });
   } catch (error) {

@@ -72,3 +72,8 @@ export type Floor = Prisma.FloorModel
  * 
  */
 export type Room = Prisma.RoomModel
+/**
+ * Model Notification
+ * 
+ */
+export type Notification = Prisma.NotificationModel
