@@ -22,7 +22,7 @@ export const kpiStats = [
   },
   {
     id: "bookings-today",
-    label: "Bookings Today",
+    label: "Total Check in",
     value: "38",
     icon: "bi-calendar-check",
     trend: "12% vs yesterday",
@@ -75,8 +75,8 @@ export const bookingTrendChartData = {
       pointBackgroundColor: chartColors.primary,
     },
     {
-      label: "Allocated Rooms",
-      data: [18, 22, 15, 25, 20, 17, 24, 19, 23, 16, 21, 14],
+      label: "Total Residents (in house)",
+      data: [128, 212, 210, 250, 200, 210, 280, 190, 230, 160, 210, 180],
       borderColor: chartColors.danger,
       backgroundColor: "transparent",
       fill: false,

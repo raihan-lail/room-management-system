@@ -4,6 +4,7 @@ import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import apiRequest from "../../api/client";
+import FlexibleButton from "../../components/FlexibleButtons";
 
 const PAGE_SIZE = 10;
 
@@ -265,14 +266,14 @@ export default function EmployeeManagement() {
           </label>
 
           <div className="bookings-toolbar__actions">
-            <button
-              type="button"
+            <FlexibleButton
+              permission="employees.create"
               className="btn btn-primary"
               onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Add New Employee
-            </button>
+            </FlexibleButton>
 
             <button
               type="button"
