@@ -428,7 +428,7 @@ export default function LocationManagement() {
         setSuccess("Location deleted successfully.");
       } else {
         await apiRequest(
-          `/api/locations/${location.id}/floors/${floor.id}`,
+          `/api/location/${location.id}/floor/${floor.id}`,
           { method: "DELETE" }
         );
 
