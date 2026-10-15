@@ -93,6 +93,7 @@ export const addFormSchemas = {
     fields: [
       { name: "name", label: "Name", type: "text", placeholder: "Full name", required: true },
       { name: "Email", label: "Email", type: "email", placeholder: "Email address", required: true },
+      {name: "Password", label: "Password", type: "password",  required:true},
       { name: "Phone", label: "Phone", type: "tel", placeholder: "Phone number", required: true },
       { name: "Role", label: "Role", type: "select", options: ROLE_NAMES },
       { name: "Site", label: "Site", type: "select", options: SITES },
@@ -105,7 +106,7 @@ export const addFormSchemas = {
     submitLabel: "Add Role",
     fields: [
       { name: "name", label: "Name", type: "text", placeholder: "Role name", required: true },
-      { name: "site", label: "Site", type: "select", options: SITES },
+      { name: "description", label: "Description", type: "text", placeholder: "Description (optional)" },
     ],
   },
 

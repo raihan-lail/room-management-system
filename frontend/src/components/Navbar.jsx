@@ -1,4 +1,7 @@
 import { useEffect, useRef, useState } from "react";
+import { useNavigate } from "react-router-dom";
+
+import useAuth from "../contexts/useAuth";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
@@ -25,6 +28,20 @@ export default function Navbar({
 
        const notificationsContainerRef = useRef(null);
        const [currentTime, setCurrentTime] = useState(() => new Date());
+       const { user, logout } = useAuth();
+       const navigate = useNavigate();
+
+       const employee = user?.employee;
+       const userName = employee?.name || user?.email || "User";
+       const userRole = employee?.roles?.length
+         ? employee.roles.join(", ")
+         : "—";
+
+       const handleLogout = async () => {
+         setUserDropdownOpen(false);
+         await logout();
+         navigate("/login", { replace: true });
+       };
 
        useEffect(() => {
          const intervalId = window.setInterval(() => {
@@ -95,7 +112,7 @@ export default function Navbar({
         <span className="navbar__title">DONGGI</span>
 
       </div>
-      <p>MOCKUP BUILD, NOT REAL DEVELOPMENT</p>
+      
       <div className="navbar__actions">
 
        <div className="navbar-date-time" aria-label="Current date and time">
@@ -185,12 +202,11 @@ export default function Navbar({
 
         <div className="navbar-user__info">
           <span className="navbar-user__name">
-            
-              Admin
+            {userName}
           </span>
 
           <span className="navbar-user__role">
-           Superadmin
+            {userRole}
           </span>
         </div>
         <div className='user-dropdown-toogle'>
@@ -207,18 +223,14 @@ export default function Navbar({
       {/* DROPDOWN MENU */}
       {userDropdownOpen ? (
         <div className="user-dropdown-menu" role="menu">
-          <a href="/login">
-
-
           <button
             type="button"
             className="logout-button"
-           
+            onClick={handleLogout}
           >
             <i className="bi bi-box-arrow-right" aria-hidden="true" />
             Logout
           </button>
-          </a>
         </div>
       ) : null}
     </div>

@@ -1,43 +1,96 @@
 import MainLayout from "../../components/MainLayout";
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
-import {
-  addFormSchemas,
-  buildRow,
-} from "../../components/modals/addFormSchemas";
-
-import { roles as initialRoles } from "../../data/roles";
-
+import { addFormSchemas } from "../../components/modals/addFormSchemas";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
 const roleSchema = addFormSchemas.role;
 
 export default function RoleManagement() {
-  const [roleList, setRoleList] = useState(initialRoles);
+  const [roleList, setRoleList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
 
-  const handleAddRole = (values) => {
-    setRoleList((prev) => [...prev, buildRow(roleSchema, values)]);
-    setCurrentPage(1);
+  useEffect(() => {
+    let isActive = true;
+
+    apiRequest("/api/role")
+      .then((data) => {
+        if (!isActive) return;
+        setRoleList(data.data ?? []);
+      })
+      .catch((err) => {
+        if (!isActive) return;
+        setError(err.message || "Failed to load roles");
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const handleAddRole = async (values) => {
+    setError("");
+
+    try {
+      const data = await apiRequest("/api/role", {
+        method: "POST",
+        body: JSON.stringify({
+          name: values.name,
+          description: values.description || null,
+        }),
+      });
+
+      setRoleList((prev) => [...prev, data.data]);
+      setCurrentPage(1);
+    } catch (err) {
+      setError(err.message || "Failed to create role");
+    }
   };
 
-  const handleEditRole = (values) => {
-    setRoleList((prev) =>
-      prev.map((row) =>
-        row === editingRow ? buildRow(roleSchema, values, row) : row,
-      ),
-    );
+  const handleEditRole = async (values) => {
+    setError("");
+
+    try {
+      const data = await apiRequest(`/api/role/${editingRow.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: values.name,
+          description: values.description || null,
+        }),
+      });
+
+      setRoleList((prev) =>
+        prev.map((row) => (row.id === editingRow.id ? data.data : row)),
+      );
+    } catch (err) {
+      setError(err.message || "Failed to update role");
+    }
   };
 
-  const handleDeleteRole = () => {
-    setRoleList((prev) => prev.filter((row) => row !== deletingRow));
+  const handleDeleteRole = async () => {
+    setError("");
+
+    try {
+      await apiRequest(`/api/role/${deletingRow.id}`, { method: "DELETE" });
+
+      setRoleList((prev) => prev.filter((row) => row.id !== deletingRow.id));
+    } catch (err) {
+      setError(err.message || "Failed to delete role");
+    }
   };
 
   const filteredRoles = useMemo(() => {
@@ -46,11 +99,9 @@ export default function RoleManagement() {
     if (!query) return roleList;
 
     return roleList.filter((role) =>
-      [
-       
-       role.name,
-       role.site
-      ].some((value) => (value || "").toString().toLowerCase().includes(query)),
+      [role.name, role.description].some((value) =>
+        (value || "").toString().toLowerCase().includes(query),
+      ),
     );
   }, [roleList, search]);
 
@@ -80,7 +131,7 @@ export default function RoleManagement() {
           <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">Role Management</h1>
             <p className="dashboard-header__subtitle">
-              Manage Roles for Each Site
+              Manage roles and their descriptions
             </p>
           </div>
         </div>
@@ -91,7 +142,7 @@ export default function RoleManagement() {
             <input
               type="search"
               aria-label="Search role"
-              placeholder="Search by name, site..."
+              placeholder="Search by name, description..."
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
@@ -118,6 +169,7 @@ export default function RoleManagement() {
           </div>
         </div>
 
+        {error && <p className="error-text">{error}</p>}
 
          <section className="table-card content">
           <div className="office-table-wrapper">
@@ -126,22 +178,28 @@ export default function RoleManagement() {
                 <tr>
                   <th className="table-col-no">No</th>
                   <th>Name</th>
-                  <th>Site</th>
+                  <th>Description</th>
                   <th>Action</th>
                 </tr>
               </thead>
 
               <tbody>
-                {pagedRoles.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan="12" className="muted">
+                    <td colSpan="4" className="muted">
+                      Loading roles...
+                    </td>
+                  </tr>
+                ) : filteredRoles.length === 0 ? (
+                  <tr>
+                    <td colSpan="4" className="muted">
                       No role found.
                     </td>
                   </tr>
                 ) : (
                   pagedRoles.map((role, index) => (
                     <tr
-                      key={`${index}`}
+                      key={role.id}
                     >
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}
@@ -151,10 +209,7 @@ export default function RoleManagement() {
                         {role.name || "-"}
                       </td>
 
-                      <td>{role.site}</td>
-
-                     
-                     
+                      <td>{role.description || "-"}</td>
 
                       <td>
                         <TableRowActions

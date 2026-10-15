@@ -1,22 +1,44 @@
 import MainLayout from "../../components/MainLayout";
-import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
-import {
-  addFormSchemas,
-  buildRow,
-} from "../../components/modals/addFormSchemas";
-import { sites as initialSites } from "../../data/sites";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
-const siteSchema = addFormSchemas.site;
+const siteSchema = {
+  entity: "Site",
+  title: "Add Site",
+  submitLabel: "Add Site",
+  fields: [
+    {
+      name: "name",
+      label: "Site Name",
+      type: "text",
+      placeholder: "Site name",
+      required: true,
+    },
+    {
+      name: "code",
+      label: "Site Code",
+      type: "text",
+      placeholder: "Site code",
+      required: true,
+    },
+    {
+      name: "description",
+      label: "Description",
+      type: "text",
+      placeholder: "Description (optional)",
+    },
+  ],
+};
 
 export default function SiteManagement() {
-  const navigate = useNavigate();
-  const [siteList, setSiteList] = useState(initialSites);
+  const [siteList, setSiteList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
@@ -27,21 +49,79 @@ export default function SiteManagement() {
     direction: "asc",
   });
 
-  const handleAddSite = (values) => {
-    setSiteList((prev) => [...prev, buildRow(siteSchema, values)]);
-    setCurrentPage(1);
+  useEffect(() => {
+    let isActive = true;
+
+    apiRequest("/api/site")
+      .then((data) => {
+        if (!isActive) return;
+        setSiteList(data.data ?? []);
+      })
+      .catch((err) => {
+        if (!isActive) return;
+        setError(err.message || "Failed to load sites");
+      })
+      .finally(() => {
+        if (!isActive) return;
+        setIsLoading(false);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, []);
+
+  const handleAddSite = async (values) => {
+    setError("");
+
+    try {
+      const data = await apiRequest("/api/site", {
+        method: "POST",
+        body: JSON.stringify({
+          name: values.name,
+          code: values.code,
+          description: values.description || null,
+        }),
+      });
+
+      setSiteList((prev) => [...prev, data.data]);
+      setCurrentPage(1);
+    } catch (err) {
+      setError(err.message || "Failed to create site");
+    }
   };
 
-  const handleEditSite = (values) => {
-    setSiteList((prev) =>
-      prev.map((row) =>
-        row === editingRow ? buildRow(siteSchema, values, row) : row,
-      ),
-    );
+  const handleEditSite = async (values) => {
+    setError("");
+
+    try {
+      const data = await apiRequest(`/api/site/${editingRow.id}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          name: values.name,
+          code: values.code,
+          description: values.description || null,
+        }),
+      });
+
+      setSiteList((prev) =>
+        prev.map((row) => (row.id === editingRow.id ? data.data : row)),
+      );
+    } catch (err) {
+      setError(err.message || "Failed to update site");
+    }
   };
 
-  const handleDeleteSite = () => {
-    setSiteList((prev) => prev.filter((row) => row !== deletingRow));
+  const handleDeleteSite = async () => {
+    setError("");
+
+    try {
+      await apiRequest(`/api/site/${deletingRow.id}`, { method: "DELETE" });
+
+      setSiteList((prev) => prev.filter((row) => row.id !== deletingRow.id));
+    } catch (err) {
+      setError(err.message || "Failed to delete site");
+    }
   };
 
   const handleSort = (key) => {
@@ -57,49 +137,19 @@ export default function SiteManagement() {
     const query = search.trim().toLowerCase();
     if (!query) return siteList;
 
-    return siteList.filter((site) => {
-      const siteNameMatch = (site.name || "").toLowerCase().includes(query);
-      const locationsMatch = site.locations?.some((loc) =>
-        loc.title.toLowerCase().includes(query)
-      );
-      const roomStatusMatch = site.room_status?.some((st) =>
-        st.title.toLowerCase().includes(query)
-      );
-      const bookingStatusMatch = site.booking_status?.some((st) =>
-        st.title.toLowerCase().includes(query)
-      );
-
-      return (
-        siteNameMatch ||
-        locationsMatch ||
-        roomStatusMatch ||
-        bookingStatusMatch
-      );
-    });
+    return siteList.filter((site) =>
+      [site.name, site.code, site.description].some((value) =>
+        (value || "").toString().toLowerCase().includes(query),
+      ),
+    );
   }, [siteList, search]);
 
   const sortedSites = useMemo(() => {
     if (!sortConfig.key) return filteredSites;
 
     return [...filteredSites].sort((a, b) => {
-      let aValue;
-      let bValue;
-
-      switch (sortConfig.key) {
-        case "name":
-          aValue = a.name || "";
-          bValue = b.name || "";
-          break;
-        case "locations":
-          aValue = (a.locations || []).map((l) => l.title).join(", ");
-          bValue = (b.locations || []).map((l) => l.title).join(", ");
-          break;
-        default:
-          return 0;
-      }
-
-      aValue = aValue.toString().toLowerCase();
-      bValue = bValue.toString().toLowerCase();
+      const aValue = (a[sortConfig.key] || "").toString().toLowerCase();
+      const bValue = (b[sortConfig.key] || "").toString().toLowerCase();
 
       if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
       if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
@@ -131,7 +181,7 @@ export default function SiteManagement() {
           <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">Site Management</h1>
             <p className="dashboard-header__subtitle">
-              Manage sites, camp locations, room statuses, and booking configurations
+              Manage sites and their details
             </p>
           </div>
         </div>
@@ -142,7 +192,7 @@ export default function SiteManagement() {
             <input
               type="search"
               aria-label="Search sites"
-              placeholder="Search by site name, camp location, or status..."
+              placeholder="Search by site name, code, or description..."
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
@@ -155,7 +205,7 @@ export default function SiteManagement() {
               onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
-              Create New Site
+              Add New Site
             </button>
 
             <button
@@ -168,6 +218,8 @@ export default function SiteManagement() {
             </button>
           </div>
         </div>
+
+        {error && <p className="error-text">{error}</p>}
 
         <section className="table-card content">
           <div className="office-table-wrapper">
@@ -189,29 +241,33 @@ export default function SiteManagement() {
                     <button
                       type="button"
                       className="table-sort"
-                      onClick={() => handleSort("locations")}
+                      onClick={() => handleSort("code")}
                     >
-                      Camp Locations
+                      Code
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-                  <th>Room Statuses</th>
-                  <th>Booking Statuses</th>
-                  <th>Timezone</th>
+                  <th>Description</th>
                   <th>Action</th>
                 </tr>
               </thead>
 
               <tbody>
-                {pagedSites.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan="6" className="muted text-center">
+                    <td colSpan="5" className="muted">
+                      Loading sites...
+                    </td>
+                  </tr>
+                ) : pagedSites.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="muted">
                       No sites found.
                     </td>
                   </tr>
                 ) : (
                   pagedSites.map((site, index) => (
-                    <tr key={`${site.name}-${index}`}>
+                    <tr key={site.id}>
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}
                       </td>
@@ -220,50 +276,14 @@ export default function SiteManagement() {
                         <strong>{site.name || "-"}</strong>
                       </td>
 
-                      <td>
-                        <div className="tags-container" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                          {site.locations && site.locations.length > 0
-                            ? site.locations.map((loc, idx) => (
-                                <span key={idx} className="badge badge-neutral">
-                                  {loc.title}
-                                </span>
-                              ))
-                            : "-"}
-                        </div>
-                      </td>
+                      <td>{site.code || "-"}</td>
 
-                      <td>
-                        <div className="tags-container" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                          {site.room_status && site.room_status.length > 0
-                            ? site.room_status.map((status, idx) => (
-                                <span key={idx} className="badge badge-info">
-                                  {status.title}
-                                </span>
-                              ))
-                            : "-"}
-                        </div>
-                      </td>
-
-                      <td>
-                        <div className="tags-container" style={{ display: "flex", gap: "4px", flexWrap: "wrap" }}>
-                          {site.booking_status && site.booking_status.length > 0
-                            ? site.booking_status.map((status, idx) => (
-                                <span key={idx} className="badge badge-success">
-                                  {status.title}
-                                </span>
-                              ))
-                            : "-"}
-                        </div>
-                      </td>
-                      <td>{site.timezone}</td>
+                      <td>{site.description || "-"}</td>
 
                       <td>
                         <TableRowActions
                           label="site"
                           rowLabel={site.name}
-                          onView={() =>
-                            navigate(`/sites/${site.name.toLowerCase()}`)
-                          }
                           onEdit={() => setEditingRow(site)}
                           onDelete={() => setDeletingRow(site)}
                         />

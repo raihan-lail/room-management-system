@@ -1,83 +1,123 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Navigate, useNavigate } from "react-router-dom";
+
+import useAuth from "../../contexts/useAuth";
+import {
+  getDefaultRoute,
+  getDefaultRouteForUser,
+} from "../../utils/permissions";
 
 export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
+  const [email, setEmail] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
+  const { status, login, hasPermission } = useAuth();
   const navigate = useNavigate();
 
-  const handleSubmit = (e) => {
+  if (status === "loading") {
+    return null;
+  }
+
+  if (status === "authenticated") {
+    return <Navigate to={getDefaultRoute(hasPermission)} replace />;
+  }
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Add your auth/API logic here if needed
-    navigate("/dashboard");
+    setError("");
+    setSubmitting(true);
+
+    try {
+      const loggedInUser = await login(email, password, rememberMe);
+      navigate(getDefaultRouteForUser(loggedInUser), { replace: true });
+    } catch (err) {
+      setError(err.message || "Login failed");
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
     <div className="login-page">
       <div className="login-wrapper">
+        <div className="login-card login-card-branded">
+          <p className="app-title">
+            INTERACTIVE MOCKUP DESIGN FOR ROOM/CAMP MANAGEMENT SYSTEMS
+          </p>
+          <h1 className="login-title">LOGIN</h1>
 
-      <div className="login-card login-card-branded">
-       
-        <p className="app-title">INTERACTIVE MOCKUP DESIGN FOR ROOM/CAMP MANAGEMENT SYSTEMS</p>
-        <h1 className="login-title">LOGIN</h1>
-
-        <form className="login-form" onSubmit={handleSubmit}>
-          <p>Enter random email and password for login.</p>
-          <label className="form-field">
-            <span>Email</span>
-            <input
-              type="email"
-              required
-              placeholder="you@example.com"
-            />
-          </label>
-
-          <label className="form-field">
-            <span>Password</span>
-            <div className="password-input-wrapper">
+          <form className="login-form" onSubmit={handleSubmit}>
+            <p>Enter your email and password to login.</p>
+            <label className="form-field">
+              <span>Email</span>
               <input
-                type={showPassword ? "text" : "password"}
+                type="email"
                 required
-                placeholder="********"
+                placeholder="you@example.com"
+                autoComplete="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
               />
-
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword((prev) => !prev)}
-                aria-label={showPassword ? "Hide password" : "Show password"}
-                aria-pressed={showPassword}
-              >
-                <i
-                  className={`bi ${
-                    showPassword ? "bi-eye-slash-fill" : "bi-eye-fill"
-                  }`}
-                  aria-hidden="true"
-                />
-              </button>
-            </div>
-          </label>
-
-          <div className="auth-links">
-            <label className="remember-me">
-              <input type="checkbox" />
-              <span>Remember me</span>
             </label>
 
-            <a href="/forgot-password" className="forgot-password-link">
-              Forgot Password?
-            </a>
-          </div>
+            <label className="form-field">
+              <span>Password</span>
+              <div className="password-input-wrapper">
+                <input
+                  type={showPassword ? "text" : "password"}
+                  required
+                  placeholder="********"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                />
 
-          <button type="submit">login</button>
-        </form>
-       
+                <button
+                  type="button"
+                  className="password-toggle"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                  aria-pressed={showPassword}
+                >
+                  <i
+                    className={`bi ${
+                      showPassword ? "bi-eye-slash-fill" : "bi-eye-fill"
+                    }`}
+                    aria-hidden="true"
+                  />
+                </button>
+              </div>
+            </label>
 
-       
-      </div>
+            {error ? <p className="error-text">{error}</p> : null}
 
-      <div className="login-image-wrapper">
-        <img src="/logo.png" alt="" className="login-image" />
-      </div>
+            <div className="auth-links">
+              <label className="remember-me">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Remember me</span>
+              </label>
+
+              <a href="/forgot-password" className="forgot-password-link">
+                Forgot Password?
+              </a>
+            </div>
+
+            <button type="submit" disabled={submitting}>
+              {submitting ? "logging in..." : "login"}
+            </button>
+          </form>
+        </div>
+
+        <div className="login-image-wrapper">
+          <img src="/logo.png" alt="" className="login-image" />
+        </div>
       </div>
     </div>
   );

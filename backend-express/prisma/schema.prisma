@@ -1,0 +1,163 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  id       String @id @default(cuid())
+  email    String @unique
+  password String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  employee Employee?
+}
+
+model Site {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  code        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  employees Employee[]
+  roles     Role[]
+  Locations Location[]
+}
+
+model Employee {
+  id     String @id @default(cuid())
+  userId String @unique
+  name   String
+
+  siteId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  site Site? @relation(fields: [siteId], references: [id])
+
+  roles       EmployeeRole[]
+  permissions EmployeePermission[]
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model Role {
+  id          String   @id @default(cuid())
+  siteId      String?
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site        Site?            @relation(fields: [siteId], references: [id])
+  employees   EmployeeRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  createdAt   DateTime @default(now())
+
+  roles     RolePermission[]
+  employees EmployeePermission[]
+}
+
+model EmployeeRole {
+  employeeId String
+  roleId     String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@id([employeeId, roleId])
+  @@index([roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@id([roleId, permissionId])
+  @@index([permissionId])
+}
+
+model EmployeePermission {
+  employeeId   String
+  permissionId String
+
+  employee Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  assignedAt DateTime @default(now())
+
+  @@id([employeeId, permissionId])
+  @@index([permissionId])
+}
+
+model Location {
+  id          String   @id @default(cuid())
+  siteId      String
+  name        String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site   Site    @relation(fields: [siteId], references: [id], onDelete: Restrict)
+  floors Floor[]
+
+  @@unique([siteId, name])
+  @@index([siteId])
+}
+
+model Floor {
+  id          String   @id @default(cuid())
+  locationId  String
+  name        String
+  floorNumber Int
+  description String?
+  isActive    Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  location Location @relation(fields: [locationId], references: [id], onDelete: Restrict)
+  rooms    Room[]
+
+  @@unique([locationId, floorNumber])
+  @@index([locationId])
+}
+
+model Room {
+  id          String   @id @default(cuid())
+  floorId     String
+  name        String
+  description String?
+  row         String?
+  isBookable  Boolean  @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  floor Floor @relation(fields: [floorId], references: [id], onDelete: Restrict)
+
+  @@unique([floorId, name])
+  @@index([floorId])
+}
