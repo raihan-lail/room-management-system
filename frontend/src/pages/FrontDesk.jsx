@@ -17,6 +17,7 @@ const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
   { id: "in_house", label: "In House", icon: "bi-house-door", title: "Current In House" },
    { id: "home_leave", label: "Home Leave", icon: "bi-door-open", title: "Current Home Leave" },
+   { id: "near_end", label: "Near End Date", icon: "bi-door-open", title: "Ended Soon" },
   { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 

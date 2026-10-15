@@ -608,98 +608,6 @@ user-dropdown-toogle {
   transition: background-color 0.2s ease;
 }
 
-.notifications-dropdown {
-  position: fixed;
-  top: 70px; 
-  left: 50%;
-  transform: translateX(-50%);
-  width: min(420px, calc(100vw - 32px));
-  background: #ffffff;
-  border: 1px solid #e2e8f0;
-  border-radius: 14px;
-  box-shadow: 0 22px 60px rgba(15, 23, 42, 0.22);
-  z-index: 1000; 
-  overflow: hidden;
-}
-@media (min-width: 728px) {
-  .notifications-dropdown {
-    position: absolute;
-    top: calc(100% + 10px);
-    right: 0;
-    left: auto;
-    transform: none;
-    z-index: 60;
-  }
-
-  .notifications-dropdown__body {
-    max-height: 360px;
-  }
-}
-
-.notifications-dropdown__header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 12px 14px;
-  border-bottom: 1px solid #e2e8f0;
-  font-weight: 800;
-  color: #111827;
-}
-
-.notifications-refresh {
-  border: 1px solid #e2e8f0;
-  background: #eaa8a8;
-  color: #0f172a;
-  font-weight: 700;
-  border-radius: 10px;
-  padding: 6px 10px;
-  cursor: pointer;
-  transition: background-color 0.15s ease, filter 0.15s ease;
-}
-
-.notifications-refresh:hover:not(:disabled) {
-  background-color: #f8fafc;
-}
-
-.notifications-refresh:disabled {
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.notifications-dropdown__body {
-  padding: 12px 14px 14px;
-  max-height: 360px;
-  overflow-y: auto;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.notification-item {
-  padding: 10px 12px;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  background: #ffffff;
-}
-
-.notification-item.is-unread {
-  border-color: rgba(39, 56, 150, 0.45);
-  background-color: #f8fafc;
-}
-
-.notification-item__message {
-  margin: 0;
-  font-size: 14px;
-  color: #111827;
-}
-
-.notification-item__meta {
-  margin: 6px 0 0;
-  font-size: 12px;
-  color: #64748b;
-}
-
 .logout-button:hover {
   background-color: #f3f4f6;
 }
@@ -869,6 +777,67 @@ div.notification-item {
   line-height: 14px;
 
   color: #64748b;
+}
+
+
+/* =========================
+   NAVBAR DROPDOWNS RESPONSIVE
+========================= */
+
+@media (max-width: 768px) {
+  .notifications-dropdown {
+    position: fixed;
+
+    top: 64px;
+    right: 12px;
+    left: 12px;
+
+    width: auto;
+    max-height: min(70vh, 480px);
+
+    z-index: 1000;
+  }
+
+  .notifications-dropdown__body {
+    max-height: min(56vh, 380px);
+  }
+
+  .user-dropdown-menu {
+    position: fixed;
+
+    top: 64px;
+    right: 12px;
+
+    min-width: min(220px, calc(100vw - 24px));
+    max-width: calc(100vw - 24px);
+
+    z-index: 1000;
+  }
+}
+
+@media (max-width: 480px) {
+  .notifications-dropdown {
+    top: 60px;
+    right: 8px;
+    left: 8px;
+
+    border-radius: 8px;
+  }
+
+  .notifications-dropdown__header {
+    padding: 8px 10px;
+  }
+
+  .notifications-dropdown__body {
+    padding: 6px 8px 8px;
+
+    max-height: min(60vh, 340px);
+  }
+
+  .user-dropdown-menu {
+    top: 60px;
+    right: 8px;
+  }
 }
 
 

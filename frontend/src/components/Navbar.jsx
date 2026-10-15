@@ -46,6 +46,7 @@ export default function Navbar({ onToggleSidebar }) {
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
 
   const notificationsContainerRef = useRef(null);
+  const userDropdownRef = useRef(null);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -118,11 +119,50 @@ export default function Navbar({ onToggleSidebar }) {
     };
   }, [notificationsOpen]);
 
+  useEffect(() => {
+    if (!userDropdownOpen) return;
+
+    const handlePointerDown = (event) => {
+      const container = userDropdownRef.current;
+
+      if (!container) return;
+
+      if (container.contains(event.target)) {
+        return;
+      }
+
+      setUserDropdownOpen(false);
+    };
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setUserDropdownOpen(false);
+      }
+    };
+
+    document.addEventListener("pointerdown", handlePointerDown);
+    document.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.removeEventListener("pointerdown", handlePointerDown);
+      document.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [userDropdownOpen]);
+
   const handleToggleNotifications = async () => {
     const nextOpen = !notificationsOpen;
     setNotificationsOpen(nextOpen);
     if (nextOpen) {
+      setUserDropdownOpen(false);
       await loadNotifications();
+    }
+  };
+
+  const handleToggleUserDropdown = () => {
+    const nextOpen = !userDropdownOpen;
+    setUserDropdownOpen(nextOpen);
+    if (nextOpen) {
+      setNotificationsOpen(false);
     }
   };
 
@@ -273,12 +313,13 @@ export default function Navbar({ onToggleSidebar }) {
           ) : null}
         </div>
 
-        <div className="navbar-user-dropdown">
+        <div className="navbar-user-dropdown" ref={userDropdownRef}>
           <button
             type="button"
             className="navbar-user-button"
-            onClick={() => setUserDropdownOpen((prev) => !prev)}
+            onClick={handleToggleUserDropdown}
             aria-expanded={userDropdownOpen}
+            aria-haspopup="menu"
           >
             <div className="navbar-user__avatar">
               <i className="bi bi-person-fill" aria-hidden="true" />
