@@ -3,11 +3,13 @@ import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+
 import {
   addFormSchemas,
   buildRow,
 } from "../../components/modals/addFormSchemas";
 import bookingsData from "../../data/bookings";
+import FlexibleButton from "../../components/FlexibleButtons";
 
 const PAGE_SIZE = 10;
 
@@ -205,14 +207,14 @@ export default function BookingTableView() {
           </label>
 
           <div className="bookings-toolbar__actions">
-            <button
-              type="button"
+            <FlexibleButton
+              permission="bookings.create"
               className="btn btn-primary"
               onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Booking
-            </button>
+            </FlexibleButton>
 
             <button
               type="button"

@@ -1,10 +1,12 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import {
+  buildNotificationSocketUrl,
   fetchNotifications,
   markAllNotificationsAsRead,
   markNotificationAsRead,
+  requestNotificationSocketTicket,
 } from "../api/notifications";
 import useAuth from "../contexts/useAuth";
 
@@ -47,6 +49,7 @@ export default function Navbar({ onToggleSidebar }) {
 
   const notificationsContainerRef = useRef(null);
   const userDropdownRef = useRef(null);
+  const notificationsRef = useRef([]);
   const [currentTime, setCurrentTime] = useState(() => new Date());
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -54,6 +57,13 @@ export default function Navbar({ onToggleSidebar }) {
   const employee = user?.employee;
   const userName = employee?.name || user?.email || "User";
   const userRole = employee?.roles?.length ? employee.roles.join(", ") : "—";
+  const userId = user?.id;
+
+  const unreadInList = useMemo(
+    () => notifications.filter((item) => !item.isRead).length,
+    [notifications]
+  );
+  const displayUnreadCount = Math.max(unreadCount, unreadInList);
 
   const handleLogout = async () => {
     setUserDropdownOpen(false);
@@ -66,7 +76,9 @@ export default function Navbar({ onToggleSidebar }) {
     setNotificationsError("");
     try {
       const data = await fetchNotifications();
-      setNotifications(Array.isArray(data?.data) ? data.data : []);
+      const list = Array.isArray(data?.data) ? data.data : [];
+      setNotifications(list);
+      notificationsRef.current = list;
       setUnreadCount(typeof data?.unreadCount === "number" ? data.unreadCount : 0);
     } catch (err) {
       setNotificationsError(err?.message || "Failed to load notifications");
@@ -80,6 +92,88 @@ export default function Navbar({ onToggleSidebar }) {
     const pollId = window.setInterval(loadNotifications, 60000);
     return () => window.clearInterval(pollId);
   }, [loadNotifications]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    let socket = null;
+    let retryTimeoutId = null;
+    let stopped = false;
+    let retryCount = 0;
+
+    const handleIncomingNotification = (notification) => {
+      if (!notification || !notification.id) return;
+      if (notificationsRef.current.some((item) => item.id === notification.id)) {
+        return;
+      }
+
+      const next = [notification, ...notificationsRef.current].slice(0, 50);
+      notificationsRef.current = next;
+      setNotifications(next);
+      setUnreadCount((prev) => prev + 1);
+    };
+
+    const scheduleReconnect = () => {
+      if (stopped) return;
+      const delay = Math.min(1000 * 2 ** retryCount, 15000);
+      retryCount += 1;
+      retryTimeoutId = window.setTimeout(() => {
+        void connect();
+      }, delay);
+    };
+
+    const connect = async () => {
+      if (stopped) return;
+
+      try {
+        const data = await requestNotificationSocketTicket();
+        if (stopped || !data?.ticket) {
+          scheduleReconnect();
+          return;
+        }
+
+        socket = new WebSocket(buildNotificationSocketUrl(data.ticket));
+
+        socket.onopen = () => {
+          retryCount = 0;
+        };
+
+        socket.onmessage = (event) => {
+          try {
+            const payload = JSON.parse(event.data);
+            if (payload?.event === "notification:new" && payload?.data) {
+              handleIncomingNotification(payload.data);
+            }
+          } catch {
+            // Ignore malformed socket messages.
+          }
+        };
+
+        socket.onclose = () => {
+          socket = null;
+          scheduleReconnect();
+        };
+
+        socket.onerror = () => {
+          try {
+            socket?.close();
+          } catch {
+            // Socket cleanup best-effort; onclose handles reconnect.
+          }
+        };
+      } catch {
+        scheduleReconnect();
+      }
+    };
+
+    void connect();
+
+    return () => {
+      stopped = true;
+      if (retryTimeoutId) window.clearTimeout(retryTimeoutId);
+      if (socket) socket.close();
+    };
+  }, [userId]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -171,11 +265,11 @@ export default function Navbar({ onToggleSidebar }) {
 
     try {
       await markNotificationAsRead(notification.id);
-      setNotifications((prev) =>
-        prev.map((item) =>
-          item.id === notification.id ? { ...item, isRead: true } : item
-        )
+      const next = notificationsRef.current.map((item) =>
+        item.id === notification.id ? { ...item, isRead: true } : item
       );
+      notificationsRef.current = next;
+      setNotifications(next);
       setUnreadCount((prev) => Math.max(0, prev - 1));
     } catch {
       // Keep dropdown usable even if mark-as-read fails.
@@ -185,7 +279,12 @@ export default function Navbar({ onToggleSidebar }) {
   const handleMarkAllAsRead = async () => {
     try {
       await markAllNotificationsAsRead();
-      setNotifications((prev) => prev.map((item) => ({ ...item, isRead: true })));
+      const next = notificationsRef.current.map((item) => ({
+        ...item,
+        isRead: true,
+      }));
+      notificationsRef.current = next;
+      setNotifications(next);
       setUnreadCount(0);
     } catch (err) {
       setNotificationsError(err?.message || "Failed to update notifications");
@@ -230,7 +329,7 @@ export default function Navbar({ onToggleSidebar }) {
             onClick={handleToggleNotifications}
           >
             <i className="bi bi-bell" aria-hidden="true" />
-            {unreadCount > 0 ? (
+            {displayUnreadCount > 0 ? (
               <span className="navbar-notification-dot" aria-hidden="true" />
             ) : null}
           </button>
@@ -242,12 +341,15 @@ export default function Navbar({ onToggleSidebar }) {
               aria-label="Notifications"
             >
               <div className="notifications-dropdown__header">
-                <span>Notifications{unreadCount > 0 ? ` (${unreadCount})` : ""}</span>
+                <span>
+                  Notifications
+                  {displayUnreadCount > 0 ? ` (${displayUnreadCount})` : ""}
+                </span>
 
                 <button
                   type="button"
                   className="notifications-refresh"
-                  disabled={notificationsLoading || unreadCount === 0}
+                  disabled={notificationsLoading || displayUnreadCount === 0}
                   onClick={handleMarkAllAsRead}
                 >
                   Mark all read
