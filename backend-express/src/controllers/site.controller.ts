@@ -8,6 +8,7 @@ import {
   isGlobalSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditActor } from "../services/audit.service.js";
 
 type SiteInput = {
   name?: string;
@@ -128,6 +129,14 @@ export async function createSite(
       type: "SUCCESS",
     });
 
+    await auditActor(req, actor, {
+      action: "create",
+      resource: "site",
+      resourceId: site.id,
+      description: `Site ${site.name} created`,
+      after: site,
+    });
+
     res.status(201).json({
       message: "Site created successfully",
       data: site,
@@ -222,6 +231,15 @@ export async function updateSite(
       type: "INFO",
     });
 
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "site",
+      resourceId: site.id,
+      description: `Site ${site.name} updated`,
+      before: existingSite,
+      after: site,
+    });
+
     res.json({
       message: "Site updated successfully",
       data: site,
@@ -288,6 +306,14 @@ export async function deleteSite(
       title: "Site Deleted",
       message: `Site ${site.name} was deleted successfully.`,
       type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "delete",
+      resource: "site",
+      resourceId: site.id,
+      description: `Site ${site.name} deleted`,
+      before: site,
     });
 
     res.json({ message: "Site deleted successfully" });

@@ -17,6 +17,7 @@ model User {
 
   employee Employee?
     notifications Notification[]
+    auditLogs AuditLog[] @relation("AuditLogActor")
 
 }
 
@@ -177,4 +178,25 @@ model Notification {
     user User @relation(fields: [userId], references: [id])
 
   @@index([userId, isRead, createdAt])
+}
+
+model AuditLog {
+  id          String   @id @default(cuid())
+  actorUserId String?
+  actorName   String?
+  action      String
+  resource    String
+  resourceId  String?
+  description String?
+  before      Json?
+  after       Json?
+  ipAddress   String?
+  userAgent   String?
+  createdAt   DateTime @default(now())
+  actor User? @relation("AuditLogActor",fields: [actorUserId], references: [id])
+
+  @@index([createdAt])
+  @@index([actorUserId, createdAt])
+  @@index([resource, resourceId, createdAt])
+  @@index([action, createdAt])
 }

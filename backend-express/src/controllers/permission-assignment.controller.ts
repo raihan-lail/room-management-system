@@ -9,6 +9,7 @@ import {
   isGlobalSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditActor } from "../services/audit.service.js";
 
 // GET /api/roles/:id/permissions
 export async function getRolePermissions(
@@ -126,6 +127,14 @@ export async function enableRolePermission(
       type: "INFO",
     });
 
+    await auditActor(req, actor, {
+      action: "enable",
+      resource: "role_permission",
+      resourceId: role.id,
+      description: `Permission ${permission.name} enabled for role ${role.name}`,
+      after: { roleId: role.id, permissionId: permission.id, permissionName: permission.name },
+    });
+
     res.json({ message: "Role permission enabled" });
   } catch (error) {
     console.error("Enable role permission error:", error);
@@ -176,6 +185,14 @@ export async function disableRolePermission(
       title: "Role Permission Disabled",
       message: `A permission was disabled for role ${role.name}.`,
       type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "disable",
+      resource: "role_permission",
+      resourceId: role.id,
+      description: `Permission ${req.params.permissionId} disabled for role ${role.name}`,
+      before: { roleId: role.id, permissionId: req.params.permissionId },
     });
 
     res.json({ message: "Role permission disabled" });
@@ -268,6 +285,14 @@ export async function enableEmployeePermission(
       type: "INFO",
     });
 
+    await auditActor(req, actor, {
+      action: "enable",
+      resource: "employee_permission",
+      resourceId: employee.id,
+      description: `Permission ${permission.name} enabled for employee ${employee.id}`,
+      after: { employeeId: employee.id, permissionId: permission.id, permissionName: permission.name },
+    });
+
     res.json({ message: "Employee permission enabled" });
   } catch (error) {
     console.error("Enable employee permission error:", error);
@@ -298,6 +323,14 @@ export async function disableEmployeePermission(
       title: "Employee Permission Disabled",
       message: `A permission was disabled for an employee.`,
       type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "disable",
+      resource: "employee_permission",
+      resourceId: employee.id,
+      description: `Permission ${req.params.permissionId} disabled for employee ${employee.id}`,
+      before: { employeeId: employee.id, permissionId: req.params.permissionId },
     });
 
     res.json({ message: "Employee permission disabled" });

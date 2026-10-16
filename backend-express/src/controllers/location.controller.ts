@@ -12,6 +12,7 @@ import {
   isGlobalSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditActor, auditInTransaction } from "../services/audit.service.js";
 
 const LOCATION_ERROR_MESSAGES = {
   duplicate:
@@ -174,7 +175,7 @@ export async function createLocation(
     }
 
     const location = await prisma.$transaction(async (tx) => {
-      return tx.location.create({
+      const created = await tx.location.create({
         data: {
           name: name.trim(),
           description: description?.trim() || null,
@@ -194,6 +195,16 @@ export async function createLocation(
           },
         },
       });
+
+      await auditInTransaction(tx, req, actor, {
+        action: "create",
+        resource: "location",
+        resourceId: created.id,
+        description: `Location ${created.name} created`,
+        after: created,
+      });
+
+      return created;
     });
 
     await notifyActor(req, {
@@ -277,6 +288,15 @@ export async function updateLocation(
       type: "INFO",
     });
 
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "location",
+      resourceId: location.id,
+      description: `Location ${location.name} updated`,
+      before: existing,
+      after: location,
+    });
+
     res.json({
       message: "Location updated successfully",
       data: location,
@@ -323,6 +343,14 @@ export async function deleteLocation(
       title: "Location Deleted",
       message: `Location ${location.name} was deleted successfully.`,
       type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "delete",
+      resource: "location",
+      resourceId: location.id,
+      description: `Location ${location.name} deleted`,
+      before: location,
     });
 
     res.json({ message: "Location deleted successfully" });
@@ -376,6 +404,14 @@ export async function createFloor(
       title: "Floor Created",
       message: `Floor ${created.name} was created successfully.`,
       type: "SUCCESS",
+    });
+
+    await auditActor(req, actor, {
+      action: "create",
+      resource: "floor",
+      resourceId: created.id,
+      description: `Floor ${created.name} created in location ${location.id}`,
+      after: created,
     });
 
     res.status(201).json({
@@ -488,6 +524,15 @@ export async function updateFloor(
       type: "INFO",
     });
 
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "floor",
+      resourceId: updated.id,
+      description: `Floor ${updated.name} updated`,
+      before: floor,
+      after: updated,
+    });
+
     res.json({
       message: "Floor updated successfully",
       data: updated,
@@ -539,6 +584,14 @@ export async function deleteFloor(
       title: "Floor Deleted",
       message: `Floor ${floor.name} was deleted successfully.`,
       type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "delete",
+      resource: "floor",
+      resourceId: floor.id,
+      description: `Floor ${floor.name} deleted`,
+      before: floor,
     });
 
     res.json({ message: "Floor deleted successfully" });

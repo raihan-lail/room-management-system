@@ -11,6 +11,7 @@ import {
   isGlobalSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditInTransaction } from "../services/audit.service.js";
 
 type EmployeeInput = {
   name?: string;
@@ -244,7 +245,7 @@ export async function createEmployee(
         });
       }
 
-      return tx.employee.findUniqueOrThrow({
+      const created = await tx.employee.findUniqueOrThrow({
         where: { id: employee.id },
         select: {
           id: true,
@@ -273,6 +274,16 @@ export async function createEmployee(
           },
         },
       });
+
+      await auditInTransaction(tx, req, actor, {
+        action: "create",
+        resource: "employee",
+        resourceId: created.id,
+        description: `Employee ${created.name} created`,
+        after: created,
+      });
+
+      return created;
     });
 
     await notifyActor(req, {
@@ -484,18 +495,27 @@ export async function updateEmployee(
         ...(nextSiteId !== undefined ? { siteId: nextSiteId } : {}),
       };
 
-      if (Object.keys(employeeData).length > 0) {
-        return tx.employee.update({
+      const updated = Object.keys(employeeData).length > 0
+        ? await tx.employee.update({
           where: { id: target.id },
           data: employeeData,
           select: employeeSelect,
+        })
+        : await tx.employee.findUniqueOrThrow({
+          where: { id: target.id },
+          select: employeeSelect,
         });
-      }
 
-      return tx.employee.findUniqueOrThrow({
-        where: { id: target.id },
-        select: employeeSelect,
+      await auditInTransaction(tx, req, actor, {
+        action: "update",
+        resource: "employee",
+        resourceId: target.id,
+        description: `Employee ${updated.name} updated`,
+        before: target,
+        after: updated,
       });
+
+      return updated;
     });
 
     await notifyActor(req, {
@@ -555,6 +575,14 @@ export async function deleteEmployee(
 
       await tx.user.delete({
         where: { id: target.userId },
+      });
+
+      await auditInTransaction(tx, req, actor, {
+        action: "delete",
+        resource: "employee",
+        resourceId: target.id,
+        description: `Employee ${target.name} deleted`,
+        before: target,
       });
     });
 

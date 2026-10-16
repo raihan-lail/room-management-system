@@ -1,6 +1,7 @@
 import type { Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
+import { auditActor } from "../services/audit.service.js";
 
 export async function getMyNotifications(
   req: AuthRequest,
@@ -89,6 +90,8 @@ export async function markNotificationAsRead(
       success: true,
       message: "Notification marked as read",
     });
+
+    
   } catch (error) {
     next(error);
   }
@@ -122,7 +125,13 @@ export async function markAllNotificationsAsRead(
       message: "All notifications marked as read",
       updatedCount: result.count,
     });
+
+    
   } catch (error) {
     next(error);
   }
+}
+
+export async function getRoleNotifications(){
+  
 }

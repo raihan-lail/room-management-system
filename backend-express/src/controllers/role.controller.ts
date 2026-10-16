@@ -9,6 +9,7 @@ import {
   isGlobalSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditActor, auditInTransaction } from "../services/audit.service.js";
 
 type RoleInput = {
     name?: string;
@@ -146,6 +147,14 @@ export async function createRole(
             type: "SUCCESS",
         });
 
+        await auditActor(req, actor, {
+            action: "create",
+            resource: "role",
+            resourceId: role.id,
+            description: `Role ${role.name} created`,
+            after: role,
+        });
+
         res.status(201).json({
             message: "Role Created Successfully",
             data: role,
@@ -212,6 +221,15 @@ export async function updateRole(
             title: "Role Updated",
             message: `Role ${role.name} was updated successfully.`,
             type: "INFO",
+        });
+
+        await auditActor(req, actor, {
+            action: "update",
+            resource: "role",
+            resourceId: role.id,
+            description: `Role ${role.name} updated`,
+            before: existing,
+            after: role,
         });
 
         res.json({
@@ -305,6 +323,11 @@ export async function replaceRolePermissions(
             }
         }
 
+        const previousAssignments = await prisma.rolePermission.findMany({
+            where: { roleId: role.id },
+            select: { permissionId: true },
+        });
+
         await prisma.$transaction(async (tx) => {
             await tx.rolePermission.deleteMany({
                 where: { roleId: role.id},
@@ -317,6 +340,15 @@ export async function replaceRolePermissions(
                     })),
                 });
             }
+
+            await auditInTransaction(tx, req, actor, {
+                action: "replace",
+                resource: "role_permission",
+                resourceId: role.id,
+                description: `Permissions replaced for role ${role.name}`,
+                before: { permissionIds: previousAssignments.map((p) => p.permissionId) },
+                after: { permissionIds },
+            });
         });
 
         const updatedRole = await prisma.role.findUnique({
@@ -396,6 +428,14 @@ export async function deleteRole(
             title: "Role Deleted",
             message: `Role ${role.name} was deleted successfully.`,
             type: "WARNING",
+        });
+
+        await auditActor(req, actor, {
+            action: "delete",
+            resource: "role",
+            resourceId: role.id,
+            description: `Role ${role.name} deleted`,
+            before: role,
         });
 
         res.json({ message: "Role deleted successfully"});

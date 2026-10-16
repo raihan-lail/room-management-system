@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 import { generateAccessToken } from "../lib/jwt.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 import { getEmployeeEffectivePermissions } from "../lib/permission.js";
+import { auditActor } from "../services/audit.service.js";
 
 async function buildAuthUser(userId: string) {
   const user = await prisma.user.findUnique({
@@ -89,6 +90,12 @@ export async function login(
     });
 
     if (!user) {
+      await auditActor(req, null, {
+        action: "login_failed",
+        resource: "auth",
+        description: `Failed login attempt for ${typeof email === "string" ? email : "unknown email"}`,
+        after: { email: typeof email === "string" ? email : null },
+      });
       res.status(401).json({
         message: "Invalid email or password",
       });
@@ -101,6 +108,12 @@ export async function login(
     );
 
     if (!passwordValid) {
+      await auditActor(req, { userId: user.id, name: user.employee?.name ?? null }, {
+        action: "login_failed",
+        resource: "auth",
+        resourceId: user.id,
+        description: `Failed login attempt for ${user.email}`,
+      });
       res.status(401).json({
         message: "Invalid email or password",
       });
@@ -108,6 +121,12 @@ export async function login(
     }
 
     if (!user.employee) {
+      await auditActor(req, { userId: user.id, name: null }, {
+        action: "login_failed",
+        resource: "auth",
+        resourceId: user.id,
+        description: `Login blocked: no employee account for ${user.email}`,
+      });
       res.status(403).json({
         message: "Employee account not found",
       });
@@ -141,6 +160,13 @@ res.cookie("access_token", token, cookieOptions);
       return;
     }
 
+    await auditActor(req, { userId: user.id, name: user.employee?.name ?? null }, {
+      action: "login",
+      resource: "auth",
+      resourceId: user.id,
+      description: `User ${user.email} logged in`,
+    });
+
     res.status(200).json({
       message: "Login successful",
       user: authUser,
@@ -154,15 +180,41 @@ res.cookie("access_token", token, cookieOptions);
   }
 }
 
-export function logout(
-  _req: Request,
+export async function logout(
+  req: Request,
   res: Response
-): void {
+): Promise<void> {
+  const token = req.cookies?.access_token as string | undefined;
+  let auditUserId: string | null = null;
+  let auditName: string | null = null;
+
+  if (token) {
+    try {
+      const payload = verifyAccessToken(token);
+      auditUserId = payload.userId;
+      const who = await prisma.user.findUnique({
+        where: { id: payload.userId },
+        include: { employee: { select: { name: true } } },
+      });
+      auditName = who?.employee?.name ?? null;
+      (req as Request & { userId?: string }).userId = payload.userId;
+    } catch {
+      // Invalid/expired token: still clear cookie and audit anonymously.
+    }
+  }
+
   res.clearCookie("access_token", {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax",
     path: "/",
+  });
+
+  await auditActor(req, auditUserId ? { userId: auditUserId, name: auditName } : null, {
+    action: "logout",
+    resource: "auth",
+    resourceId: auditUserId,
+    description: auditUserId ? "User logged out" : "Anonymous logout",
   });
 
   res.status(200).json({
