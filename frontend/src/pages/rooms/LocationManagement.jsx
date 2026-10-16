@@ -88,8 +88,12 @@ export default function LocationManagement() {
   }, []);
 
   useEffect(() => {
+  const timer = window.setTimeout(() => {
     loadData();
-  }, [loadData]);
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadData]);
 
   const filteredLocations = useMemo(() => {
     const query = search.trim().toLowerCase();

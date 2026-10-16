@@ -88,10 +88,16 @@ export default function Navbar({ onToggleSidebar }) {
   }, []);
 
   useEffect(() => {
-    loadNotifications();
-    const pollId = window.setInterval(loadNotifications, 60000);
-    return () => window.clearInterval(pollId);
-  }, [loadNotifications]);
+  // Defer the initial fetch so it isn't synchronous on mount
+  const initialTimer = window.setTimeout(loadNotifications, 0);
+  
+  const pollId = window.setInterval(loadNotifications, 60000);
+  
+  return () => {
+    window.clearTimeout(initialTimer);
+    window.clearInterval(pollId);
+  };
+}, [loadNotifications]);
 
   useEffect(() => {
     if (!userId) return;
