@@ -265,6 +265,9 @@ export default function BookingTableView() {
                       </i>
                     </button>
                   </th>
+                  <th>
+                    Bed
+                  </th>
 
                   <th>
                     <button
@@ -359,6 +362,9 @@ export default function BookingTableView() {
 
                       <td>
                         <strong>{booking.room || "-"}</strong>
+                      </td>
+                       <td>
+                        <strong>{booking.bed || "-"}</strong>
                       </td>
 
                       <td>{booking.guest?.name || "-"}</td>

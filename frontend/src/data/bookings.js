@@ -2,6 +2,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "101",
+    bed: "01",
     guest: {
       name: "Ahmad Fauzan",
       gender: "Male",
@@ -18,6 +19,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "102",
+    bed: "01",
     guest: {
       name: "Sarah Johnson",
       gender: "Female",
@@ -34,6 +36,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "103",
+    bed: "01",
     guest: {
       name: "Muhammad Rizky",
       gender: "Male",
@@ -50,6 +53,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "104",
+    bed: "01",
     guest: {
       name: "Emily Carter",
       gender: "Female",
@@ -65,6 +69,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "105",
+    bed: "01",
     guest: {
       name: "Budi Santoso",
       gender: "Male",
@@ -80,6 +85,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "106",
+    bed: "01",
     guest: {
       name: "Olivia Martin",
       gender: "Female",
@@ -95,6 +101,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "107",
+    bed: "01",
     guest: {
       name: "Andi Pratama",
       gender: "Male",
@@ -110,6 +117,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "108",
+    bed: "01",
     guest: {
       name: "Daniel Kim",
       gender: "Male",
@@ -125,6 +133,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "109",
+    bed: "01",
     guest: {
       name: "Maria Santos",
       gender: "Female",
@@ -140,6 +149,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "110",
+    bed: "01",
     guest: {
       name: "Thomas Müller",
       gender: "Male",
@@ -155,6 +165,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "111",
+    bed: "01",
     guest: {
       name: "Siti Nurhaliza",
       gender: "Female",
@@ -170,6 +181,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "112",
+    bed: "01",
     guest: {
       name: "James Wilson",
       gender: "Male",
@@ -185,6 +197,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "113",
+    bed: "01",
     guest: {
       name: "Nadia Putri",
       gender: "Female",
@@ -200,6 +213,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "114",
+    bed: "01",
     guest: {
       name: "Lucas Bernard",
       gender: "Male",
@@ -215,6 +229,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "115",
+    bed: "01",
     guest: {
       name: "Aisha Khan",
       gender: "Female",
@@ -230,6 +245,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "116",
+    bed: "01",
     guest: {
       name: "Kevin Tan",
       gender: "Male",
@@ -245,6 +261,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "117",
+    bed: "01",
     guest: {
       name: "Anna Kowalski",
       gender: "Female",
@@ -260,6 +277,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "118",
+    bed: "01",
     guest: {
       name: "Rafi Hidayat",
       gender: "Male",
@@ -275,6 +293,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "119",
+    bed: "01",
     guest: {
       name: "Sophia Williams",
       gender: "Female",
@@ -290,6 +309,7 @@ export const bookings = [
   {
     booking_id: "SD00001",
     room: "120",
+    bed: "01",
     guest: {
       name: "Yuki Tanaka",
       gender: "Female",
@@ -303,7 +323,9 @@ export const bookings = [
     notes: "Arrival details not confirmed",
   },
   {
+    booking_id: "SD00001",
     room: "201",
+    bed: "01",
     guest: {
       name: "Rin Thosaka",
       gender: "Female",
@@ -317,7 +339,9 @@ export const bookings = [
     notes: "Arrival details not confirmed",
   },
   {
+    booking_id: "SD00001",
     room: "202",
+    bed: "01",
     guest: {
       name: "Hasbulla",
       gender: "male",

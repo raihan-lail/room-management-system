@@ -288,26 +288,33 @@ export default function LocationManagement() {
     setError("");
     setSuccess("");
 
-    if (!locationForm.name.trim()) {
-      setError("Location name is required.");
-      return;
-    }
-
     if (
-      modalMode === "create-location" &&
-      !locationForm.siteId
+      modalMode === "create-location" ||
+      modalMode === "edit-location"
     ) {
-      setError("Please select a site.");
-      return;
+      if (!locationForm.name.trim()) {
+        setError("Location name is required.");
+        return;
+      }
+
+      if (
+        modalMode === "create-location" &&
+        !locationForm.siteId
+      ) {
+        setError("Please select a site.");
+        return;
+      }
     }
 
-    const floors = locationForm.floors.map((floor) => ({
-      name: floor.name.trim(),
-      floorNumber: Number(floor.floorNumber),
-      description: floor.description.trim() || null,
-    }));
+    let floors = [];
 
     if (modalMode === "create-location") {
+      floors = locationForm.floors.map((floor) => ({
+        name: floor.name.trim(),
+        floorNumber: Number(floor.floorNumber),
+        description: (floor.description ?? "").trim() || null,
+      }));
+
       for (const floor of floors) {
         if (
           !floor.name ||
@@ -336,7 +343,7 @@ export default function LocationManagement() {
           body: JSON.stringify({
             siteId: locationForm.siteId,
             name: locationForm.name.trim(),
-            description: locationForm.description.trim() || null,
+            description: (locationForm.description ?? "").trim() || null,
             floors,
           }),
         });
@@ -347,14 +354,14 @@ export default function LocationManagement() {
           method: "PATCH",
           body: JSON.stringify({
             name: locationForm.name.trim(),
-            description: locationForm.description.trim() || null,
+            description: (locationForm.description ?? "").trim() || null,
           }),
         });
 
         setSuccess("Location updated successfully.");
       } else if (modalMode === "create-floor") {
         if (
-          !floorForm.name.trim() ||
+          !(floorForm.name ?? "").trim() ||
           floorForm.floorNumber === "" ||
           !Number.isInteger(Number(floorForm.floorNumber))
         ) {
@@ -368,9 +375,9 @@ export default function LocationManagement() {
           {
             method: "POST",
             body: JSON.stringify({
-              name: floorForm.name.trim(),
+              name: (floorForm.name ?? "").trim(),
               floorNumber: Number(floorForm.floorNumber),
-              description: floorForm.description.trim() || null,
+              description: (floorForm.description ?? "").trim() || null,
             }),
           }
         );
@@ -378,7 +385,7 @@ export default function LocationManagement() {
         setSuccess("Floor created successfully.");
       } else if (modalMode === "edit-floor") {
         if (
-          !floorForm.name.trim() ||
+          !(floorForm.name ?? "").trim() ||
           floorForm.floorNumber === "" ||
           !Number.isInteger(Number(floorForm.floorNumber))
         ) {
@@ -392,9 +399,9 @@ export default function LocationManagement() {
           {
             method: "PATCH",
             body: JSON.stringify({
-              name: floorForm.name.trim(),
+              name: (floorForm.name ?? "").trim(),
               floorNumber: Number(floorForm.floorNumber),
-              description: floorForm.description.trim() || null,
+              description: (floorForm.description ?? "").trim() || null,
               isActive: floorForm.isActive,
             }),
           }
