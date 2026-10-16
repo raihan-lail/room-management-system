@@ -1,246 +1,368 @@
-import MainLayout from "../../components/MainLayout";
-import { useMemo, useState } from "react";
-import { auditLogsData } from "../../data/auditLog";
 
+import MainLayout from "../../components/MainLayout";
+import { useEffect, useState } from "react";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
-// Dummy Audit Logs Data
+const INITIAL_FILTERS = {
+  actor: "",
+  action: "",
+  resource: "",
+  resourceId: "",
+  startDate: "",
+  endDate: "",
+};
 
+function formatTimestamp(value) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return value;
+
+  return date.toLocaleString();
+}
+
+function formatJson(value) {
+  if (value == null) return "-";
+  return JSON.stringify(value, null, 2);
+}
 
 export default function AuditLog() {
-  const [currentPage, setCurrentPage] = useState(1);
-  const [search, setSearch] = useState("");
-  const [selectedModule, setSelectedModule] = useState("ALL");
-  const [sortConfig, setSortConfig] = useState({
-    key: "timestamp",
-    direction: "desc",
+  const [logs, setLogs] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 0,
   });
 
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction:
-        prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
-    setCurrentPage(1);
-  };
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [filters, setFilters] = useState(INITIAL_FILTERS);
+  const [selectedLogId, setSelectedLogId] = useState(null);
 
-  const filteredLogs = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    return auditLogsData.filter((log) => {
-      const matchesModule =
-        selectedModule === "ALL" || log.module === selectedModule;
+  // Fetch audit logs from the API.
+  useEffect(() => {
+    const controller = new AbortController();
 
-      const matchesSearch = [
-        log.id,
-        log.timestamp,
-        log.user,
-        log.email,
-        log.action,
-        log.module,
-        log.ip_address,
-        log.details,
-        log.status,
-      ].some((val) => (val || "").toString().toLowerCase().includes(query));
+    // Debounce text search and filter changes.
+    const timer = setTimeout(async () => {
+      setLoading(true);
+      setError("");
 
-      return matchesModule && matchesSearch;
-    });
-  }, [search, selectedModule]);
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+      });
 
-  const sortedLogs = useMemo(() => {
-    if (!sortConfig.key) return filteredLogs;
+      if (search.trim()) {
+        params.set("search", search.trim());
+      }
 
-    return [...filteredLogs].sort((a, b) => {
-      let aValue = a[sortConfig.key] ?? "";
-      let bValue = b[sortConfig.key] ?? "";
+      // These parameters must be supported by the backend.
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value.trim()) {
+          params.set(key, value.trim());
+        }
+      });
 
-      aValue = aValue.toString().toLowerCase();
-      bValue = bValue.toString().toLowerCase();
+      try {
+        const response = await apiRequest(
+          `/api/audit?${params.toString()}`,
+          { signal: controller.signal }
+        );
 
-      if (aValue < bValue) return sortConfig.direction === "asc" ? -1 : 1;
-      if (aValue > bValue) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
-    });
-  }, [filteredLogs, sortConfig]);
+        setLogs(response.data ?? []);
+        setPagination(
+          response.pagination ?? {
+            page: currentPage,
+            pageSize: PAGE_SIZE,
+            total: 0,
+            totalPages: 0,
+          }
+        );
+      } catch (err) {
+        if (err.name === "AbortError") return;
 
-  const totalPages = Math.max(1, Math.ceil(filteredLogs.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
+        setError(err.message || "Failed to load audit logs.");
+        setLogs([]);
+      } finally {
+        if (!controller.signal.aborted) {
+          setLoading(false);
+        }
+      }
+    }, 300);
 
-  const pagedLogs = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-    return sortedLogs.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedLogs, safePage]);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [currentPage, search, filters]);
 
-  const startRow =
-    filteredLogs.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredLogs.length);
+ 
 
-  const handleSearchChange = (value) => {
+  function handleSearchChange(value) {
     setSearch(value);
     setCurrentPage(1);
-  };
+    setSelectedLogId(null);
+  }
+
+  function clearFilters() {
+    setSearch("");
+    setFilters(INITIAL_FILTERS);
+    setCurrentPage(1);
+    setSelectedLogId(null);
+  }
+
+  const totalPages = pagination.totalPages || 0;
+  const startRow =
+    pagination.total === 0
+      ? 0
+      : (currentPage - 1) * PAGE_SIZE + 1;
+
+  const endRow = Math.min(
+    currentPage * PAGE_SIZE,
+    pagination.total
+  );
 
   return (
     <MainLayout>
       <div className="dashboard">
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">Audit Logs</h1>
+            <h1 className="dashboard-header__title">
+              Audit Logs
+            </h1>
+
             <p className="dashboard-header__subtitle">
-              Track user activities, system security events, and configuration changes
+              Track user activities, system security events,
+              and configuration changes
             </p>
           </div>
         </div>
 
+        {/* Search */}
         <div className="bookings-toolbar form-actions">
           <label className="history-search">
             <i className="bi bi-search" aria-hidden="true" />
+
             <input
               type="search"
               aria-label="Search audit logs"
-              placeholder="Search by user, action, IP, or details..."
+              placeholder="Search user, action, resource, or details..."
               value={search}
-              onChange={(event) => handleSearchChange(event.target.value)}
+              onChange={(event) =>
+                handleSearchChange(event.target.value)
+              }
             />
           </label>
 
           <div className="bookings-toolbar__actions">
-            <div className="page-permission-role-selector">
-              <select
-                id="module-filter"
-                value={selectedModule}
-                className="permission-role-selector"
-                onChange={(e) => {
-                  setSelectedModule(e.target.value);
-                  setCurrentPage(1);
-                }}
-              >
-                <option value="ALL">All Modules</option>
-                <option value="Booking Management">Booking Management</option>
-                <option value="Room Management">Room Management</option>
-                <option value="Site Management">Site Management</option>
-                <option value="User Management">User Management</option>
-                <option value="Permissions">Permissions</option>
-                <option value="Authentication">Authentication</option>
-              </select>
-            </div>
+            <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={clearFilters}
+            >
+              <i className="bi bi-x-circle" aria-hidden="true" />
+              Clear Filters
+            </button>
 
             <button
               type="button"
               className="btn btn-neutral"
-              onClick={() => console.log("Exporting logs to Excel...")}
+              onClick={() =>
+                console.log("Implement server-side Excel export")
+              }
             >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              <i
+                className="bi bi-file-earmark-excel"
+                aria-hidden="true"
+              />
               Export Excel
             </button>
           </div>
         </div>
 
+        {/* Filters */}
         <section className="table-card content">
+         
+
+          {error && (
+            <div className="audit-error" role="alert">
+              {error}
+              <button
+                type="button"
+                className="btn btn-neutral"
+                onClick={() => setCurrentPage((page) => page)}
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("timestamp")}
-                    >
-                      Timestamp
-                      <i className="bi bi-sort-numeric-down" aria-hidden="true" />
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("user")}
-                    >
-                      User
-                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                    </button>
-                  </th>
+                  <th>Timestamp</th>
+                  <th>User</th>
                   <th>Action</th>
-                  <th>Module</th>
+                  <th>Resource</th>
+                  <th>Resource ID</th>
+                  <th>Description</th>
                   <th>Details</th>
-                  <th>IP Address</th>
-                  <th>Status</th>
                 </tr>
               </thead>
 
               <tbody>
-                {pagedLogs.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan="8" className="muted text-center">
+                    <td colSpan={8} className="muted text-center">
+                      Loading audit logs...
+                    </td>
+                  </tr>
+                ) : error ? (
+                  <tr>
+                    <td colSpan={8} className="muted text-center">
+                      Unable to load audit logs.
+                    </td>
+                  </tr>
+                ) : logs.length === 0 ? (
+                  <tr>
+                    <td colSpan={8} className="muted text-center">
                       No audit logs found.
                     </td>
                   </tr>
                 ) : (
-                  pagedLogs.map((log, index) => (
-                    <tr key={log.id || index}>
-                      <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
-                      </td>
+                  logs.map((log, index) => (
+                    <>
+                      <tr key={log.id}>
+                        <td className="table-col-no">
+                          {startRow + index}
+                        </td>
 
-                      <td style={{ whiteSpace: "nowrap" }}>
-                        <small>{log.timestamp}</small>
-                      </td>
+                        <td style={{ whiteSpace: "nowrap" }}>
+                          <small>
+                            {formatTimestamp(log.createdAt)}
+                          </small>
+                        </td>
 
-                      <td>
-                        <strong>{log.user}</strong>
-                        <br />
-                        <small className="muted">{log.email}</small>
-                      </td>
+                        <td>
+                          <strong>
+                            {log.actorName || "Unknown user"}
+                          </strong>
+                          <br />
+                          <small className="muted">
+                            {log.actorUserId || "System"}
+                          </small>
+                        </td>
 
-                      <td>
-                        <span className="badge badge-neutral">{log.action}</span>
-                      </td>
+                        <td>
+                          <span className="badge badge-neutral">
+                            {log.action}
+                          </span>
+                        </td>
 
-                      <td>{log.module}</td>
+                        <td>{log.resource}</td>
 
-                      <td style={{ maxWidth: "280px" }}>
-                        <span title={log.details}>{log.details}</span>
-                      </td>
+                        <td>
+                          <code>{log.resourceId || "-"}</code>
+                        </td>
 
-                      <td>
-                        <code>{log.ip_address}</code>
-                      </td>
+                        <td style={{ maxWidth: "280px" }}>
+                          <span title={log.description || ""}>
+                            {log.description || "-"}
+                          </span>
+                        </td>
 
-                      <td>
-                        <span
-                          className={`badge ${
-                            log.status === "SUCCESS"
-                              ? "badge-success"
-                              : "badge-danger"
-                          }`}
-                        >
-                          {log.status}
-                        </span>
-                      </td>
-                    </tr>
+                        <td>
+                          <button
+                            type="button"
+                            className="btn btn-neutral"
+                            onClick={() =>
+                              setSelectedLogId((current) =>
+                                current === log.id ? null : log.id
+                              )
+                            }
+                          >
+                            {selectedLogId === log.id
+                              ? "Hide"
+                              : "View"}
+                          </button>
+                        </td>
+                      </tr>
+
+                      {selectedLogId === log.id && (
+                        <tr key={`${log.id}-details`}>
+                          <td colSpan={8}>
+                            <div className="audit-log-details">
+                              <h4>Audit Event Details</h4>
+
+                              <p>
+                                <strong>Event ID:</strong>{" "}
+                                {log.id}
+                              </p>
+
+                              <p>
+                                <strong>Actor user ID:</strong>{" "}
+                                {log.actorUserId || "-"}
+                              </p>
+
+                              <p>
+                                <strong>IP address:</strong>{" "}
+                                {log.ipAddress || "-"}
+                              </p>
+
+                              <p>
+                                <strong>User agent:</strong>{" "}
+                                {log.userAgent || "-"}
+                              </p>
+
+                              <div className="audit-log-changes">
+                                <div>
+                                  <strong>Before</strong>
+                                  <pre>
+                                    {formatJson(log.before)}
+                                  </pre>
+                                </div>
+
+                                <div>
+                                  <strong>After</strong>
+                                  <pre>
+                                    {formatJson(log.after)}
+                                  </pre>
+                                </div>
+                              </div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   ))
                 )}
               </tbody>
             </table>
           </div>
 
-          {/* PAGINATION */}
+          {/* Server-side pagination */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredLogs.length} logs
+              Showing {startRow}–{endRow} of {pagination.total} logs
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
+                disabled={loading || currentPage <= 1}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.max(1, prev - 1))
+                  setCurrentPage((page) => Math.max(1, page - 1))
                 }
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -248,15 +370,21 @@ export default function AuditLog() {
               </button>
 
               <span className="office-page-info">
-                Page {safePage} of {totalPages}
+                Page {currentPage} of {Math.max(1, totalPages)}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={
+                  loading ||
+                  totalPages === 0 ||
+                  currentPage >= totalPages
+                }
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((page) =>
+                    Math.min(totalPages, page + 1)
+                  )
                 }
               >
                 Next
