@@ -10,8 +10,15 @@ import permissionRouter from "./routes/permission.route";
 import locationRouter from "./routes/location.route";
 import notificationRouter from "./routes/notification.route";
 import auditRouter from "./routes/audit.route";
+import { setupNotificationSocket } from "./websocket/notification.socket";
+import { createServer } from "node:http";
+
 
 const app = express();
+
+const server = createServer(app);
+
+setupNotificationSocket(server);
 
 app.use(cors(
     {

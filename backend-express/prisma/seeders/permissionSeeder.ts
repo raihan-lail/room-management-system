@@ -150,6 +150,42 @@ const permissions = [
     name: "audit.logs",
     description: "access audit logs page",
   },
+  {
+    name:"bookings.import",
+    description:"import bookings in excel/csv"
+  },
+  {
+    name:"bookings.export",
+    description:"export bookings in excel/csv"
+  },
+  {
+    name:"home-leave.export",
+    description:"export home leaves in excel/csv"
+  },
+  {
+    name:"rooms.export",
+    description:"export rooms in excel/csv"
+  },
+  {
+    name:"room-allocations.create",
+    description:"create room allocations"
+  },
+  {
+    name:"room-allocations.import",
+    description:"import room allocations data"
+  },
+  {
+    name:"room-allocations.export",
+    description:"export room data in excel/csv"
+  },
+  {
+    name:"resident.import",
+    description:"import resident data",
+
+  }, {
+    name:"resident.export",
+    description:"export resident data in escel/csv"
+  }
 ];
 
 async function main() {

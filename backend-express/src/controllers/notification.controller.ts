@@ -1,7 +1,7 @@
 import type { Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware";
-import { auditActor } from "../services/audit.service.js";
+
 
 export async function getMyNotifications(
   req: AuthRequest,
@@ -135,3 +135,4 @@ export async function markAllNotificationsAsRead(
 export async function getRoleNotifications(){
   
 }
+
