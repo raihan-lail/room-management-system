@@ -1,6 +1,7 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+import type { Prisma } from "../generated/prisma/client.js";
 import {
   getActorOrRespond,
   isGlobalSuperadmin,
@@ -10,6 +11,8 @@ import {
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 import type { Actor } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
+import { auditActor, auditInTransaction } from "../services/audit.service.js";
 
 function roomSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
@@ -23,33 +26,144 @@ function roomSiteFilter(actor: Actor) {
   };
 }
 
+function singleParam(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed ? trimmed : undefined;
+}
+
+function listParam(value: unknown): string[] | undefined {
+  const raw = Array.isArray(value) ? value : [value];
+  const list = raw
+    .flatMap((entry) => (typeof entry === "string" ? entry.split(",") : []))
+    .map((entry) => entry.trim())
+    .filter(Boolean);
+  return list.length > 0 ? [...new Set(list)] : undefined;
+}
+
+function booleanParam(value: unknown): boolean | undefined {
+  const raw = singleParam(value)?.toLowerCase();
+
+  if (raw === "true") return true;
+  if (raw === "false") return false;
+
+  return undefined;
+}
+
 export async function listRooms(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const rooms = await prisma.room.findMany({
-      where: {
-        ...roomSiteFilter(actor),
-        ...(typeof req.query.floorId === "string"
-          ? { floorId: req.query.floorId }
-          : {}),
-      },
-      include: {
-        floor: {
-          include: {
-            location: {
-              include: { site: true },
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page ?? "1"), 10) || 1,
+    );
+
+    const pageSize = Math.min(
+      100,
+      Math.max(
+        1,
+        Number.parseInt(String(req.query.pageSize ?? "20"), 10) || 20,
+      ),
+    );
+
+    const floorId = singleParam(req.query.floorId);
+    const name = singleParam(req.query.name);
+    const description = singleParam(req.query.description);
+    const row = singleParam(req.query.row);
+
+    const types = listParam(req.query.type);
+    const isBookable = booleanParam(req.query.isBookable);
+
+    const search = singleParam(req.query.search);
+
+    const where: Prisma.RoomWhereInput = {
+      ...roomSiteFilter(actor),
+      ...(floorId ? { floorId } : {}),
+      ...(name
+        ? { name: { contains: name, mode: "insensitive" as const } }
+        : {}),
+      ...(description
+        ? {
+            description: {
+              contains: description,
+              mode: "insensitive" as const,
+            },
+          }
+        : {}),
+      ...(row
+        ? { row: { contains: row, mode: "insensitive" as const } }
+        : {}),
+      ...(types
+        ? types.length === 1
+          ? { type: types[0] }
+          : { type: { in: types } }
+        : {}),
+      ...(isBookable !== undefined ? { isBookable } : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                description: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                type: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                row: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [rooms, total] = await prisma.$transaction([
+      prisma.room.findMany({
+        where,
+        include: {
+          floor: {
+            include: {
+              location: {
+                include: { site: true },
+              },
             },
           },
+          beds: true,
+          _count: { select: { beds: true } },
         },
-        beds: true,
-        _count: { select: { beds: true } },
-      },
-      orderBy: [{ name: "asc" }],
-    });
+        orderBy: [{ name: "asc" }],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
 
-    return res.json({ rooms });
+      prisma.room.count({ where }),
+    ]);
+
+    return res.json({
+      rooms,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
   } catch (error) {
     return handlePrismaError(error, res);
   }
@@ -163,25 +277,45 @@ export async function createRoom(req: AuthRequest, res: Response) {
       });
     }
 
-    const room = await prisma.room.create({
-      data: {
-        floorId,
-        name: name.trim(),
-        description:
-          typeof description === "string" ? description.trim() || null : null,
-        row: typeof row === "string" ? row.trim() || null : null,
-        isBookable: isBookable ?? true,
+    const room = await prisma.$transaction(async (tx) => {
+      const created = await tx.room.create({
+        data: {
+          floorId,
+          name: name.trim(),
+          description:
+            typeof description === "string"
+              ? description.trim() || null
+              : null,
+          row: typeof row === "string" ? row.trim() || null : null,
+          isBookable: isBookable ?? true,
 
-        beds: {
-          create: Array.from({ length: numberOfBeds }, (_, index) => ({
-            name: `Bed ${index + 1}`,
-          })),
+          beds: {
+            create: Array.from({ length: numberOfBeds }, (_, index) => ({
+              name: `Bed ${index + 1}`,
+            })),
+          },
         },
-      },
-      include: {
-        floor: true,
-        beds: true,
-      },
+        include: {
+          floor: true,
+          beds: true,
+        },
+      });
+
+      await auditInTransaction(tx, req, actor, {
+        action: "create",
+        resource: "room",
+        resourceId: created.id,
+        description: `Room ${created.name} created`,
+        after: created,
+      });
+
+      return created;
+    });
+
+    await notifyActor(req, {
+      title: "Room Created",
+      message: `Room ${room.name} was created successfully.`,
+      type: "SUCCESS",
     });
 
     return res.status(201).json({ room });
@@ -205,7 +339,6 @@ export async function updateRoom(req: AuthRequest, res: Response) {
         id,
         ...roomSiteFilter(actor),
       },
-      select: { id: true },
     });
 
     if (!existing) {
@@ -283,6 +416,21 @@ export async function updateRoom(req: AuthRequest, res: Response) {
       include: { beds: true },
     });
 
+    await notifyActor(req, {
+      title: "Room Updated",
+      message: `Room ${room.name} was updated successfully.`,
+      type: "INFO",
+    });
+
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "room",
+      resourceId: room.id,
+      description: `Room ${room.name} updated`,
+      before: existing,
+      after: room,
+    });
+
     return res.json({ room });
   } catch (error) {
     return handlePrismaError(error, res, {
@@ -304,8 +452,7 @@ export async function deleteRoom(req: AuthRequest, res: Response) {
         id,
         ...roomSiteFilter(actor),
       },
-      select: {
-        id: true,
+      include: {
         _count: { select: { beds: true } },
       },
     });
@@ -322,6 +469,20 @@ export async function deleteRoom(req: AuthRequest, res: Response) {
     }
 
     await prisma.room.delete({ where: { id } });
+
+    await notifyActor(req, {
+      title: "Room Deleted",
+      message: `Room ${room.name} was deleted successfully.`,
+      type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "delete",
+      resource: "room",
+      resourceId: room.id,
+      description: `Room ${room.name} deleted`,
+      before: room,
+    });
 
     return res.json({ message: "Room deleted successfully" });
   } catch (error) {

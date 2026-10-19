@@ -8,6 +8,7 @@ import {
   useState,
 } from "react";
 
+import useAuth from "../contexts/useAuth";
 import bookingsData from "../data/bookings";
 import { rooms as roomsData } from "../data/room";
 import BookingModal from "./modals/BookingModal";
@@ -208,7 +209,11 @@ function bookingOverlaps(
 }
 
 export default function CalendarView() {
-   
+  const { hasPermission } = useAuth();
+
+  const canCreateBooking =
+    hasPermission("bookings.create");
+
   const [hovered, setHovered] =
     useState(null);
 
@@ -849,6 +854,8 @@ export default function CalendarView() {
     index,
     event
   ) => {
+    if (!canCreateBooking) return;
+
     if (event.button !== 0) return;
 
     event.preventDefault();
@@ -1484,6 +1491,10 @@ export default function CalendarView() {
                               : ""
                           } ${
                             booked ? "is-booked" : ""
+                          } ${
+                            !canCreateBooking
+                              ? "is-locked"
+                              : ""
                           } ${
                             isCellSelected(
                               room.name,

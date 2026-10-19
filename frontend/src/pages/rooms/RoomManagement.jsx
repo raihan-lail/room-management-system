@@ -1,343 +1,515 @@
+
 import MainLayout from "../../components/MainLayout";
-import { useMemo, useState } from "react";
+import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import apiRequest from "../../api/client";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
-import {
-  addFormSchemas,
-  buildRow,
-} from "../../components/modals/addFormSchemas";
-import { rooms as initialRooms } from "../../data/room";
+import { buildRoomSchema } from "../../components/modals/addFormSchemas";
+import FlexibleButton from "../../components/FlexibleButtons";
+
 
 const PAGE_SIZE = 10;
 
-const roomSchema = addFormSchemas.room;
+function getRoomList(response) {
+  if (Array.isArray(response?.rooms)) return response.rooms;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
 
+function getPagination(response, currentPage) {
+  const pagination = response?.pagination ?? response?.meta ?? {};
+
+  return {
+    page: Number(pagination.page ?? currentPage),
+    pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
+    total: Number(pagination.total ?? 0),
+    totalPages: Number(
+      pagination.totalPages ??
+        Math.max(1, Math.ceil((pagination.total ?? 0) / PAGE_SIZE))
+    ),
+  };
+}
+
+function mapRoomToForm(room) {
+  return {
+    ...room,
+    name: room.name ?? "",
+    locationId: room.floor?.location?.id ?? "",
+    floorId: room.floorId ?? room.floor?.id ?? "",
+    description: room.description ?? "",
+    row: room.row ?? "",
+    isBookable: room.isBookable === false ? "No" : "Yes",
+  };
+}
+
+function getRoomLocation(room) {
+  return (
+    room.floor?.location?.name ??
+    room.location?.name ??
+    room.location ??
+    "-"
+  );
+}
+function getRoomBeds(room) {
+  return Array.isArray(room.beds) ? room.beds : [];
+}
+
+function getRoomBedCount(room) {
+  return room._count?.beds ?? getRoomBeds(room).length;
+}
 
 export default function RoomManagement() {
-     const navigate = useNavigate();
-     const [roomList, setRoomList] = useState(initialRooms);
-     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-     const [editingRow, setEditingRow] = useState(null);
-     const [deletingRow, setDeletingRow] = useState(null);
-     const [currentPage, setCurrentPage] = useState(1);
-     const [search, setSearch] = useState("");
-     const [selectedLocation, setSelectedLocation] = useState("ALL");
-     const [selectedStatus, setSelectedStatus] = useState("ALL");
-     const [sortConfig, setSortConfig] = useState({
-  key: null,
-  direction: "asc",
-});
+  const navigate = useNavigate();
 
- const handleAddRoom = (values) => {
-  setRoomList((prev) => [...prev, buildRow(roomSchema, values)]);
-  setCurrentPage(1);
-};
-
- const handleEditRoom = (values) => {
-  setRoomList((prev) =>
-    prev.map((row) =>
-      row === editingRow ? buildRow(roomSchema, values, row) : row,
-    ),
-  );
-};
-
- const handleDeleteRoom = () => {
-  setRoomList((prev) => prev.filter((row) => row !== deletingRow));
-};
-
- const handleSort = (key) => {
-  setSortConfig((prev) => ({
-    key,
-    direction:
-      prev.key === key && prev.direction === "asc"
-        ? "desc"
-        : "asc",
-  }));
-
-  setCurrentPage(1);
-};
-
-     const filteredRooms = useMemo(() => {
-        const query = search.trim().toLowerCase();
-        return roomList.filter((room) => {
-            const locationMatch =
-              selectedLocation === "ALL" || room.location === selectedLocation;
-            const statusMatch =
-              selectedStatus === "ALL" || room.status === selectedStatus;
-            const matchesQuery = !query ||
-            [
-            room.name,
-            room.desc,
-            room.location,
-            room.status,
-            room.cleaning_status
-        ].some((value) =>
-        (value || "").toString().toLowerCase().includes(query)
-    );
-            return locationMatch && statusMatch && matchesQuery;
-        })
-     }, [roomList, search, selectedLocation, selectedStatus]);
-
-      const locationOptions = useMemo(() => [
-        "ALL",
-        ...[...new Set(roomList.map((room) => room.location).filter(Boolean))],
-      ], [roomList]);
-
-      const statusOptions = useMemo(() => [
-        "ALL",
-        ...[...new Set(roomList.map((room) => room.status).filter(Boolean))],
-      ], [roomList]);
-
-      const sortedRoom = useMemo(() => {
-  if (!sortConfig.key) return filteredRooms;
-
-  return [...filteredRooms].sort((a, b) => {
-    let aValue;
-    let bValue;
-
-    switch (sortConfig.key) {
-      case "name":
-        aValue = a.name;
-        bValue = b.name;
-        break;
-
-      case "location":
-        aValue = a.location;
-        bValue = b.location;
-        break;
-
-      case "status":
-        aValue = a.status;
-        bValue = b.status;
-        break;
-
-      default:
-        return 0;
-    }
-
-    aValue = (aValue ?? "").toString().toLowerCase();
-    bValue = (bValue ?? "").toString().toLowerCase();
-
-    if (aValue < bValue) {
-      return sortConfig.direction === "asc" ? -1 : 1;
-    }
-
-    if (aValue > bValue) {
-      return sortConfig.direction === "asc" ? 1 : -1;
-    }
-
-    return 0;
+  const [roomList, setRoomList] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
   });
-}, [filteredRooms, sortConfig]);
 
-     const totalPages = Math.max(1, Math.ceil(filteredRooms.length / PAGE_SIZE));
-     const safePage = Math.min(currentPage, totalPages);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({
+    key: null,
+    direction: "asc",
+  });
 
-      const pagedRooms = useMemo(() => {
-         const startIndex = (safePage - 1) * PAGE_SIZE;
-         return sortedRoom.slice(startIndex, startIndex + PAGE_SIZE);
-       }, [sortedRoom, safePage]);
-     
-       const startRow = filteredRooms.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-       const endRow = Math.min(safePage * PAGE_SIZE, filteredRooms.length);
-     
-       const handleSearchChange = (value) => {
-         setSearch(value);
-         setCurrentPage(1);
-       };
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
-    return (
-        <MainLayout>
-            <div className="dashboard">
-                <div className="dashboard-header">
-                     <div className="dashboard-header__text">
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [editingRow, setEditingRow] = useState(null);
+  const [deletingRow, setDeletingRow] = useState(null);
+  const [expandedRooms, setExpandedRooms] = useState([]);
+
+  const loadLocations = useCallback(async () => {
+    try {
+      const response = await apiRequest("/api/location");
+      setLocations(response?.data ?? []);
+    } catch (err) {
+      setError(err.message || "Failed to load locations.");
+    }
+  }, []);
+
+  const loadRooms = useCallback(async () => {
+    setLoading(true);
+    setError("");
+
+    try {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+        search: search.trim(),
+      });
+
+      const response = await apiRequest(
+        `/api/rooms?${params.toString()}`
+      );
+
+      const rooms = getRoomList(response);
+      const pageInfo = getPagination(response, currentPage);
+
+      setRoomList(rooms);
+      setPagination(pageInfo);
+
+      // Protect against a stale page after deletion or filtering.
+      if (pageInfo.totalPages > 0 && currentPage > pageInfo.totalPages) {
+        setCurrentPage(pageInfo.totalPages);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to load rooms.");
+      setRoomList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [currentPage, search]);
+
+  useEffect(() => {
+  const timer = window.setTimeout(() => {
+    loadRooms();
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadRooms]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadLocations();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadLocations]);
+
+  const addRoomSchema = useMemo(
+    () => buildRoomSchema(locations, { includeBeds: true }),
+    [locations]
+  );
+
+  const editRoomSchema = useMemo(
+    () => buildRoomSchema(locations, { includeBeds: false }),
+    [locations]
+  );
+
+  const handleAddRoom = async (values) => {
+    setSaving(true);
+    setError("");
+
+    try {
+      const payload = {
+        floorId: values.floorId,
+        name: values.name?.trim(),
+        description: values.description ?? null,
+        row: values.row ?? null,
+        isBookable: values.isBookable === "Yes",
+        numberOfBeds: Number(values.numberOfBeds ?? 1),
+      };
+
+      await apiRequest("/api/rooms", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      });
+
+      setIsAddModalOpen(false);
+      setCurrentPage(1);
+
+      // Refresh explicitly because the page may not have changed.
+      if (currentPage === 1) {
+        await loadRooms();
+      }
+    } catch (err) {
+      setError(err.message || "Failed to create room.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleEditRoom = async (values) => {
+    if (!editingRow?.id) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      const payload = {
+        ...(values.floorId ? { floorId: values.floorId } : {}),
+        name: values.name?.trim(),
+        description: values.description ?? null,
+        row: values.row ?? null,
+        isBookable: values.isBookable === "Yes",
+      };
+
+      await apiRequest(`/api/rooms/${editingRow.id}`, {
+        method: "PATCH",
+        body: JSON.stringify(payload),
+      });
+
+      setEditingRow(null);
+      await loadRooms();
+    } catch (err) {
+      setError(err.message || "Failed to update room.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDeleteRoom = async () => {
+    if (!deletingRow?.id) return;
+
+    setSaving(true);
+    setError("");
+
+    try {
+      await apiRequest(`/api/rooms/${deletingRow.id}`, {
+        method: "DELETE",
+      });
+
+      setDeletingRow(null);
+
+      // Reload the previous page if its last room was deleted.
+      if (roomList.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        await loadRooms();
+      }
+    } catch (err) {
+      setError(err.message || "Failed to delete room.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction:
+        prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
+
+  const toggleRoomExpanded = (roomId) => {
+    setExpandedRooms((prev) =>
+      prev.includes(roomId)
+        ? prev.filter((id) => id !== roomId)
+        : [...prev, roomId]
+    );
+  };
+
+  // Sorting applies to the current server-returned page.
+  const sortedRooms = useMemo(() => {
+    if (!sortConfig.key) return roomList;
+
+    return [...roomList].sort((a, b) => {
+      const getValue = (room) => {
+        switch (sortConfig.key) {
+          case "name":
+            return room.name;
+          case "location":
+            return getRoomLocation(room);
+          case "status":
+            return room.status ?? "";
+          default:
+            return "";
+        }
+      };
+
+      const aValue = String(getValue(a) ?? "").toLowerCase();
+      const bValue = String(getValue(b) ?? "").toLowerCase();
+
+      const result = aValue.localeCompare(bValue, undefined, {
+        numeric: true,
+      });
+
+      return sortConfig.direction === "asc" ? result : -result;
+    });
+  }, [roomList, sortConfig]);
+
+  const startRow =
+    pagination.total === 0
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1;
+
+  const endRow = Math.min(
+    pagination.page * pagination.pageSize,
+    pagination.total
+  );
+
+  return (
+    <MainLayout>
+      <div className="dashboard">
+        <div className="dashboard-header">
+          <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">Room Management</h1>
             <p className="dashboard-header__subtitle">
-              Room management will added here
+              Manage rooms, floors, and beds.
             </p>
           </div>
-         
+        </div>
 
-                </div>
-                 <div className="bookings-toolbar form-actions">
-                
+        <div className="bookings-toolbar form-actions">
           <label className="history-search">
             <i className="bi bi-search" aria-hidden="true" />
             <input
               type="search"
               aria-label="Search rooms"
-              placeholder="Search by room number, location, status..."
+              placeholder="Search by room number, location, description..."
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
 
           <div className="bookings-toolbar__actions">
-            <select
-              aria-label="Filter by location"
-              className="permission-role-selector"
-              value={selectedLocation}
-              onChange={(event) => {
-                setSelectedLocation(event.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              {locationOptions.map((location) => (
-                <option key={location} value={location}>
-                  {location === "ALL" ? "All Locations" : location}
-                </option>
-              ))}
-            </select>
-
-            <select
-              aria-label="Filter by status"
-              className="permission-role-selector"
-              value={selectedStatus}
-              onChange={(event) => {
-                setSelectedStatus(event.target.value);
-                setCurrentPage(1);
-              }}
-            >
-              {statusOptions.map((status) => (
-                <option key={status} value={status}>
-                  {status === "ALL" ? "All Statuses" : status}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <div className="bookings-toolbar__actions">
-            <button
-              type="button"
+            <FlexibleButton
+              permission="rooms.manage"
               className="btn btn-primary"
               onClick={() => setIsAddModalOpen(true)}
+              disabled={saving}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Room
-            </button>
-
-            <button
-              type="button"
-              className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
-            >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Export Excel
-            </button>
+            </FlexibleButton>
           </div>
         </div>
 
-         <section className="table-card content">
+        {error && (
+          <div className="alert alert-danger" role="alert">
+            {error}
+          </div>
+        )}
+
+        <section className="table-card content">
           <div className="office-table-wrapper">
-            <table className="office-table">
+            <table className="office-table office-table--expandable">
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
-                    <th>
+                  <th>
                     <button
                       type="button"
                       className="table-sort"
                       onClick={() => handleSort("name")}
                     >
                       Room Number
-                      <i className="bi bi-sort-alpha-down" column="name">
-                        {" "}
-                      </i>
+                      <i className="bi bi-sort-alpha-down" />
                     </button>
                   </th>
-                 <th>
+                  <th>
                     <button
                       type="button"
                       className="table-sort"
                       onClick={() => handleSort("location")}
                     >
                       Location
-                      <i className="bi bi-sort-alpha-down" column="location">
-                        {" "}
-                      </i>
+                      <i className="bi bi-sort-alpha-down" />
                     </button>
                   </th>
-                  <th>Desc</th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("status")}
-                    >
-                      Status
-                      <i className="bi bi-sort-alpha-down" column="status">
-                        {" "}
-                      </i>
-                    </button>
-                  </th>
-                   <th>Action</th>
+                  <th>Floor</th>
+                  <th>Description</th>
+                  <th>Beds</th>
                   
+                  <th>Action</th>
                 </tr>
               </thead>
 
               <tbody>
-                {pagedRooms.length === 0 ? (
+                {loading ? (
                   <tr>
-                    <td colSpan="12" className="muted">
+                    <td colSpan={7} className="muted">
+                      Loading rooms...
+                    </td>
+                  </tr>
+                ) : sortedRooms.length === 0 ? (
+                  <tr>
+                    <td colSpan={7} className="muted">
                       No rooms found.
                     </td>
                   </tr>
                 ) : (
-                  pagedRooms.map((room, index) => (
-                    <tr
-                      key={`${room.name}-${index}`}
-                    >
-                      <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
-                      </td>
+                  sortedRooms.map((room, index) => {
+                    const beds = getRoomBeds(room);
+                    const bedCount = getRoomBedCount(room);
+                    const isExpanded = expandedRooms.includes(room.id);
 
-                      <td>
-                        <strong>{room.name || "-"}</strong>
-                      </td>
+                    return (
+                      <Fragment key={room.id}>
+                        <tr className={isExpanded ? "is-expanded" : ""}>
+                          <td className="table-col-no">
+                            {startRow + index}
+                          </td>
+                          <td>
+                            <strong>{room.name || "-"}</strong>
+                          </td>
+                          <td>{getRoomLocation(room)}</td>
+                          <td>{room.floor.name || "-"}</td>
+                          <td>{room.description || "-"}</td>
+                          <td>
+                            <div className="location-floors-cell">
+                              <span className="location-floors-count">
+                                {bedCount} bed(s)
+                              </span>
 
-                      <td>{room.location || "-"}</td>
+                              {bedCount > 0 && (
+                                <button
+                                  type="button"
+                                  className="location-floors-toggle"
+                                  aria-expanded={isExpanded}
+                                  aria-label={`${isExpanded ? "Hide" : "View"} beds for room ${room.name}`}
+                                  onClick={() => toggleRoomExpanded(room.id)}
+                                >
+                                  <i
+                                    className={
+                                      isExpanded
+                                        ? "bi bi-chevron-up"
+                                        : "bi bi-chevron-down"
+                                    }
+                                    aria-hidden="true"
+                                  />
+                                  {isExpanded ? "Hide" : "View"}
+                                </button>
+                              )}
+                            </div>
+                          </td>
+                         
+                          <td>
+                            <TableRowActions
+                              label="room"
+                              rowLabel={room.name}
+                              onView={() =>
+                                navigate(`/rooms/${room.id}/booking-details`)
+                              }
+                              onEdit={() => setEditingRow(mapRoomToForm(room))}
+                              onDelete={() => setDeletingRow(room)}
+                            />
+                          </td>
+                        </tr>
 
-                      <td>{room.desc || "-"}</td>
+                        {isExpanded && bedCount > 0 && (
+                          <tr className="location-floors-row">
+                            <td colSpan={7}>
+                              <div className="location-floors-panel">
+                                <p className="location-floors-panel__title">
+                                  Beds — Room {room.name}
+                                </p>
 
-                      <td>{room.status || "-"}</td>
-
-                     
-
-                      
-
-                      <td>
-                        <TableRowActions
-                          label="room"
-                          rowLabel={room.name}
-                          onView={() =>
-                            navigate(`/rooms/${room.name}/booking-details`)
-                          }
-                          onEdit={() => setEditingRow(room)}
-                          onDelete={() => setDeletingRow(room)}
-                        />
-                      </td>
-                    </tr>
-                  ))
+                                <ul className="location-floors-list">
+                                  {beds.map((bed) => (
+                                    <li
+                                      key={bed.id}
+                                      className="location-floors-item"
+                                    >
+                                      <div className="location-floors-item__text">
+                                        <strong className="location-floors-item__name">
+                                          {bed.name}
+                                        </strong>
+                                        <span className="location-floors-item__meta">
+                                          {bed.status ?? "UNKNOWN"}
+                                          {bed.description
+                                            ? ` · ${bed.description}`
+                                            : ""}
+                                          {bed.isActive === false && (
+                                            <span className="location-floors-badge">
+                                              Inactive
+                                            </span>
+                                          )}
+                                        </span>
+                                      </div>
+                                    </li>
+                                  ))}
+                                </ul>
+                              </div>
+                            </td>
+                          </tr>
+                        )}
+                      </Fragment>
+                    );
+                  })
                 )}
               </tbody>
             </table>
           </div>
 
-          {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredRooms.length} rooms
+              Showing {startRow}–{endRow} of {pagination.total} rooms
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
+                disabled={loading || currentPage <= 1}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.max(1, prev - 1))
+                  setCurrentPage((page) => Math.max(1, page - 1))
                 }
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -345,15 +517,19 @@ export default function RoomManagement() {
               </button>
 
               <span className="office-page-info">
-                Page {safePage} of {totalPages}
+                Page {currentPage} of {pagination.totalPages}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={
+                  loading || currentPage >= pagination.totalPages
+                }
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((page) =>
+                    Math.min(pagination.totalPages, page + 1)
+                  )
                 }
               >
                 Next
@@ -362,37 +538,36 @@ export default function RoomManagement() {
             </div>
           </div>
         </section>
-            </div>
+      </div>
 
-        {isAddModalOpen && (
-          <AddModal
-            schema={roomSchema}
-            onClose={() => setIsAddModalOpen(false)}
-            onSubmit={handleAddRoom}
-          />
-        )}
+      {isAddModalOpen && (
+        <AddModal
+          schema={addRoomSchema}
+          onClose={() => setIsAddModalOpen(false)}
+          onSubmit={handleAddRoom}
+        />
+      )}
 
-        {editingRow && (
-          <AddModal
-            schema={roomSchema}
-            mode="edit"
-            initialValues={editingRow}
-            onClose={() => setEditingRow(null)}
-            onSubmit={handleEditRoom}
-          />
-        )}
+      {editingRow && (
+        <AddModal
+          schema={editRoomSchema}
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditRoom}
+        />
+      )}
 
-        {deletingRow && (
-          <ConfirmModal
-            title="Delete Room"
-            message={`Delete room ${deletingRow.name || ""}? This cannot be undone.`}
-            confirmLabel="Delete"
-            danger
-            onClose={() => setDeletingRow(null)}
-            onConfirm={handleDeleteRoom}
-          />
-        )}
-
-        </MainLayout>
-    )
+      {deletingRow && (
+        <ConfirmModal
+          title="Delete Room"
+          message={`Delete room ${deletingRow.name || ""}? Rooms with beds cannot be deleted until their beds are removed.`}
+          confirmLabel={saving ? "Deleting..." : "Delete"}
+          danger
+          onClose={() => !saving && setDeletingRow(null)}
+          onConfirm={handleDeleteRoom}
+        />
+      )}
+    </MainLayout>
+  );
 }

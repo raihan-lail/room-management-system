@@ -40,8 +40,6 @@ const TIMEZONES = ["WITA", "WIB"];
 
 const CAMP_LOCATIONS = ["EAST-CAMP", "WEST-CAMP", "NORTH-CAMP", "SOUTH-CAMP"];
 
-const ROOM_LOCATIONS = ["EAST WING", "WEST WING", "NORTH WING"];
-
 const ROOM_STATUSES = ["VACANT", "BOOKED", "OCCUPIED", "HOME_LEAVE", "ALLOCATED"];
 
 const BOOKING_STATUSES = ["IN_REQUEST", "CONFIRMED", "IN_HOUSE", "CHECKED_OUT"];
@@ -150,19 +148,6 @@ export const addFormSchemas = {
     }),
   },
 
-  room: {
-    entity: "Room",
-    title: "Add Room",
-    submitLabel: "Add Room",
-    fields: [
-      { name: "name", label: "Room Number", type: "text", placeholder: "e.g. 101", required: true },
-      { name: "desc", label: "Description", type: "text", placeholder: "e.g. room" },
-      { name: "location", label: "Location", type: "select", options: ROOM_LOCATIONS },
-      { name: "status", label: "Status", type: "select", options: ROOM_STATUSES },
-      { name: "cleaning_status", label: "Cleaning Status", type: "select", options: YES_NO },
-    ],
-  },
-
   homeLeave: {
     entity: "Home Leave",
     title: "Add Home Leave",
@@ -252,6 +237,57 @@ export const addFormSchemas = {
     }),
   },
 };
+
+/*
+ * The room form needs live data, so its locations and
+ * floors are mapped from the locations endpoint and
+ * passed in. Beds can only be set while creating a
+ * room, so the field is optional.
+ */
+export function buildRoomSchema(locations = [], { includeBeds = true } = {}) {
+  const locationOptions = locations.map((location) => ({
+    value: location.id,
+    label: location.name,
+  }));
+
+  const floorOptions = (values) => {
+    const location = locations.find(
+      (item) => item.id === values.locationId,
+    );
+
+    return (location?.floors ?? [])
+      .filter((floor) => floor.isActive !== false)
+      .map((floor) => ({
+        value: floor.id,
+        label: floor.name,
+      }));
+  };
+
+  return {
+    entity: "Room",
+    title: "Add Room",
+    submitLabel: "Add Room",
+    fields: [
+      { name: "name", label: "Room Number", type: "text", placeholder: "e.g. 101", required: true },
+      { name: "locationId", label: "Location", type: "select", options: locationOptions, required: true },
+      { name: "floorId", label: "Floor", type: "select", options: floorOptions, required: true },
+      ...(includeBeds
+        ? [
+            {
+              name: "numberOfBeds",
+              label: "Number of Beds",
+              type: "number",
+              defaultValue: 1,
+              required: true,
+            },
+          ]
+        : []),
+      { name: "description", label: "Description", type: "text", placeholder: "e.g. room" },
+      { name: "row", label: "Row", type: "text", placeholder: "e.g. A" },
+      { name: "isBookable", label: "Bookable", type: "select", options: YES_NO, defaultValue: "Yes" },
+    ],
+  };
+}
 
 export function buildRow(schema, values, existing) {
   /*

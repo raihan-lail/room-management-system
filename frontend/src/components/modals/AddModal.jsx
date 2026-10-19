@@ -14,6 +14,19 @@ function normalizeOption(option) {
 }
 
 /*
+ * Options can be a plain list or a function of the
+ * current form values, so a field such as Floor can
+ * depend on a field such as Location.
+ */
+function resolveOptions(field, values = {}) {
+  if (typeof field.options === "function") {
+    return field.options(values) ?? [];
+  }
+
+  return field.options ?? [];
+}
+
+/*
  * Every add and edit form is described by a plain
  * field list, so this modal only has to render inputs
  * and hand the raw values back to the page that
@@ -36,7 +49,7 @@ function buildInitialValues(fields, initialValues) {
     }
 
     if (field.type === "select") {
-      const [first] = field.options ?? [];
+      const [first] = resolveOptions(field, values);
 
       values[field.name] = normalizeOption(first).value ?? "";
 
@@ -49,7 +62,7 @@ function buildInitialValues(fields, initialValues) {
   }, {});
 }
 
-export function ModalField({ field, value, onChange }) {
+export function ModalField({ field, value, values = {}, onChange }) {
   const handleChange = (event) => {
     onChange(field.name, event.target.value);
   };
@@ -63,7 +76,7 @@ export function ModalField({ field, value, onChange }) {
         onChange={handleChange}
         required={field.required}
       >
-        {(field.options ?? []).map((option) => {
+        {resolveOptions(field, values).map((option) => {
           const { value: optionValue, label } = normalizeOption(option);
 
           return (
@@ -126,7 +139,28 @@ export default function AddModal({
   );
 
   const handleChange = (name, value) => {
-    setValues((prev) => ({ ...prev, [name]: value }));
+    setValues((prev) => {
+      const next = { ...prev, [name]: value };
+
+      // Keep dependent selects valid when their source changes.
+      schema.fields.forEach((field) => {
+        if (field.type !== "select" || typeof field.options !== "function") {
+          return;
+        }
+
+        if (field.name === name) return;
+
+        const allowed = resolveOptions(field, next).map(
+          (option) => normalizeOption(option).value,
+        );
+
+        if (!allowed.includes(next[field.name])) {
+          next[field.name] = allowed[0] ?? "";
+        }
+      });
+
+      return next;
+    });
   };
 
   const handleSubmit = (event) => {
@@ -165,6 +199,7 @@ export default function AddModal({
               key={field.name}
               field={field}
               value={values[field.name] ?? ""}
+              values={values}
               onChange={handleChange}
             />
           ))}

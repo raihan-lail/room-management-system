@@ -9,6 +9,8 @@ import {
 } from "../utils/actor.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import type { Actor } from "../utils/actor.js";
+import { notifyActor } from "../services/notification.service.js";
+import { auditActor } from "../services/audit.service.js";
 
 function bedSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
@@ -39,7 +41,6 @@ export async function updateBed(req: AuthRequest, res: Response) {
         id,
         ...bedSiteFilter(actor),
       },
-      select: { id: true },
     });
 
     if (!existing) {
@@ -137,6 +138,21 @@ export async function updateBed(req: AuthRequest, res: Response) {
       include: { room: true },
     });
 
+    await notifyActor(req, {
+      title: "Bed Updated",
+      message: `Bed ${bed.name} was updated successfully.`,
+      type: "INFO",
+    });
+
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "bed",
+      resourceId: bed.id,
+      description: `Bed ${bed.name} updated`,
+      before: existing,
+      after: bed,
+    });
+
     return res.json({ bed });
   } catch (error) {
     return handlePrismaError(error, res, {
@@ -160,6 +176,13 @@ export async function deleteBed(req: AuthRequest, res: Response) {
       },
       select: {
         id: true,
+        roomId: true,
+        name: true,
+        description: true,
+        status: true,
+        isActive: true,
+        createdAt: true,
+        updatedAt: true,
         _count: { select: { bookings: true } },
       },
     });
@@ -175,6 +198,20 @@ export async function deleteBed(req: AuthRequest, res: Response) {
     }
 
     await prisma.bed.delete({ where: { id } });
+
+    await notifyActor(req, {
+      title: "Bed Deleted",
+      message: `Bed ${bed.name} was deleted successfully.`,
+      type: "WARNING",
+    });
+
+    await auditActor(req, actor, {
+      action: "delete",
+      resource: "bed",
+      resourceId: bed.id,
+      description: `Bed ${bed.name} deleted`,
+      before: bed,
+    });
 
     return res.json({ message: "Bed deleted successfully" });
   } catch (error) {

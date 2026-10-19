@@ -28,7 +28,7 @@ export async function getAuditLogs(
     const page = Math.max(
       1,
       Number.parseInt(String(req.query.page ?? "1"), 10) || 1
-    );
+    ); 
 
     const pageSize = Math.min(
       100,

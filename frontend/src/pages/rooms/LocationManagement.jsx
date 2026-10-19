@@ -520,7 +520,7 @@ export default function LocationManagement() {
 
         <section className="table-card content">
           <div className="office-table-wrapper">
-            <table className="office-table office-table--locations">
+            <table className="office-table office-table--expandable">
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
