@@ -84,6 +84,7 @@ export const addFormSchemas = {
       { name: "gender", label: "Gender", type: "select", options: GENDERS },
       { name: "country", label: "Country", type: "select", options: COUNTRIES },
       { name: "site", label: "Site", type: "select", options: SITES },
+       { name: "company", label: "Company", type: "text", placeholder: "DSLNG", required: true },
       { name: "dept", label: "Dept", type: "select", options: DEPARTMENTS },
       { name: "meal_type", label: "Meal Type", type: "select", options: MEAL_TYPES },
     ],

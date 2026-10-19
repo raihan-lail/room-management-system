@@ -150,3 +150,5 @@ frontend/dist/
 backend/.env
 frontend/.env
 *.log
+
+AGENTS.md
