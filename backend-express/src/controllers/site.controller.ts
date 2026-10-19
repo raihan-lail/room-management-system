@@ -9,12 +9,7 @@ import {
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
-
-type SiteInput = {
-  name?: string;
-  code?: string;
-  description?: string | null;
-};
+import type { SiteInput } from "../types/site.type.js";
 
 // GET /api/sites
 export async function listSites(

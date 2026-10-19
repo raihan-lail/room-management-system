@@ -12,16 +12,8 @@ import {
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditInTransaction } from "../services/audit.service.js";
+import type { EmployeeInput } from "../types/employee.type.js";
 
-type EmployeeInput = {
-  name?: string;
-  email?: string;
-  phone?: string;
-  password?: string;
-  siteId?: string | null;
-  userId?: string;
-  roleIds?: string[];
-};
 const employeeSelect = {
   id: true,
   name: true,

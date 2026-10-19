@@ -10,12 +10,8 @@ import {
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
+import type { RoleInput } from "../types/role.type.js";
 
-type RoleInput = {
-    name?: string;
-    description?: string | null;
-    siteId?: string | null;
-}
 
 export async function listRoles(
     req: AuthRequest, 
