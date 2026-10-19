@@ -408,6 +408,7 @@ export const ModelName = {
   Location: 'Location',
   Floor: 'Floor',
   Room: 'Room',
+  Bed: 'Bed',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -425,7 +426,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "notification" | "auditLog"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "notification" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1243,6 +1244,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Bed: {
+      payload: Prisma.$BedPayload<ExtArgs>
+      fields: Prisma.BedFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BedFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BedFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        findFirst: {
+          args: Prisma.BedFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BedFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        findMany: {
+          args: Prisma.BedFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>[]
+        }
+        create: {
+          args: Prisma.BedCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        createMany: {
+          args: Prisma.BedCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BedCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>[]
+        }
+        delete: {
+          args: Prisma.BedDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        update: {
+          args: Prisma.BedUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        deleteMany: {
+          args: Prisma.BedDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BedUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BedUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>[]
+        }
+        upsert: {
+          args: Prisma.BedUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BedPayload>
+        }
+        aggregate: {
+          args: Prisma.BedAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBed>
+        }
+        groupBy: {
+          args: Prisma.BedGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BedGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BedCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BedCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -1544,6 +1619,7 @@ export const RoomScalarFieldEnum = {
   id: 'id',
   floorId: 'floorId',
   name: 'name',
+  type: 'type',
   description: 'description',
   row: 'row',
   isBookable: 'isBookable',
@@ -1552,6 +1628,20 @@ export const RoomScalarFieldEnum = {
 } as const
 
 export type RoomScalarFieldEnum = (typeof RoomScalarFieldEnum)[keyof typeof RoomScalarFieldEnum]
+
+
+export const BedScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  name: 'name',
+  description: 'description',
+  status: 'status',
+  isActive: 'isActive',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BedScalarFieldEnum = (typeof BedScalarFieldEnum)[keyof typeof BedScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {
@@ -1871,6 +1961,7 @@ export type GlobalOmitConfig = {
   location?: Prisma.LocationOmit
   floor?: Prisma.FloorOmit
   room?: Prisma.RoomOmit
+  bed?: Prisma.BedOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
 }
