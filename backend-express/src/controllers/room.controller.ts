@@ -9,11 +9,9 @@ import {
 } from "../utils/actor.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
-function roomSiteFilter(
-  actor: NonNullable<
-    Awaited<ReturnType<typeof import("../utils/actor.js").getActor>>
-  >,
-) {
+import type { Actor } from "../utils/actor.js";
+
+function roomSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
 
   return {

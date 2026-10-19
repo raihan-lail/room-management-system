@@ -13,6 +13,7 @@ import auditRouter from "./routes/audit.route";
 import { setupNotificationSocket } from "./websocket/notification.socket";
 import { createServer } from "node:http";
 import roomRouter from "./routes/room.route";
+import bedRouter from "./routes/bed.route";
 
 
 const app = express();
@@ -37,6 +38,7 @@ app.use("/api/site", siteRouter);
 app.use("/api/permission", permissionRouter);
 app.use("/api/location", locationRouter);
 app.use("/api/rooms", roomRouter);
+app.use("/api/bed", bedRouter);
 app.use("/api/notification", notificationRouter);
 app.use("/api/audit", auditRouter);
 
