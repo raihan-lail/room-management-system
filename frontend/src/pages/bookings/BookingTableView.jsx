@@ -1,7 +1,7 @@
 import { useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
-import AddModal from "../../components/modals/AddModal";
+import BookingModal from "../../components/modals/BookingModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 
 import {
@@ -448,16 +448,14 @@ export default function BookingTableView() {
       </div>
 
       {isAddModalOpen && (
-        <AddModal
-          schema={bookingSchema}
+        <BookingModal
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleCreateBooking}
         />
       )}
 
       {editingRow && (
-        <AddModal
-          schema={bookingSchema}
+        <BookingModal
           mode="edit"
           initialValues={editingRow}
           onClose={() => setEditingRow(null)}

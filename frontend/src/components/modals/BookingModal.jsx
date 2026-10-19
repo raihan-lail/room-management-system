@@ -1,6 +1,9 @@
 import { useState } from "react";
 import { rooms } from "../../data/room";
 import { guests } from "../../data/guest";
+import { addFormSchemas, toFormValues } from "./addFormSchemas";
+import { ModalField } from "./AddModal";
+import useAuth from "../../contexts/useAuth";
 
 const BOOKING_STATUSES = [
   "IN_REQUEST",
@@ -9,13 +12,88 @@ const BOOKING_STATUSES = [
   "CHECKED_OUT",
 ];
 
+const RESIDENT_FIELDS = addFormSchemas.resident.fields;
+
+const BOOKING_FIELDS = [
+  {
+    name: "status",
+    label: "Status",
+    type: "select",
+    options: BOOKING_STATUSES,
+    defaultValue: "IN_REQUEST",
+  },
+  { name: "started_at", label: "Start Date", type: "date", required: true },
+  { name: "ended_at", label: "End Date", type: "date", required: true },
+  {
+    name: "notes",
+    label: "Notes",
+    type: "textarea",
+    placeholder: "add notes (optional)",
+  },
+];
+
+const PASSWORD_FIELD = (isEdit) => ({
+  name: "password",
+  label: "Password",
+  type: "password",
+  required: !isEdit,
+  placeholder: isEdit
+    ? "Leave blank to keep current password"
+    : "Minimum 8 characters",
+});
+
+function buildValues(fields, initialValues) {
+  return fields.reduce((values, field) => {
+    const provided = initialValues?.[field.name];
+
+    if (provided !== undefined) {
+      values[field.name] = provided;
+
+      return values;
+    }
+
+    if (field.defaultValue !== undefined) {
+      values[field.name] = field.defaultValue;
+
+      return values;
+    }
+
+    if (field.type === "select") {
+      const [first] = field.options ?? [];
+
+      values[field.name] =
+        (first && typeof first === "object" ? first.value : first) ?? "";
+
+      return values;
+    }
+
+    values[field.name] = "";
+
+    return values;
+  }, {});
+}
+
+/*
+ * Booking forms always come in two sections: first
+ * the resident data, then the booking itself. The
+ * resident section offers a new resident form or an
+ * existing resident picker, but only users with the
+ * resident.manage permission may create a new one.
+ */
 export default function BookingModal({
+  mode = "create",
   room,
   startedAt,
   endedAt,
+  initialValues,
   onClose,
   onSubmit,
 }) {
+  const { hasPermission } = useAuth();
+
+  const isEdit = mode === "edit";
+  const canManageResidents = hasPermission("resident.manage");
+
   /*
    * A room passed in comes from a calendar cell
    * and must stay fixed. Without one, the room
@@ -23,39 +101,90 @@ export default function BookingModal({
    */
   const isRoomLocked = Boolean(room);
 
-  const [selectedRoom, setSelectedRoom] = useState(room ?? "");
-  const [guestName, setGuestName] = useState("");
-  const [status, setStatus] = useState("IN_REQUEST");
-  const [start, setStart] = useState(startedAt ?? "");
-  const [end, setEnd] = useState(endedAt ?? "");
-  const [notes, setNotes] = useState("");
+  const seed = {
+    ...(initialValues
+      ? toFormValues(addFormSchemas.booking, initialValues)
+      : {}),
+    ...(startedAt ? { started_at: startedAt } : {}),
+    ...(endedAt ? { ended_at: endedAt } : {}),
+  };
+
+  const sectionOneFields = [...RESIDENT_FIELDS];
+
+  sectionOneFields.splice(3, 0, PASSWORD_FIELD(isEdit));
+
+  const [residentMode, setResidentMode] = useState(
+    canManageResidents ? "new" : "existing",
+  );
+  const [residentName, setResidentName] = useState("");
+  const [selectedRoom, setSelectedRoom] = useState(
+    room ?? seed?.room ?? "",
+  );
+  const [values, setValues] = useState(() =>
+    buildValues([...sectionOneFields, ...BOOKING_FIELDS], seed),
+  );
+
+  const selectedGuest = guests.find((guest) => guest.name === residentName);
+
+  const roomOptions = rooms
+    .map((r) => ({
+      value: r.name,
+      label: `${r.name} - ${r.location} (${r.status})`,
+    }))
+    .concat(
+      selectedRoom && !rooms.some((r) => r.name === selectedRoom)
+        ? [{ value: selectedRoom, label: selectedRoom }]
+        : [],
+    );
+
+  const handleChange = (name, value) => {
+    setValues((prev) => ({ ...prev, [name]: value }));
+  };
 
   const handleSubmit = (event) => {
     event.preventDefault();
 
+    const resident =
+      residentMode === "existing" ? selectedGuest : values;
+
     onSubmit({
       room: selectedRoom,
-      guestName,
-      status,
-      started_at: start,
-      ended_at: end,
-      notes,
+      status: values.status,
+      started_at: values.started_at,
+      ended_at: values.ended_at,
+      notes: values.notes,
+      resident_mode: residentMode,
+      guest_name:
+        residentMode === "existing" ? residentName : values.name,
+      gender: resident?.gender ?? "",
+      country: resident?.country ?? "",
+      site: resident?.site ?? "",
+      dept: resident?.dept ?? "",
+      meal_type: resident?.meal_type ?? "",
+      email: resident?.email ?? "",
+      phone: resident?.phone ?? "",
+      ...(residentMode === "new" && values.password
+        ? { password: values.password }
+        : {}),
     });
 
     onClose();
   };
 
+  const title = isEdit ? "Edit Booking" : "Add Booking";
+  const submitLabel = isEdit ? "Save Changes" : "Add Booking";
+
   return (
     <div className="modal-overlay" onMouseDown={onClose}>
       <div
-        className="modal"
+        className="modal modal--wide"
         role="dialog"
         aria-modal="true"
-        aria-label="New Booking"
+        aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal__header">
-          <h2 className="modal__title">New Booking</h2>
+          <h2 className="modal__title">{title}</h2>
 
           <button
             type="button"
@@ -68,106 +197,139 @@ export default function BookingModal({
         </div>
 
         <form className="modal__form" onSubmit={handleSubmit}>
-          {/* Room Selector */}
-          <label className="form-field">
-            <span>Room</span>
+          {/* Section 1: Resident Data */}
+          <section className="modal__section">
+            <h3 className="modal__section-title">1. Resident Data</h3>
 
-            {isRoomLocked ? (
-              <input
-                type="text"
-                value={selectedRoom}
-                readOnly
-                disabled
-              />
-            ) : (
-              <select
-                value={selectedRoom}
-                onChange={(event) => setSelectedRoom(event.target.value)}
-                required
-              >
-                <option value="" disabled>
-                  Select a room
-                </option>
-                {rooms.map((r) => (
-                  <option key={r.name} value={r.name}>
-                    {r.name} - {r.location} ({r.status})
-                  </option>
-                ))}
-              </select>
+            {canManageResidents && (
+              <div className="modal__options">
+                <button
+                  type="button"
+                  className={`modal__option${
+                    residentMode === "new" ? " is-active" : ""
+                  }`}
+                  onClick={() => setResidentMode("new")}
+                >
+                  Fill new resident
+                </button>
+
+                <button
+                  type="button"
+                  className={`modal__option${
+                    residentMode === "existing" ? " is-active" : ""
+                  }`}
+                  onClick={() => setResidentMode("existing")}
+                >
+                  Select existing resident
+                </button>
+              </div>
             )}
-          </label>
 
-          {/* Resident/Guest Selector */}
-          <label className="form-field">
-            <span>Resident Name</span>
+            {residentMode === "existing" ? (
+              <>
+                <label className="form-field">
+                  <span>Resident</span>
 
-            <select
-              value={guestName}
-              onChange={(event) => setGuestName(event.target.value)}
-              required
-            >
-              <option value="" disabled>
-                Select a resident
-              </option>
-              {guests.map((guest) => (
-                <option key={guest.email || guest.name} value={guest.name}>
-                  {guest.name} ({guest.dept ?? "No Dept"})
-                </option>
+                  <select
+                    value={residentName}
+                    onChange={(event) =>
+                      setResidentName(event.target.value)
+                    }
+                    required
+                  >
+                    <option value="" disabled>
+                      Select a resident
+                    </option>
+                    {guests.map((guest) => (
+                      <option key={guest.email || guest.name} value={guest.name}>
+                        {guest.name} ({guest.dept ?? "No Dept"})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+
+                {selectedGuest && (
+                  <div className="modal__grid">
+                    {RESIDENT_FIELDS.map((field) => (
+                      <ModalField
+                        key={field.name}
+                        field={{
+                          ...field,
+                          type: "text",
+                          required: false,
+                          readOnly: true,
+                        }}
+                        value={selectedGuest[field.name] ?? ""}
+                        onChange={() => {}}
+                      />
+                    ))}
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="modal__grid">
+                  {sectionOneFields.map((field) => (
+                    <ModalField
+                      key={field.name}
+                      field={field}
+                      value={values[field.name] ?? ""}
+                      onChange={handleChange}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </section>
+
+          {/* Section 2: Booking Data */}
+          <section className="modal__section">
+            <h3 className="modal__section-title">2. Booking Data</h3>
+
+            <div className="modal__grid">
+              {isRoomLocked ? (
+                <label className="form-field">
+                  <span>Room</span>
+
+                  <input
+                    type="text"
+                    value={selectedRoom}
+                    readOnly
+                    disabled
+                  />
+                </label>
+              ) : (
+                <ModalField
+                  field={{
+                    name: "room",
+                    label: "Room",
+                    type: "select",
+                    options: roomOptions,
+                    required: true,
+                  }}
+                  value={selectedRoom}
+                  onChange={(name, value) => setSelectedRoom(value)}
+                />
+              )}
+
+              {BOOKING_FIELDS.filter(
+                (field) => field.name !== "notes",
+              ).map((field) => (
+                <ModalField
+                  key={field.name}
+                  field={field}
+                  value={values[field.name] ?? ""}
+                  onChange={handleChange}
+                />
               ))}
-            </select>
-          </label>
+            </div>
 
-          {/* Status Selector */}
-          <label className="form-field">
-            <span>Status</span>
-
-            <select
-              value={status}
-              onChange={(event) => setStatus(event.target.value)}
-              required
-            >
-              {BOOKING_STATUSES.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          {/* Dates */}
-          <label className="form-field">
-            <span>Start Date</span>
-
-            <input
-              type="date"
-              value={start}
-              onChange={(event) => setStart(event.target.value)}
-              required
+            <ModalField
+              field={BOOKING_FIELDS.find((field) => field.name === "notes")}
+              value={values.notes ?? ""}
+              onChange={handleChange}
             />
-          </label>
-
-          <label className="form-field">
-            <span>End Date</span>
-
-            <input
-              type="date"
-              value={end}
-              onChange={(event) => setEnd(event.target.value)}
-              required
-            />
-          </label>
-
-          {/* Notes */}
-          <label className="form-field">
-            <span>Notes</span>
-
-            <textarea
-              rows="3"
-              value={notes}
-              onChange={(event) => setNotes(event.target.value)}
-              placeholder="add notes (optional)"
-            />
-          </label>
+          </section>
 
           {/* Actions */}
           <div className="modal__actions">
@@ -180,7 +342,7 @@ export default function BookingModal({
             </button>
 
             <button type="submit" className="btn btn-primary">
-              Create Booking
+              {submitLabel}
             </button>
           </div>
         </form>

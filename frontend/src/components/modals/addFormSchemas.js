@@ -63,8 +63,11 @@ const toTitles = (values) => values.map((title) => ({ title }));
 const emptyGuest = {
   gender: "",
   country: "",
+  site: "",
   dept: "",
   meal_type: "",
+  email: "",
+  phone: "",
 };
 
 let localHomeLeaveId = 100;
@@ -224,20 +227,23 @@ export const addFormSchemas = {
       guest_name: guest?.name ?? "",
       gender: guest?.gender ?? "",
       country: guest?.country ?? "",
+      site: guest?.site ?? "",
       dept: guest?.dept ?? "",
       meal_type: guest?.meal_type ?? "",
+      email: guest?.email ?? "",
+      phone: guest?.phone ?? "",
       status: status ?? "",
       started_at: started_at ?? "",
       ended_at: ended_at ?? "",
       notes: notes ?? "",
     }),
-    buildRow: ({ room, guest_name, gender, country, dept, meal_type, status, started_at, ended_at, notes }, existing) => ({
+    buildRow: ({ room, guest_name, gender, country, site, dept, meal_type, email, phone, status, started_at, ended_at, notes }, existing) => ({
       id: existing?.id ?? Date.now(),
       booked_at:
         existing?.booked_at ??
         new Date().toISOString().slice(0, 10),
       room,
-      guest: { ...emptyGuest, ...existing?.guest, name: guest_name, gender, country, dept, meal_type },
+      guest: { ...emptyGuest, ...existing?.guest, name: guest_name, gender, country, site, dept, meal_type, email, phone },
       started_at,
       ended_at,
       status,

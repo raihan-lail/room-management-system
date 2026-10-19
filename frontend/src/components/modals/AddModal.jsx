@@ -49,7 +49,7 @@ function buildInitialValues(fields, initialValues) {
   }, {});
 }
 
-function ModalField({ field, value, onChange }) {
+export function ModalField({ field, value, onChange }) {
   const handleChange = (event) => {
     onChange(field.name, event.target.value);
   };

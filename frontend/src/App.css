@@ -3770,6 +3770,10 @@ textarea,
   padding: 24px;
 }
 
+.modal--wide {
+  max-width: 640px;
+}
+
 .modal__header {
   display: flex;
   align-items: center;
@@ -3819,6 +3823,70 @@ textarea,
 .modal__form {
   display: flex;
   flex-direction: column;
+
+  gap: 16px;
+}
+
+.modal__section {
+  display: flex;
+  flex-direction: column;
+
+  gap: 12px;
+
+  padding-bottom: 16px;
+
+  border-bottom: 1px solid var(--brand-soft);
+}
+
+.modal__section-title {
+  margin: 0;
+
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 700;
+
+  color: var(--brand-bold);
+}
+
+.modal__options {
+  display: flex;
+
+  gap: 8px;
+}
+
+.modal__option {
+  flex: 1;
+
+  padding: 8px 12px;
+
+  border: 1px solid var(--brand-bold);
+  background-color: #ffffff;
+  color: var(--brand-bold);
+
+  border-radius: 8px;
+
+  font-size: 13px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background-color 0.15s ease,
+    color 0.15s ease;
+}
+
+.modal__option:hover {
+  background-color: var(--brand-soft);
+}
+
+.modal__option.is-active {
+  background-color: var(--brand-bold);
+  color: #ffffff;
+}
+
+.modal__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 
   gap: 16px;
 }

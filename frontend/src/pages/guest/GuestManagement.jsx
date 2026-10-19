@@ -6,6 +6,9 @@ import ConfirmModal from "../../components/modals/ConfirmModal";
 import { addFormSchemas, buildRow } from "../../components/modals/addFormSchemas";
 
 import { guests as initialGuests } from "../../data/guest";
+import FlexibleButton from "../../components/FlexibleButtons";
+
+
 
 
 const PAGE_SIZE = 10;
@@ -174,14 +177,15 @@ export default function GuestManagement() {
           </label>
 
           <div className="bookings-toolbar__actions">
-            <button
-              type="button"
+            <FlexibleButton
+
+              permission="resident-manage"
               className="btn btn-primary"
               onClick={() => setIsAddModalOpen(true)}
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Add New Resident
-            </button>
+            </FlexibleButton>
 
             <button
               type="button"

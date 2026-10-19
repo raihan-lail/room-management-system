@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import TableRowActions from "../components/TableRowActions";
 import AddModal from "../components/modals/AddModal";
+import BookingModal from "../components/modals/BookingModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import {
   addFormSchemas,
@@ -760,7 +761,16 @@ aria-label={
         </section>
       </div>
 
-      {editingRow && (
+      {editingRow && !isHomeLeave && (
+        <BookingModal
+          mode="edit"
+          initialValues={editingRow}
+          onClose={() => setEditingRow(null)}
+          onSubmit={handleEditRow}
+        />
+      )}
+
+      {editingRow && isHomeLeave && (
         <AddModal
           schema={activeSchema}
           mode="edit"
