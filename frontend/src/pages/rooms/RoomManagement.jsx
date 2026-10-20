@@ -12,6 +12,11 @@ import FlexibleButton from "../../components/FlexibleButtons";
 
 const PAGE_SIZE = 10;
 
+const VIEW_MODES = [
+  { id: "room", label: "Rooms", icon: "bi-door-closed" },
+  { id: "bed", label: "Beds", icon: "bi-list-ul" },
+];
+
 function getRoomList(response) {
   if (Array.isArray(response?.rooms)) return response.rooms;
   if (Array.isArray(response?.data)) return response.data;
@@ -73,6 +78,7 @@ export default function RoomManagement() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [viewMode, setViewMode] = useState("room");
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -294,6 +300,24 @@ export default function RoomManagement() {
     });
   }, [roomList, sortConfig]);
 
+  const bedViewRows = useMemo(
+    () =>
+      sortedRooms.flatMap((room) => {
+        const beds = getRoomBeds(room);
+
+        if (beds.length === 0) {
+          return [{ rowKey: `${room.id}-empty`, room, bed: null }];
+        }
+
+        return beds.map((bed) => ({
+          rowKey: `${room.id}-${bed.id}`,
+          room,
+          bed,
+        }));
+      }),
+    [sortedRooms]
+  );
+
   const startRow =
     pagination.total === 0
       ? 0
@@ -329,6 +353,26 @@ export default function RoomManagement() {
           </label>
 
           <div className="bookings-toolbar__actions">
+            <div
+              className="frontdesk-segments"
+              role="tablist"
+              aria-label="Room view mode"
+            >
+              {VIEW_MODES.map((mode) => (
+                <button
+                  key={mode.id}
+                  type="button"
+                  role="tab"
+                  aria-selected={viewMode === mode.id}
+                  className={`frontdesk-segment ${viewMode === mode.id ? "is-active" : ""}`}
+                  onClick={() => setViewMode(mode.id)}
+                >
+                  <i className={`bi ${mode.icon}`} aria-hidden="true" />
+                  {mode.label}
+                </button>
+              ))}
+            </div>
+
             <FlexibleButton
               permission="rooms.manage"
               className="btn btn-primary"
@@ -349,7 +393,8 @@ export default function RoomManagement() {
 
         <section className="table-card content">
           <div className="office-table-wrapper">
-            <table className="office-table office-table--expandable">
+            {viewMode === "room" ? (
+              <table className="office-table office-table--expandable">
               <thead>
                 <tr>
                   <th className="table-col-no">No</th>
@@ -376,7 +421,6 @@ export default function RoomManagement() {
                   <th>Floor</th>
                   <th>Description</th>
                   <th>Beds</th>
-                  
                   <th>Action</th>
                 </tr>
               </thead>
@@ -496,6 +540,82 @@ export default function RoomManagement() {
                 )}
               </tbody>
             </table>
+            ) : (
+              <table className="office-table">
+                <thead>
+                  <tr>
+                    <th className="table-col-no">No</th>
+                    <th>
+                      <button
+                        type="button"
+                        className="table-sort"
+                        onClick={() => handleSort("name")}
+                      >
+                        Room Number
+                        <i className="bi bi-sort-alpha-down" />
+                      </button>
+                    </th>
+                    <th>Bed Name</th>
+                    <th>
+                      <button
+                        type="button"
+                        className="table-sort"
+                        onClick={() => handleSort("location")}
+                      >
+                        Location
+                        <i className="bi bi-sort-alpha-down" />
+                      </button>
+                    </th>
+                    <th>Floor</th>
+                    
+                    <th>Description</th>
+                    <th>Bed Status</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={7} className="muted">
+                        Loading rooms...
+                      </td>
+                    </tr>
+                  ) : bedViewRows.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="muted">
+                        No rooms found.
+                      </td>
+                    </tr>
+                  ) : (
+                    bedViewRows.map(({ rowKey, room, bed }, index) => (
+                      <tr key={rowKey}>
+                        <td className="table-col-no">{startRow + index}</td>
+                        <td>
+                          <strong>{room.name || "-"}</strong>
+                        </td>
+                        <td>{bed?.name || "-"}</td>
+                        <td>{getRoomLocation(room)}</td>
+                        <td>{room.floor?.name || "-"}</td>
+                        <td>{room.description || "-"}</td>
+                        <td>{bed.status}</td>
+                        <td>
+                          <TableRowActions
+                            label="room"
+                            rowLabel={room.name}
+                            onView={() =>
+                              navigate(`/rooms/${room.id}/booking-details`)
+                            }
+                            onEdit={() => setEditingRow(mapRoomToForm(room))}
+                            onDelete={() => setDeletingRow(room)}
+                          />
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            )}
           </div>
 
           <div className="office-pagination">
