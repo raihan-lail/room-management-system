@@ -55,8 +55,10 @@ export default function Navbar({ onToggleSidebar }) {
   const navigate = useNavigate();
 
   const employee = user?.employee;
+  
   const userName = employee?.name || user?.email || "User";
-  const userRole = employee?.roles?.length ? employee.roles.join(", ") : "—";
+  const userRole = employee?.roles?.length ? employee.roles.join(", ") : "�?";
+  const siteName = employee?.siteName || employee?.site?.name || "GLOBAL";
   const userId = user?.id;
 
   const unreadInList = useMemo(
@@ -311,7 +313,7 @@ export default function Navbar({ onToggleSidebar }) {
 
         <i className="bi bi-geo-alt" aria-hidden="true" />
 
-        <span className="navbar__title">DONGGI</span>
+        <span className="navbar__title">{siteName}</span>
       </div>
 
       <div className="navbar__actions">

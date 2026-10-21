@@ -37,6 +37,13 @@ async function buildAuthUser(userId: string) {
     ({ role }) => role.name === "superadmin" && role.siteId === null
   );
 
+  const site = user.employee.siteId
+    ? await prisma.site.findUnique({
+        where: { id: user.employee.siteId },
+        select: { id: true, name: true },
+      })
+    : null;
+
   return {
     id: user.id,
     email: user.email,
@@ -47,6 +54,8 @@ async function buildAuthUser(userId: string) {
       id: user.employee.id,
       name: user.employee.name,
       siteId: user.employee.siteId,
+      siteName: site?.name ?? "Global",
+      site,
       roles: roleNames,
       permissions,
     },

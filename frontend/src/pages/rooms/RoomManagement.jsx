@@ -564,6 +564,7 @@ export default function RoomManagement() {
                   </th>
                   <th>Floor</th>
                   <th>Description</th>
+                  <th>Type</th>
                   <th>Beds</th>
                   <th>Bookable?</th>
                   <th>Action</th>
@@ -601,6 +602,7 @@ export default function RoomManagement() {
                           <td>{getRoomLocation(room)}</td>
                           <td>{room.floor.name || "-"}</td>
                           <td>{room.description || "-"}</td>
+                          <td>{room.type || "-"}</td>
                           <td>
                             <div className="location-floors-cell">
                               <span className="location-floors-count">
@@ -701,6 +703,7 @@ export default function RoomManagement() {
                         <i className="bi bi-sort-alpha-down" />
                       </button>
                     </th>
+                    <th>Room Type</th>
                     <th>Bed</th>
                     <th>
                       <button
@@ -741,6 +744,7 @@ export default function RoomManagement() {
                         <td>
                           <strong>{room?.name || "-"}</strong>
                         </td>
+                        <td>{room?.type || "-"}</td>
                         <td>{bed.name || "-"}</td>
                         <td>{getRoomLocation(room ?? {})}</td>
                         <td>{room?.floor?.name || "-"}</td>
