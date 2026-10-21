@@ -59,7 +59,7 @@ function getEmail(employee) {
 }
 
 function getSiteName(employee) {
-  return employee.site?.name || "-";
+  return employee.site?.name || "GLOBAL";
 }
 
 function getRoleNames(employee) {

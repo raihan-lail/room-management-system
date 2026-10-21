@@ -1,7 +1,8 @@
 import type { Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
-import type { Prisma } from "../generated/prisma/client.js";
+import { Prisma } from "../generated/prisma/client.js";
+
 import {
   getActorOrRespond,
   isGlobalSuperadmin,
@@ -13,6 +14,8 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import type { Actor } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
+import * as XLSX from "xlsx";
+import type { ImportRow, RowError } from "../types/room.type.js";
 
 function roomSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
@@ -22,6 +25,54 @@ function roomSiteFilter(actor: Actor) {
       location: {
         siteId: actor.siteId ?? NO_MATCHING_ID,
       },
+    },
+  };
+}
+
+function textValue(value: unknown): string {
+  return value == null ? "" : String(value).trim();
+}
+
+function parseBoolean(value: unknown): boolean | null {
+  if (typeof value === "boolean") return value;
+
+  const valueText = textValue(value).toLowerCase();
+
+  if (["true", "1", "yes"].includes(valueText)) return true;
+  if (["false", "0", "no"].includes(valueText)) return false;
+
+  return null;
+}
+
+function parseInteger(value: unknown): number | null {
+  if (
+    typeof value === "number" &&
+    Number.isInteger(value)
+  ) {
+    return value;
+  }
+
+  const valueText = textValue(value);
+
+  if (!/^\d+$/.test(valueText)) return null;
+
+  const parsed = Number(valueText);
+  return Number.isSafeInteger(parsed) ? parsed : null;
+}
+
+function normalizeHeader(header: string): string {
+  return header.trim().replace(/\s+/g, "").toLowerCase();
+}
+
+function getSiteScope(actor: {
+  siteId: string | null;
+  roles: Array<{ role: { name: string; siteId: string | null } }>;
+}): Prisma.FloorWhereInput {
+  if (isGlobalSuperadmin(actor)) return {};
+
+  return {
+    location: {
+      siteId: actor.siteId ?? NO_MATCHING_ID,
     },
   };
 }
@@ -504,6 +555,420 @@ export async function deleteRoom(req: AuthRequest, res: Response) {
     return handlePrismaError(error, res, {
       conflict: "Cannot delete a room with dependent records",
       notFound: "Room not found",
+    });
+  }
+}
+
+export async function importRoomsFromExcel(
+  req: AuthRequest,
+  res: Response,
+) {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    if (!req.file) {
+      return res.status(400).json({
+        message: "Please upload an Excel file.",
+      });
+    }
+
+    // Allow only Excel Open XML workbooks.
+    if (
+      !req.file.originalname.toLowerCase().endsWith(".xlsx")
+    ) {
+      return res.status(400).json({
+        message: "Only .xlsx Excel files are supported.",
+      });
+    }
+
+    let worksheet: XLSX.WorkSheet;
+    let rawRows: Record<string, unknown>[];
+
+    try {
+      const workbook = XLSX.read(req.file.buffer, {
+        type: "buffer",
+        cellDates: false,
+      });
+
+      const firstSheetName = workbook.SheetNames[0];
+
+      if (!firstSheetName) {
+        return res.status(400).json({
+          message: "The Excel file does not contain a worksheet.",
+        });
+      }
+
+      worksheet = workbook.Sheets[firstSheetName];
+
+      rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+        worksheet,
+        { defval: "" },
+      );
+    } catch {
+      return res.status(400).json({
+        message: "Unable to read the Excel file.",
+      });
+    }
+
+    if (rawRows.length === 0) {
+      return res.status(400).json({
+        message: "The Excel worksheet contains no data rows.",
+      });
+    }
+
+    if (rawRows.length > 1000) {
+      return res.status(400).json({
+        message: "A maximum of 1,000 rooms can be imported per file.",
+      });
+    }
+
+    // Normalize header names so "siteName" and "Site Name"
+    // are both accepted.
+    const normalizedRows = rawRows.map((raw) => {
+      const normalized: Record<string, unknown> = {};
+
+      for (const [key, value] of Object.entries(raw)) {
+        normalized[normalizeHeader(key)] = value;
+      }
+
+      return normalized;
+    });
+
+    const requiredHeaders = [
+      "sitename",
+      "locationname",
+      "floornumber",
+      "roomname",
+      "isbookable",
+      "numberofbeds",
+    ];
+
+    const actualHeaders = new Set(
+      Object.keys(normalizedRows[0] ?? {}),
+    );
+
+    const missingHeaders = requiredHeaders.filter(
+      (header) => !actualHeaders.has(header),
+    );
+
+    if (missingHeaders.length > 0) {
+      return res.status(400).json({
+        message: "The Excel file is missing required columns.",
+        missingColumns: missingHeaders,
+        requiredColumns: requiredHeaders,
+      });
+    }
+
+    const errors: RowError[] = [];
+    const parsedRows: ImportRow[] = [];
+    const roomKeys = new Set<string>();
+
+    for (let index = 0; index < normalizedRows.length; index++) {
+      const raw = normalizedRows[index];
+      const excelRow = index + 2;
+
+      const siteName = textValue(raw.sitename);
+      const locationName = textValue(raw.locationname);
+      const floorNumber = parseInteger(raw.floornumber);
+      const roomName = textValue(raw.roomname);
+      const description = textValue(raw.description) || null;
+      const roomRow = textValue(raw.row) || null;
+      const isBookable = parseBoolean(raw.isbookable);
+      const numberOfBeds = parseInteger(raw.numberofbeds);
+
+      const bedNamesText = textValue(raw.bednames);
+      const bedNames = bedNamesText
+        ? bedNamesText.split(";").map((name) => name.trim())
+        : [];
+
+      const addError = (message: string) => {
+        errors.push({
+          row: excelRow,
+          ...(roomName ? { roomName } : {}),
+          message,
+        });
+      };
+
+      if (!siteName) addError("siteName is required.");
+      if (!locationName) addError("locationName is required.");
+
+      if (floorNumber === null || floorNumber < 0) {
+        addError("floorNumber must be a non-negative integer.");
+      }
+
+      if (!roomName) addError("roomName is required.");
+
+      if (roomName.length > 100) {
+        addError("roomName cannot exceed 100 characters.");
+      }
+
+      if (isBookable === null) {
+        addError("isBookable must be TRUE or FALSE.");
+      }
+
+      if (
+        numberOfBeds === null ||
+        numberOfBeds < 0 ||
+        numberOfBeds > 100
+      ) {
+        addError("numberOfBeds must be an integer from 0 to 100.");
+      }
+
+      if (
+        isBookable === true &&
+        numberOfBeds !== null &&
+        numberOfBeds < 1
+      ) {
+        addError("Bookable rooms must have at least one bed.");
+      }
+
+      if (
+        description !== null &&
+        description.length > 2000
+      ) {
+        addError("description cannot exceed 2,000 characters.");
+      }
+
+      if (roomRow !== null && roomRow.length > 100) {
+        addError("row cannot exceed 100 characters.");
+      }
+
+      if (
+        bedNames.some((name) => !name) ||
+        new Set(bedNames.map((name) => name.toLowerCase())).size !==
+          bedNames.length
+      ) {
+        addError("bedNames cannot contain empty or duplicate names.");
+      }
+
+      if (
+        numberOfBeds !== null &&
+        bedNames.length > 0 &&
+        bedNames.length !== numberOfBeds
+      ) {
+        addError(
+          "The number of bedNames must match numberOfBeds.",
+        );
+      }
+
+      if (errors.some((error) => error.row === excelRow)) {
+        continue;
+      }
+
+      const roomKey = [
+        siteName.toLowerCase(),
+        locationName.toLowerCase(),
+        String(floorNumber),
+        roomName.toLowerCase(),
+      ].join("|");
+
+      if (roomKeys.has(roomKey)) {
+        addError("Duplicate room name in this Excel file.");
+        continue;
+      }
+
+      roomKeys.add(roomKey);
+
+      parsedRows.push({
+        siteName,
+        locationName,
+        floorNumber: floorNumber!,
+        roomName,
+        description,
+        row: roomRow,
+        isBookable: isBookable!,
+        numberOfBeds: numberOfBeds!,
+        bedNames,
+        excelRow,
+      });
+    }
+
+    // Resolve floor names and enforce site-level authorization.
+    const floors = await prisma.floor.findMany({
+      where: {
+        ...getSiteScope(actor),
+        location: {
+          ...(isGlobalSuperadmin(actor)
+            ? {}
+            : {
+                siteId: actor.siteId ?? NO_MATCHING_ID,
+              }),
+        },
+      },
+      include: {
+        location: {
+          include: { site: true },
+        },
+      },
+    });
+
+    const floorByKey = new Map<string, (typeof floors)[number]>();
+
+    for (const floor of floors) {
+      const key = [
+        floor.location.site.name.toLowerCase(),
+        floor.location.name.toLowerCase(),
+        String(floor.floorNumber),
+      ].join("|");
+
+      // If this key occurs more than once, mark it ambiguous.
+      if (floorByKey.has(key)) {
+        floorByKey.set(key, null as never);
+      } else {
+        floorByKey.set(key, floor);
+      }
+    }
+
+    const resolvedRows: Array<{
+      row: ImportRow;
+      floorId: string;
+    }> = [];
+
+    for (const row of parsedRows) {
+      const key = [
+        row.siteName.toLowerCase(),
+        row.locationName.toLowerCase(),
+        String(row.floorNumber),
+      ].join("|");
+
+      const floor = floorByKey.get(key);
+
+      if (!floor) {
+        errors.push({
+          row: row.excelRow,
+          roomName: row.roomName,
+          message:
+            "Floor not found, inaccessible, or ambiguous for this site and location.",
+        });
+        continue;
+      }
+
+      const existingRoom = await prisma.room.findFirst({
+        where: {
+          floorId: floor.id,
+          name: { equals: row.roomName, mode: "insensitive" },
+        },
+        select: { id: true },
+      });
+
+      if (existingRoom) {
+        errors.push({
+          row: row.excelRow,
+          roomName: row.roomName,
+          message: "A room with this name already exists on this floor.",
+        });
+        continue;
+      }
+
+      resolvedRows.push({
+        row,
+        floorId: floor.id,
+      });
+    }
+
+    // All-or-nothing behavior: don't import if any row is invalid.
+    if (errors.length > 0) {
+      return res.status(400).json({
+        message:
+          "Import validation failed. No rooms were created.",
+        totalRows: rawRows.length,
+        validRows: resolvedRows.length,
+        errorCount: errors.length,
+        errors,
+      });
+    }
+
+    if (resolvedRows.length === 0) {
+      return res.status(400).json({
+        message: "There are no rooms to import.",
+      });
+    }
+
+    // Create every room and its beds in one transaction.
+    const createdRooms = await prisma.$transaction(
+      async (tx) => {
+        const created = [];
+
+        for (const { row, floorId } of resolvedRows) {
+          const room = await tx.room.create({
+            data: {
+              floorId,
+              name: row.roomName,
+              description: row.description,
+              row: row.row,
+              isBookable: row.isBookable,
+              beds: {
+                create: Array.from(
+                  { length: row.numberOfBeds },
+                  (_, index) => ({
+                    name: row.bedNames[index] || `Bed ${index + 1}`,
+                  }),
+                ),
+              },
+            },
+            include: {
+              beds: true,
+              floor: {
+                include: {
+                  location: {
+                    include: { site: true },
+                  },
+                },
+              },
+            },
+          });
+
+          created.push(room);
+        }
+
+        return created;
+      },
+      { maxWait: 10000, timeout: 60000 },
+    );
+
+    // Notify and audit after the database transaction succeeds.
+    await notifyActor(req, {
+      title: "Room Import Completed",
+      message: `${createdRooms.length} rooms were imported successfully.`,
+      type: "SUCCESS",
+    });
+
+    await auditActor(req, actor, {
+      action: "import",
+      resource: "room",
+      description: `Imported ${createdRooms.length} rooms from an Excel file`,
+      after: {
+        filename: req.file.originalname,
+        totalRooms: createdRooms.length,
+        totalBeds: createdRooms.reduce(
+          (total, room) => total + room.beds.length,
+          0,
+        ),
+      },
+    });
+
+    return res.status(201).json({
+      message: "Rooms imported successfully.",
+      importedRooms: createdRooms.length,
+      importedBeds: createdRooms.reduce(
+        (total, room) => total + room.beds.length,
+        0,
+      ),
+    });
+  } catch (error) {
+    if (error instanceof Prisma.PrismaClientKnownRequestError) {
+      if (error.code === "P2002") {
+        return res.status(409).json({
+          message:
+            "Import conflicts with an existing room or bed. No rooms were imported.",
+        });
+      }
+    }
+
+    return handlePrismaError(error, res, {
+      duplicate: "A room or bed with the same unique value already exists.",
+      conflict: "Unable to import rooms because related records conflict.",
     });
   }
 }

@@ -6,6 +6,7 @@ import apiRequest from "../../api/client";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+import ImportRoomsModal from "../../components/modals/ImportRoomsModal";
 import { buildRoomSchema } from "../../components/modals/addFormSchemas";
 import FlexibleButton from "../../components/FlexibleButtons";
 
@@ -120,6 +121,7 @@ export default function RoomManagement() {
   const [error, setError] = useState("");
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [expandedRooms, setExpandedRooms] = useState([]);
@@ -327,6 +329,24 @@ export default function RoomManagement() {
     }
   };
 
+  const handleRoomsImported = useCallback(async () => {
+    setCurrentPage(1);
+    setBedPage(1);
+
+    // Reload explicitly because the page may not have changed.
+    if (viewMode === "bed") {
+      if (bedPage === 1) {
+        await loadBeds();
+      }
+
+      return;
+    }
+
+    if (currentPage === 1) {
+      await loadRooms();
+    }
+  }, [viewMode, currentPage, bedPage, loadBeds, loadRooms]);
+
   const handleSearchChange = (value) => {
     setSearch(value);
     setCurrentPage(1);
@@ -525,6 +545,16 @@ export default function RoomManagement() {
             >
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Room
+            </FlexibleButton>
+
+            <FlexibleButton
+              permission="rooms.manage"
+              className="btn btn-neutral"
+              onClick={() => setIsImportModalOpen(true)}
+              disabled={saving}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Bulk Import
             </FlexibleButton>
           </div>
         </div>
@@ -822,6 +852,13 @@ export default function RoomManagement() {
           schema={addRoomSchema}
           onClose={() => setIsAddModalOpen(false)}
           onSubmit={handleAddRoom}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <ImportRoomsModal
+          onClose={() => setIsImportModalOpen(false)}
+          onImported={handleRoomsImported}
         />
       )}
 

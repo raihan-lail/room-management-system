@@ -3948,6 +3948,116 @@ textarea,
   color: #475569;
 }
 
+.import-template {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 12px;
+
+  padding: 12px;
+
+  border: 1px solid var(--brand-soft);
+  border-radius: 8px;
+}
+
+.import-template__text {
+  display: flex;
+  flex-direction: column;
+
+  gap: 2px;
+
+  min-width: 0;
+}
+
+.import-template__title {
+  font-size: 13px;
+  font-weight: 700;
+
+  color: var(--brand-bold);
+}
+
+.import-template__hint {
+  font-size: 12px;
+  line-height: 18px;
+
+  color: #475569;
+}
+
+.import-template .btn {
+  text-decoration: none;
+}
+
+.import-file {
+  display: flex;
+  align-items: center;
+
+  gap: 6px;
+
+  margin: 0;
+
+  font-size: 12px;
+
+  color: #475569;
+
+  word-break: break-all;
+}
+
+.import-file i {
+  color: var(--brand-bold);
+}
+
+.import-message {
+  padding: 10px 12px;
+
+  border-radius: 8px;
+
+  font-size: 13px;
+  line-height: 18px;
+}
+
+.import-message--error {
+  border: 1px solid var(--brand-danger);
+  background-color: var(--brand-danger-soft);
+
+  color: var(--brand-danger);
+}
+
+.import-message--success {
+  border: 1px solid var(--brand-bold);
+  background-color: var(--brand-soft);
+
+  color: var(--brand-bold);
+}
+
+.import-errors {
+  max-height: 180px;
+  overflow-y: auto;
+
+  padding: 10px 12px;
+
+  border: 1px solid var(--brand-danger);
+  border-radius: 8px;
+  background-color: var(--brand-danger-soft);
+
+  color: var(--brand-danger);
+}
+
+.import-errors__title {
+  margin: 0 0 6px;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.import-errors__list {
+  margin: 0;
+  padding-left: 16px;
+
+  font-size: 12px;
+  line-height: 18px;
+}
+
 /* =========================
    RESIDENT FORMS
    ========================= */

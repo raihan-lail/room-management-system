@@ -9,6 +9,7 @@ import { verifyAccessToken } from "../lib/jwt.js";
 
 export interface AuthRequest extends Request {
   userId?: string;
+  file?: Express.Multer.File;
 }
 
 export function authenticate(
