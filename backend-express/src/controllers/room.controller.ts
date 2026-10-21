@@ -407,6 +407,21 @@ export async function updateRoom(req: AuthRequest, res: Response) {
       if (typeof isBookable !== "boolean") {
         return res.status(400).json({ message: "Invalid isBookable" });
       }
+
+      if (isBookable) {
+        const allocation = await prisma.roomAllocation.findUnique({
+          where: { roomId: id },
+          select: { id: true },
+        });
+
+        if (allocation) {
+          return res.status(409).json({
+            message:
+              "Cannot make an allocated room bookable. Delete its allocation first.",
+          });
+        }
+      }
+
       data.isBookable = isBookable;
     }
 

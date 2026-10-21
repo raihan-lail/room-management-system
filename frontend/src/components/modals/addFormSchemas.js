@@ -52,8 +52,6 @@ const BOOKING_MEAL_TYPES = [
   "Middle East",
 ];
 
-const ALLOCATION_TYPES = ["storage", "meeting room", "emergency kitchen"];
-
 const YES_NO = ["No", "Yes"];
 
 const toTitles = (values) => values.map((title) => ({ title }));
@@ -172,20 +170,6 @@ export const addFormSchemas = {
     }),
   },
 
-  roomAllocation: {
-    entity: "Allocation",
-    title: "Add Allocation",
-    submitLabel: "Add Allocation",
-    fields: [
-      { name: "name", label: "Room Number", type: "text", placeholder: "e.g. 105", required: true },
-      { name: "type", label: "Allocation Type", type: "select", options: ALLOCATION_TYPES },
-      { name: "started_at", label: "Started At", type: "date", required: true },
-      { name: "ended_at", label: "Ended At", type: "date", required: true },
-      { name: "reason", label: "Allocation Reason", type: "textarea", placeholder: "Reason (optional)" },
-      { name: "allocated_by", label: "Allocated By", type: "text", placeholder: "Allocated by" },
-    ],
-  },
-
   booking: {
     entity: "Booking",
     title: "Add Booking",
@@ -285,6 +269,47 @@ export function buildRoomSchema(locations = [], { includeBeds = true } = {}) {
       { name: "description", label: "Description", type: "text", placeholder: "e.g. room" },
       { name: "row", label: "Row", type: "text", placeholder: "e.g. A" },
       { name: "isBookable", label: "Bookable", type: "select", options: YES_NO, defaultValue: "Yes" },
+    ],
+  };
+}
+
+/*
+ * Room allocations can only target rooms that are not
+ * bookable, so the options are mapped from the filtered
+ * rooms fetched by the page. The room select is
+ * searchable because allocation rooms are often spread
+ * across locations and floors.
+ */
+export function buildRoomAllocationSchema(rooms = []) {
+  const roomOptions = rooms.map((room) => {
+    const location =
+      room.floor?.location?.name ?? room.location?.name ?? "";
+
+    return {
+      value: room.id,
+      label: location ? `${room.name} · ${location}` : room.name,
+    };
+  });
+
+  return {
+    entity: "Allocation",
+    title: "Add Allocation",
+    submitLabel: "Add Allocation",
+    fields: [
+      {
+        name: "roomId",
+        label: "Room",
+        type: "select",
+        options: roomOptions,
+        defaultValue: "",
+        placeholderOption: "Select a non-bookable room",
+        searchable: true,
+        searchPlaceholder: "Search by room number or location...",
+        required: true,
+      },
+      { name: "purpose", label: "Purpose", type: "text", placeholder: "e.g. storage", required: true },
+      { name: "description", label: "Description", type: "textarea", placeholder: "Description (optional)" },
+      { name: "notes", label: "Notes", type: "textarea", placeholder: "Notes (optional)" },
     ],
   };
 }

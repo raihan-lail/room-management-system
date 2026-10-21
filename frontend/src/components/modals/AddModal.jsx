@@ -62,6 +62,65 @@ function buildInitialValues(fields, initialValues) {
   }, {});
 }
 
+function SearchableSelect({ field, value, values, onChange }) {
+  const [query, setQuery] = useState("");
+
+  const options = resolveOptions(field, values).map(normalizeOption);
+  const search = query.trim().toLowerCase();
+
+  const filteredOptions = search
+    ? options.filter(
+        (option) =>
+          option.label.toLowerCase().includes(search) ||
+          String(option.value).toLowerCase().includes(search),
+      )
+    : options;
+
+  const selectedOption = options.find(
+    (option) => option.value === value,
+  );
+
+  // Keep the current selection visible even when the
+  // search text filters every other option out.
+  const visibleOptions =
+    selectedOption &&
+    !filteredOptions.some((option) => option.value === value)
+      ? [selectedOption, ...filteredOptions]
+      : filteredOptions;
+
+  return (
+    <>
+      <div className="form-field__search">
+        <i className="bi bi-search" aria-hidden="true" />
+
+        <input
+          type="search"
+          value={query}
+          placeholder={field.searchPlaceholder ?? "Search..."}
+          aria-label={`Search ${field.label}`}
+          onChange={(event) => setQuery(event.target.value)}
+        />
+      </div>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(field.name, event.target.value)}
+        required={field.required}
+      >
+        <option value="">
+          {field.placeholderOption ?? "Select..."}
+        </option>
+
+        {visibleOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 export function ModalField({ field, value, values = {}, onChange }) {
   const handleChange = (event) => {
     onChange(field.name, event.target.value);
@@ -69,7 +128,16 @@ export function ModalField({ field, value, values = {}, onChange }) {
 
   let control;
 
-  if (field.type === "select") {
+  if (field.type === "select" && field.searchable) {
+    control = (
+      <SearchableSelect
+        field={field}
+        value={value}
+        values={values}
+        onChange={onChange}
+      />
+    );
+  } else if (field.type === "select") {
     control = (
       <select
         value={value}
@@ -110,13 +178,19 @@ export function ModalField({ field, value, values = {}, onChange }) {
     );
   }
 
-  return (
-    <label className="form-field">
+  const content = (
+    <>
       <span>{field.label}</span>
 
       {control}
-    </label>
+    </>
   );
+
+  if (field.type === "select" && field.searchable) {
+    return <div className="form-field">{content}</div>;
+  }
+
+  return <label className="form-field">{content}</label>;
 }
 
 export default function AddModal({

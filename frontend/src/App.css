@@ -1767,6 +1767,42 @@ textarea,
   outline: 2px solid var(--brand-bold);
   border-color: var(--brand-bold);
 }
+
+.form-field__search {
+  display: flex;
+  align-items: center;
+
+  gap: 8px;
+
+  padding: 0 12px;
+
+  border: 1px solid var(--brand-bold);
+  border-radius: 8px;
+  background-color: #ffffff;
+
+  color: #64748b;
+}
+
+.form-field__search input {
+  flex: 1 1 auto;
+
+  min-width: 0;
+
+  padding: 12px 0;
+
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+
+  color: #111827;
+
+  outline: none;
+}
+
+.form-field__search input:focus {
+  outline: none;
+}
+
 .password-input-wrapper {
   position: relative;
   display: flex;
