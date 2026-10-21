@@ -162,17 +162,23 @@ model Room {
 
   floor Floor @relation(fields: [floorId], references: [id], onDelete: Restrict)
   beds Bed[]
+  allocation RoomAllocation?
 
   @@unique([floorId, name])
   @@index([floorId])
 }
-
+enum BedStatus {
+  VACANT
+  BOOKED
+  OCCUPIED
+  HOME_LEAVE
+}
 model Bed {
   id          String   @id @default(cuid())
   roomId      String
   name        String
   description String?
-  status      String   @default("VACANT")
+  status      BedStatus   @default(VACANT)
   isActive    Boolean  @default(true)
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -182,6 +188,20 @@ model Bed {
 
   @@unique([roomId, name])
   @@index([roomId])
+}
+
+model RoomAllocation {
+  id          String   @id @default(cuid())
+  roomId      String   @unique
+  purpose     String
+  description String?
+  notes       String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  room Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
+
+  @@index([purpose])
 }
 
 model Notification {

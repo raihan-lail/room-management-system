@@ -216,6 +216,7 @@ export type RoomWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   floor?: Prisma.XOR<Prisma.FloorScalarRelationFilter, Prisma.FloorWhereInput>
   beds?: Prisma.BedListRelationFilter
+  allocation?: Prisma.XOR<Prisma.RoomAllocationNullableScalarRelationFilter, Prisma.RoomAllocationWhereInput> | null
 }
 
 export type RoomOrderByWithRelationInput = {
@@ -230,6 +231,7 @@ export type RoomOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   floor?: Prisma.FloorOrderByWithRelationInput
   beds?: Prisma.BedOrderByRelationAggregateInput
+  allocation?: Prisma.RoomAllocationOrderByWithRelationInput
 }
 
 export type RoomWhereUniqueInput = Prisma.AtLeast<{
@@ -248,6 +250,7 @@ export type RoomWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Room"> | Date | string
   floor?: Prisma.XOR<Prisma.FloorScalarRelationFilter, Prisma.FloorWhereInput>
   beds?: Prisma.BedListRelationFilter
+  allocation?: Prisma.XOR<Prisma.RoomAllocationNullableScalarRelationFilter, Prisma.RoomAllocationWhereInput> | null
 }, "id" | "floorId_name">
 
 export type RoomOrderByWithAggregationInput = {
@@ -291,6 +294,7 @@ export type RoomCreateInput = {
   updatedAt?: Date | string
   floor: Prisma.FloorCreateNestedOneWithoutRoomsInput
   beds?: Prisma.BedCreateNestedManyWithoutRoomInput
+  allocation?: Prisma.RoomAllocationCreateNestedOneWithoutRoomInput
 }
 
 export type RoomUncheckedCreateInput = {
@@ -304,6 +308,7 @@ export type RoomUncheckedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   beds?: Prisma.BedUncheckedCreateNestedManyWithoutRoomInput
+  allocation?: Prisma.RoomAllocationUncheckedCreateNestedOneWithoutRoomInput
 }
 
 export type RoomUpdateInput = {
@@ -317,6 +322,7 @@ export type RoomUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   floor?: Prisma.FloorUpdateOneRequiredWithoutRoomsNestedInput
   beds?: Prisma.BedUpdateManyWithoutRoomNestedInput
+  allocation?: Prisma.RoomAllocationUpdateOneWithoutRoomNestedInput
 }
 
 export type RoomUncheckedUpdateInput = {
@@ -330,6 +336,7 @@ export type RoomUncheckedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   beds?: Prisma.BedUncheckedUpdateManyWithoutRoomNestedInput
+  allocation?: Prisma.RoomAllocationUncheckedUpdateOneWithoutRoomNestedInput
 }
 
 export type RoomCreateManyInput = {
@@ -479,6 +486,20 @@ export type RoomUpdateOneRequiredWithoutBedsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.RoomUpdateToOneWithWhereWithoutBedsInput, Prisma.RoomUpdateWithoutBedsInput>, Prisma.RoomUncheckedUpdateWithoutBedsInput>
 }
 
+export type RoomCreateNestedOneWithoutAllocationInput = {
+  create?: Prisma.XOR<Prisma.RoomCreateWithoutAllocationInput, Prisma.RoomUncheckedCreateWithoutAllocationInput>
+  connectOrCreate?: Prisma.RoomCreateOrConnectWithoutAllocationInput
+  connect?: Prisma.RoomWhereUniqueInput
+}
+
+export type RoomUpdateOneRequiredWithoutAllocationNestedInput = {
+  create?: Prisma.XOR<Prisma.RoomCreateWithoutAllocationInput, Prisma.RoomUncheckedCreateWithoutAllocationInput>
+  connectOrCreate?: Prisma.RoomCreateOrConnectWithoutAllocationInput
+  upsert?: Prisma.RoomUpsertWithoutAllocationInput
+  connect?: Prisma.RoomWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.RoomUpdateToOneWithWhereWithoutAllocationInput, Prisma.RoomUpdateWithoutAllocationInput>, Prisma.RoomUncheckedUpdateWithoutAllocationInput>
+}
+
 export type RoomCreateWithoutFloorInput = {
   id?: string
   name: string
@@ -489,6 +510,7 @@ export type RoomCreateWithoutFloorInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   beds?: Prisma.BedCreateNestedManyWithoutRoomInput
+  allocation?: Prisma.RoomAllocationCreateNestedOneWithoutRoomInput
 }
 
 export type RoomUncheckedCreateWithoutFloorInput = {
@@ -501,6 +523,7 @@ export type RoomUncheckedCreateWithoutFloorInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   beds?: Prisma.BedUncheckedCreateNestedManyWithoutRoomInput
+  allocation?: Prisma.RoomAllocationUncheckedCreateNestedOneWithoutRoomInput
 }
 
 export type RoomCreateOrConnectWithoutFloorInput = {
@@ -554,6 +577,7 @@ export type RoomCreateWithoutBedsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   floor: Prisma.FloorCreateNestedOneWithoutRoomsInput
+  allocation?: Prisma.RoomAllocationCreateNestedOneWithoutRoomInput
 }
 
 export type RoomUncheckedCreateWithoutBedsInput = {
@@ -566,6 +590,7 @@ export type RoomUncheckedCreateWithoutBedsInput = {
   isBookable?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  allocation?: Prisma.RoomAllocationUncheckedCreateNestedOneWithoutRoomInput
 }
 
 export type RoomCreateOrConnectWithoutBedsInput = {
@@ -594,6 +619,7 @@ export type RoomUpdateWithoutBedsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   floor?: Prisma.FloorUpdateOneRequiredWithoutRoomsNestedInput
+  allocation?: Prisma.RoomAllocationUpdateOneWithoutRoomNestedInput
 }
 
 export type RoomUncheckedUpdateWithoutBedsInput = {
@@ -606,6 +632,75 @@ export type RoomUncheckedUpdateWithoutBedsInput = {
   isBookable?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  allocation?: Prisma.RoomAllocationUncheckedUpdateOneWithoutRoomNestedInput
+}
+
+export type RoomCreateWithoutAllocationInput = {
+  id?: string
+  name: string
+  type?: string
+  description?: string | null
+  row?: string | null
+  isBookable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  floor: Prisma.FloorCreateNestedOneWithoutRoomsInput
+  beds?: Prisma.BedCreateNestedManyWithoutRoomInput
+}
+
+export type RoomUncheckedCreateWithoutAllocationInput = {
+  id?: string
+  floorId: string
+  name: string
+  type?: string
+  description?: string | null
+  row?: string | null
+  isBookable?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  beds?: Prisma.BedUncheckedCreateNestedManyWithoutRoomInput
+}
+
+export type RoomCreateOrConnectWithoutAllocationInput = {
+  where: Prisma.RoomWhereUniqueInput
+  create: Prisma.XOR<Prisma.RoomCreateWithoutAllocationInput, Prisma.RoomUncheckedCreateWithoutAllocationInput>
+}
+
+export type RoomUpsertWithoutAllocationInput = {
+  update: Prisma.XOR<Prisma.RoomUpdateWithoutAllocationInput, Prisma.RoomUncheckedUpdateWithoutAllocationInput>
+  create: Prisma.XOR<Prisma.RoomCreateWithoutAllocationInput, Prisma.RoomUncheckedCreateWithoutAllocationInput>
+  where?: Prisma.RoomWhereInput
+}
+
+export type RoomUpdateToOneWithWhereWithoutAllocationInput = {
+  where?: Prisma.RoomWhereInput
+  data: Prisma.XOR<Prisma.RoomUpdateWithoutAllocationInput, Prisma.RoomUncheckedUpdateWithoutAllocationInput>
+}
+
+export type RoomUpdateWithoutAllocationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  row?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isBookable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  floor?: Prisma.FloorUpdateOneRequiredWithoutRoomsNestedInput
+  beds?: Prisma.BedUpdateManyWithoutRoomNestedInput
+}
+
+export type RoomUncheckedUpdateWithoutAllocationInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  floorId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  type?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  row?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  isBookable?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  beds?: Prisma.BedUncheckedUpdateManyWithoutRoomNestedInput
 }
 
 export type RoomCreateManyFloorInput = {
@@ -629,6 +724,7 @@ export type RoomUpdateWithoutFloorInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   beds?: Prisma.BedUpdateManyWithoutRoomNestedInput
+  allocation?: Prisma.RoomAllocationUpdateOneWithoutRoomNestedInput
 }
 
 export type RoomUncheckedUpdateWithoutFloorInput = {
@@ -641,6 +737,7 @@ export type RoomUncheckedUpdateWithoutFloorInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   beds?: Prisma.BedUncheckedUpdateManyWithoutRoomNestedInput
+  allocation?: Prisma.RoomAllocationUncheckedUpdateOneWithoutRoomNestedInput
 }
 
 export type RoomUncheckedUpdateManyWithoutFloorInput = {
@@ -697,6 +794,7 @@ export type RoomSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   updatedAt?: boolean
   floor?: boolean | Prisma.FloorDefaultArgs<ExtArgs>
   beds?: boolean | Prisma.Room$bedsArgs<ExtArgs>
+  allocation?: boolean | Prisma.Room$allocationArgs<ExtArgs>
   _count?: boolean | Prisma.RoomCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["room"]>
 
@@ -742,6 +840,7 @@ export type RoomOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = run
 export type RoomInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   floor?: boolean | Prisma.FloorDefaultArgs<ExtArgs>
   beds?: boolean | Prisma.Room$bedsArgs<ExtArgs>
+  allocation?: boolean | Prisma.Room$allocationArgs<ExtArgs>
   _count?: boolean | Prisma.RoomCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type RoomIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -756,6 +855,7 @@ export type $RoomPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
   objects: {
     floor: Prisma.$FloorPayload<ExtArgs>
     beds: Prisma.$BedPayload<ExtArgs>[]
+    allocation: Prisma.$RoomAllocationPayload<ExtArgs> | null
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1163,6 +1263,7 @@ export interface Prisma__RoomClient<T, Null = never, ExtArgs extends runtime.Typ
   readonly [Symbol.toStringTag]: "PrismaPromise"
   floor<T extends Prisma.FloorDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.FloorDefaultArgs<ExtArgs>>): Prisma.Prisma__FloorClient<runtime.Types.Result.GetResult<Prisma.$FloorPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   beds<T extends Prisma.Room$bedsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$bedsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BedPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  allocation<T extends Prisma.Room$allocationArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Room$allocationArgs<ExtArgs>>): Prisma.Prisma__RoomAllocationClient<runtime.Types.Result.GetResult<Prisma.$RoomAllocationPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1623,6 +1724,25 @@ export type Room$bedsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs 
   take?: number
   skip?: number
   distinct?: Prisma.BedScalarFieldEnum | Prisma.BedScalarFieldEnum[]
+}
+
+/**
+ * Room.allocation
+ */
+export type Room$allocationArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the RoomAllocation
+   */
+  select?: Prisma.RoomAllocationSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the RoomAllocation
+   */
+  omit?: Prisma.RoomAllocationOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.RoomAllocationInclude<ExtArgs> | null
+  where?: Prisma.RoomAllocationWhereInput
 }
 
 /**

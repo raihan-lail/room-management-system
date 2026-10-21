@@ -63,6 +63,7 @@ export const ModelName = {
   Floor: 'Floor',
   Room: 'Room',
   Bed: 'Bed',
+  RoomAllocation: 'RoomAllocation',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -220,6 +221,19 @@ export const BedScalarFieldEnum = {
 } as const
 
 export type BedScalarFieldEnum = (typeof BedScalarFieldEnum)[keyof typeof BedScalarFieldEnum]
+
+
+export const RoomAllocationScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  purpose: 'purpose',
+  description: 'description',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RoomAllocationScalarFieldEnum = (typeof RoomAllocationScalarFieldEnum)[keyof typeof RoomAllocationScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {

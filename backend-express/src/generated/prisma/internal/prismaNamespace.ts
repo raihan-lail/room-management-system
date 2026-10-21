@@ -409,6 +409,7 @@ export const ModelName = {
   Floor: 'Floor',
   Room: 'Room',
   Bed: 'Bed',
+  RoomAllocation: 'RoomAllocation',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -426,7 +427,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "notification" | "auditLog"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "notification" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1318,6 +1319,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    RoomAllocation: {
+      payload: Prisma.$RoomAllocationPayload<ExtArgs>
+      fields: Prisma.RoomAllocationFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.RoomAllocationFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.RoomAllocationFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        findFirst: {
+          args: Prisma.RoomAllocationFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.RoomAllocationFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        findMany: {
+          args: Prisma.RoomAllocationFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>[]
+        }
+        create: {
+          args: Prisma.RoomAllocationCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        createMany: {
+          args: Prisma.RoomAllocationCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.RoomAllocationCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>[]
+        }
+        delete: {
+          args: Prisma.RoomAllocationDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        update: {
+          args: Prisma.RoomAllocationUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        deleteMany: {
+          args: Prisma.RoomAllocationDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.RoomAllocationUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.RoomAllocationUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>[]
+        }
+        upsert: {
+          args: Prisma.RoomAllocationUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$RoomAllocationPayload>
+        }
+        aggregate: {
+          args: Prisma.RoomAllocationAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateRoomAllocation>
+        }
+        groupBy: {
+          args: Prisma.RoomAllocationGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RoomAllocationGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.RoomAllocationCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.RoomAllocationCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -1644,6 +1719,19 @@ export const BedScalarFieldEnum = {
 export type BedScalarFieldEnum = (typeof BedScalarFieldEnum)[keyof typeof BedScalarFieldEnum]
 
 
+export const RoomAllocationScalarFieldEnum = {
+  id: 'id',
+  roomId: 'roomId',
+  purpose: 'purpose',
+  description: 'description',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type RoomAllocationScalarFieldEnum = (typeof RoomAllocationScalarFieldEnum)[keyof typeof RoomAllocationScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -1769,6 +1857,20 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
  * Reference to a field of type 'Boolean'
  */
 export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
+ * Reference to a field of type 'BedStatus'
+ */
+export type EnumBedStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BedStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'BedStatus[]'
+ */
+export type ListEnumBedStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BedStatus[]'>
     
 
 
@@ -1962,6 +2064,7 @@ export type GlobalOmitConfig = {
   floor?: Prisma.FloorOmit
   room?: Prisma.RoomOmit
   bed?: Prisma.BedOmit
+  roomAllocation?: Prisma.RoomAllocationOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
 }

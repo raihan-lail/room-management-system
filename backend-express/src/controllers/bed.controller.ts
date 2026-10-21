@@ -1,6 +1,7 @@
 import type { Request, Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
+
 import {
   getActorOrRespond,
   isGlobalSuperadmin,
@@ -11,6 +12,30 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import type { Actor } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
+import { Prisma } from "../generated/prisma/client.js";
+
+const BED_STATUSES = [
+  "VACANT",
+  "BOOKED",
+  "OCCUPIED",
+  "HOME_LEAVE",
+] as const;
+
+type BedStatus = (typeof BED_STATUSES)[number];
+
+function singleParam(value: unknown): string | undefined {
+  if (typeof value !== "string") return undefined;
+  const trimmed = value.trim();
+  return trimmed || undefined;
+}
+
+function parseBoolean(value: unknown): boolean | undefined {
+  if (value === "true") return true;
+  if (value === "false") return false;
+  return undefined;
+}
+
+
 
 function bedSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
@@ -26,7 +51,129 @@ function bedSiteFilter(actor: Actor) {
   };
 }
 
+export async function listBeds(req: AuthRequest, res: Response) {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
 
+    const page = Math.max(
+      1,
+      Number.parseInt(String(req.query.page ?? "1"), 10) || 1,
+    );
+
+    const pageSize = Math.min(
+      100,
+      Math.max(
+        1,
+        Number.parseInt(String(req.query.pageSize ?? "20"), 10) || 20,
+      ),
+    );
+
+    const search = singleParam(req.query.search);
+    const roomId = singleParam(req.query.roomId);
+    const floorId = singleParam(req.query.floorId);
+    const locationId = singleParam(req.query.locationId);
+    const requestedSiteId = singleParam(req.query.siteId);
+    const statusParam = singleParam(req.query.status)?.toUpperCase();
+
+    if (
+      statusParam &&
+      !BED_STATUSES.includes(statusParam as BedStatus)
+    ) {
+      return res.status(400).json({
+        message: "Invalid bed status",
+        allowedStatuses: BED_STATUSES,
+      });
+    }
+
+    // Non-global employees are always scoped to their own site.
+    const siteFilter = isGlobalSuperadmin(actor)
+      ? requestedSiteId
+        ? { siteId: requestedSiteId }
+        : {}
+      : { siteId: actor.siteId ?? NO_MATCHING_ID };
+
+    const where: Prisma.BedWhereInput = {
+      ...(statusParam
+        ? { status: statusParam as BedStatus }
+        : {}),
+      ...(roomId ? { roomId } : {}),
+      room: {
+        floor: {
+          ...(floorId ? { id: floorId } : {}),
+          location: {
+            ...(locationId ? { id: locationId } : {}),
+            ...siteFilter,
+          },
+        },
+      },
+      ...(search
+        ? {
+            OR: [
+              {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                description: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                room: {
+                  name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const [beds, total] = await prisma.$transaction([
+      prisma.bed.findMany({
+        where,
+        include: {
+          room: {
+            include: {
+              floor: {
+                include: {
+                  location: {
+                    include: { site: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+        orderBy: [
+          { room: { name: "asc" } },
+          { name: "asc" },
+        ],
+        skip: (page - 1) * pageSize,
+        take: pageSize,
+      }),
+      prisma.bed.count({ where }),
+    ]);
+
+    return res.json({
+      beds,
+      pagination: {
+        page,
+        pageSize,
+        total,
+        totalPages: Math.ceil(total / pageSize),
+      },
+    });
+  } catch (error) {
+    return handlePrismaError(error, res);
+  }
+}
 
 export async function updateBed(req: AuthRequest, res: Response) {
   try {

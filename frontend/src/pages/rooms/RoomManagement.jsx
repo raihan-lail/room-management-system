@@ -17,8 +17,21 @@ const VIEW_MODES = [
   { id: "bed", label: "Beds", icon: "bi-list-ul" },
 ];
 
+const BED_STATUSES = [
+  { value: "VACANT", label: "Vacant" },
+  { value: "BOOKED", label: "Booked" },
+  { value: "OCCUPIED", label: "Occupied" },
+  { value: "HOME_LEAVE", label: "Home Leave" },
+];
+
 function getRoomList(response) {
   if (Array.isArray(response?.rooms)) return response.rooms;
+  if (Array.isArray(response?.data)) return response.data;
+  return [];
+}
+
+function getBedList(response) {
+  if (Array.isArray(response?.beds)) return response.beds;
   if (Array.isArray(response?.data)) return response.data;
   return [];
 }
@@ -30,9 +43,12 @@ function getPagination(response, currentPage) {
     page: Number(pagination.page ?? currentPage),
     pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
     total: Number(pagination.total ?? 0),
-    totalPages: Number(
-      pagination.totalPages ??
-        Math.max(1, Math.ceil((pagination.total ?? 0) / PAGE_SIZE))
+    totalPages: Math.max(
+      1,
+      Number(
+        pagination.totalPages ??
+          Math.ceil((pagination.total ?? 0) / PAGE_SIZE)
+      )
     ),
   };
 }
@@ -61,6 +77,10 @@ function getRoomBeds(room) {
   return Array.isArray(room.beds) ? room.beds : [];
 }
 
+function getBookableLabel(room) {
+  return room?.isBookable ? "Yes" : "No";
+}
+
 function getRoomBedCount(room) {
   return room._count?.beds ?? getRoomBeds(room).length;
 }
@@ -77,7 +97,17 @@ export default function RoomManagement() {
     totalPages: 1,
   });
 
+  const [bedList, setBedList] = useState([]);
+  const [bedPagination, setBedPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [bedPage, setBedPage] = useState(1);
+  const [bedStatus, setBedStatus] = useState("");
   const [viewMode, setViewMode] = useState("room");
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -136,13 +166,60 @@ export default function RoomManagement() {
     }
   }, [currentPage, search]);
 
-  useEffect(() => {
-  const timer = window.setTimeout(() => {
-    loadRooms();
-  }, 0);
+  const loadBeds = useCallback(async () => {
+    setLoading(true);
+    setError("");
 
-  return () => window.clearTimeout(timer);
-}, [loadRooms]);
+    try {
+      const params = new URLSearchParams({
+        page: String(bedPage),
+        pageSize: String(PAGE_SIZE),
+        search: search.trim(),
+      });
+
+      if (bedStatus) {
+        params.set("status", bedStatus);
+      }
+
+      const response = await apiRequest(`/api/bed?${params.toString()}`);
+
+      const beds = getBedList(response);
+      const pageInfo = getPagination(response, bedPage);
+
+      setBedList(beds);
+      setBedPagination(pageInfo);
+
+      // Protect against a stale page after filtering.
+      if (pageInfo.totalPages > 0 && bedPage > pageInfo.totalPages) {
+        setBedPage(pageInfo.totalPages);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to load beds.");
+      setBedList([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [bedPage, search, bedStatus]);
+
+  useEffect(() => {
+    if (viewMode !== "room") return undefined;
+
+    const timer = window.setTimeout(() => {
+      loadRooms();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [viewMode, loadRooms]);
+
+  useEffect(() => {
+    if (viewMode !== "bed") return undefined;
+
+    const timer = window.setTimeout(() => {
+      loadBeds();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [viewMode, loadBeds]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -253,6 +330,22 @@ export default function RoomManagement() {
   const handleSearchChange = (value) => {
     setSearch(value);
     setCurrentPage(1);
+    setBedPage(1);
+  };
+
+  const handleBedStatusChange = (value) => {
+    setBedStatus(value);
+    setBedPage(1);
+  };
+
+  const handleViewModeChange = (mode) => {
+    setViewMode(mode);
+
+    if (mode === "bed") {
+      setBedPage(1);
+    } else {
+      setCurrentPage(1);
+    }
   };
 
   const handleSort = (key) => {
@@ -300,32 +393,59 @@ export default function RoomManagement() {
     });
   }, [roomList, sortConfig]);
 
+  // Sorting applies to the current server-returned bed page.
+  const sortedBeds = useMemo(() => {
+    if (!sortConfig.key) return bedList;
+
+    return [...bedList].sort((a, b) => {
+      const getValue = (bed) => {
+        switch (sortConfig.key) {
+          case "name":
+            return bed.room?.name ?? "";
+          case "location":
+            return getRoomLocation(bed.room ?? {});
+          case "status":
+            return bed.status ?? "";
+          default:
+            return "";
+        }
+      };
+
+      const aValue = String(getValue(a) ?? "").toLowerCase();
+      const bValue = String(getValue(b) ?? "").toLowerCase();
+
+      const result = aValue.localeCompare(bValue, undefined, {
+        numeric: true,
+      });
+
+      return sortConfig.direction === "asc" ? result : -result;
+    });
+  }, [bedList, sortConfig]);
+
   const bedViewRows = useMemo(
     () =>
-      sortedRooms.flatMap((room) => {
-        const beds = getRoomBeds(room);
-
-        if (beds.length === 0) {
-          return [{ rowKey: `${room.id}-empty`, room, bed: null }];
-        }
-
-        return beds.map((bed) => ({
-          rowKey: `${room.id}-${bed.id}`,
-          room,
-          bed,
-        }));
-      }),
-    [sortedRooms]
+      sortedBeds.map((bed) => ({
+        rowKey: bed.id,
+        room: bed.room ?? null,
+        bed,
+      })),
+    [sortedBeds]
   );
 
+  const activePage = viewMode === "bed" ? bedPage : currentPage;
+  const activePagination =
+    viewMode === "bed" ? bedPagination : pagination;
+  const setActivePage =
+    viewMode === "bed" ? setBedPage : setCurrentPage;
+
   const startRow =
-    pagination.total === 0
+    activePagination.total === 0
       ? 0
-      : (pagination.page - 1) * pagination.pageSize + 1;
+      : (activePagination.page - 1) * activePagination.pageSize + 1;
 
   const endRow = Math.min(
-    pagination.page * pagination.pageSize,
-    pagination.total
+    activePagination.page * activePagination.pageSize,
+    activePagination.total
   );
 
   return (
@@ -345,12 +465,36 @@ export default function RoomManagement() {
             <i className="bi bi-search" aria-hidden="true" />
             <input
               type="search"
-              aria-label="Search rooms"
-              placeholder="Search by room number, location, description..."
+              aria-label={viewMode === "bed" ? "Search beds" : "Search rooms"}
+              placeholder={
+                viewMode === "bed"
+                  ? "Search by bed, room, description..."
+                  : "Search by room number, location, description..."
+              }
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
+
+          {viewMode === "bed" && (
+            <label className="calendar-date-filter">
+              <span>Bed Status</span>
+              <select
+                aria-label="Filter beds by status"
+                value={bedStatus}
+                onChange={(event) =>
+                  handleBedStatusChange(event.target.value)
+                }
+              >
+                <option value="">All</option>
+                {BED_STATUSES.map((status) => (
+                  <option key={status.value} value={status.value}>
+                    {status.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
 
           <div className="bookings-toolbar__actions">
             <div
@@ -365,7 +509,7 @@ export default function RoomManagement() {
                   role="tab"
                   aria-selected={viewMode === mode.id}
                   className={`frontdesk-segment ${viewMode === mode.id ? "is-active" : ""}`}
-                  onClick={() => setViewMode(mode.id)}
+                  onClick={() => handleViewModeChange(mode.id)}
                 >
                   <i className={`bi ${mode.icon}`} aria-hidden="true" />
                   {mode.label}
@@ -421,6 +565,7 @@ export default function RoomManagement() {
                   <th>Floor</th>
                   <th>Description</th>
                   <th>Beds</th>
+                  <th>Bookable?</th>
                   <th>Action</th>
                 </tr>
               </thead>
@@ -428,13 +573,13 @@ export default function RoomManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={7} className="muted">
+                    <td colSpan={8} className="muted">
                       Loading rooms...
                     </td>
                   </tr>
                 ) : sortedRooms.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="muted">
+                    <td colSpan={8} className="muted">
                       No rooms found.
                     </td>
                   </tr>
@@ -483,6 +628,7 @@ export default function RoomManagement() {
                               )}
                             </div>
                           </td>
+                          <td>{getBookableLabel(room)}</td>
                          
                           <td>
                             <TableRowActions
@@ -499,7 +645,7 @@ export default function RoomManagement() {
 
                         {isExpanded && bedCount > 0 && (
                           <tr className="location-floors-row">
-                            <td colSpan={7}>
+                            <td colSpan={8}>
                               <div className="location-floors-panel">
                                 <p className="location-floors-panel__title">
                                   Beds — Room {room.name}
@@ -555,7 +701,7 @@ export default function RoomManagement() {
                         <i className="bi bi-sort-alpha-down" />
                       </button>
                     </th>
-                    <th>Bed Name</th>
+                    <th>Bed</th>
                     <th>
                       <button
                         type="button"
@@ -570,6 +716,7 @@ export default function RoomManagement() {
                     
                     <th>Description</th>
                     <th>Bed Status</th>
+                    <th>Bookable?</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -577,14 +724,14 @@ export default function RoomManagement() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={7} className="muted">
-                        Loading rooms...
+                      <td colSpan={8} className="muted">
+                        Loading beds...
                       </td>
                     </tr>
                   ) : bedViewRows.length === 0 ? (
                     <tr>
-                      <td colSpan={7} className="muted">
-                        No rooms found.
+                      <td colSpan={8} className="muted">
+                        No beds found.
                       </td>
                     </tr>
                   ) : (
@@ -592,23 +739,28 @@ export default function RoomManagement() {
                       <tr key={rowKey}>
                         <td className="table-col-no">{startRow + index}</td>
                         <td>
-                          <strong>{room.name || "-"}</strong>
+                          <strong>{room?.name || "-"}</strong>
                         </td>
-                        <td>{bed?.name || "-"}</td>
-                        <td>{getRoomLocation(room)}</td>
-                        <td>{room.floor?.name || "-"}</td>
-                        <td>{room.description || "-"}</td>
-                        <td>{bed.status}</td>
+                        <td>{bed.name || "-"}</td>
+                        <td>{getRoomLocation(room ?? {})}</td>
+                        <td>{room?.floor?.name || "-"}</td>
+                        <td>{room?.description || "-"}</td>
+                        <td>{bed.status || "-"}</td>
+                        <td>{getBookableLabel(room)}</td>
                         <td>
-                          <TableRowActions
-                            label="room"
-                            rowLabel={room.name}
-                            onView={() =>
-                              navigate(`/rooms/${room.id}/booking-details`)
-                            }
-                            onEdit={() => setEditingRow(mapRoomToForm(room))}
-                            onDelete={() => setDeletingRow(room)}
-                          />
+                          {room ? (
+                            <TableRowActions
+                              label="room"
+                              rowLabel={room.name}
+                              onView={() =>
+                                navigate(`/rooms/${room.id}/booking-details`)
+                              }
+                              onEdit={() => setEditingRow(mapRoomToForm(room))}
+                              onDelete={() => setDeletingRow(room)}
+                            />
+                          ) : (
+                            <span className="muted">-</span>
+                          )}
                         </td>
                       </tr>
                     ))
@@ -620,16 +772,17 @@ export default function RoomManagement() {
 
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {pagination.total} rooms
+              Showing {startRow}–{endRow} of {activePagination.total}{" "}
+              {viewMode === "bed" ? "beds" : "rooms"}
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={loading || currentPage <= 1}
+                disabled={loading || activePage <= 1}
                 onClick={() =>
-                  setCurrentPage((page) => Math.max(1, page - 1))
+                  setActivePage((page) => Math.max(1, page - 1))
                 }
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -637,18 +790,18 @@ export default function RoomManagement() {
               </button>
 
               <span className="office-page-info">
-                Page {currentPage} of {pagination.totalPages}
+                Page {activePagination.page} of {activePagination.totalPages}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
                 disabled={
-                  loading || currentPage >= pagination.totalPages
+                  loading || activePage >= activePagination.totalPages
                 }
                 onClick={() =>
-                  setCurrentPage((page) =>
-                    Math.min(pagination.totalPages, page + 1)
+                  setActivePage((page) =>
+                    Math.min(activePagination.totalPages, page + 1)
                   )
                 }
               >
