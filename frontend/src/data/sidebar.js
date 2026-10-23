@@ -58,17 +58,19 @@ export const sidebarMenu = [
        { label: 'Role Management', path: '/roles', icon: 'bi-universal-access', permission:"roles.read" },
        { label: 'Manage Permissions', path: '/manage-permissions', icon: 'bi-house', permission: "permissions.read" },
         { label: 'Audit Logs', path: '/audit-logs', icon: 'bi-clock-history', permission: "audit.logs" },
+      { label: 'Change Password', path: '/change-password', icon: 'bi-pencil' },
     ],
   },
+];
+
+export const residentMenu = [
   {
     label: "Resident's front office",
-    path: "/residents",
+    path: "/resident",
     icon: "bi-building",
-     items: [
+    items: [
       { label: 'Booking History', path: '/resident/history', icon: 'bi-clock-history' },
-     
-       { label: 'Change Password', path: '/change-password', icon: ' bi-pencil' },
-      
+      { label: 'Change Password', path: '/change-password', icon: 'bi-pencil' },
     ],
   },
 ];

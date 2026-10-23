@@ -1,4 +1,4 @@
-import { sidebarMenu } from "../data/sidebar";
+import { residentMenu, sidebarMenu } from "../data/sidebar";
 
 // A "manage"/"create"/"update" permission implies its "read" counterpart,
 // so granting e.g. `permissions.manage` alone is enough to view pages
@@ -72,7 +72,13 @@ function collectLeafPaths(items) {
 
 // Landing-page priority: dashboard -> frontdesk -> nearest allowed page
 // in sidebar order. Public pages (no permission) act as final fallback.
-export function getDefaultRoute(hasPermission) {
+// Residents only have their own front office menu.
+export function getDefaultRoute(hasPermission, accountType = "employee") {
+  if (accountType === "resident") {
+    const residentLeaves = collectLeafPaths(residentMenu);
+    return residentLeaves[0]?.path ?? "/unauthorized";
+  }
+
   if (hasPermission("dashboard")) return "/dashboard";
   if (hasPermission("frontdesk")) return "/frontdesk";
 
@@ -87,15 +93,19 @@ export function getDefaultRoute(hasPermission) {
 
 export function getDefaultRouteForUser(user) {
   const roles = user?.roles ?? user?.employee?.roles ?? [];
+  const accountType =
+    user?.accountType ?? (user?.resident ? "resident" : "employee");
   const isSuperadmin =
-    user?.isSuperadmin ||
-    user?.isGlobalSuperadmin ||
-    roles.includes("superadmin");
+    accountType === "employee" &&
+    (user?.isSuperadmin ||
+      user?.isGlobalSuperadmin ||
+      roles.includes("superadmin"));
 
   return getDefaultRoute(
     createPermissionChecker(
       user?.permissions ?? user?.employee?.permissions,
       isSuperadmin
-    )
+    ),
+    accountType
   );
 }

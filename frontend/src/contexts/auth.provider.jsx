@@ -10,14 +10,20 @@ function normalizeUser(raw) {
   const employee = raw.employee ?? {};
   const roles = raw.roles ?? employee.roles ?? [];
   const permissions = raw.permissions ?? employee.permissions ?? [];
+  const accountType =
+    raw.accountType ?? (raw.resident ? "resident" : "employee");
+  const isResident = accountType === "resident";
   const isSuperadmin =
-    raw.isSuperadmin ??
-    raw.isGlobalSuperadmin ??
-    employee.isSuperadmin ??
-    roles.includes("superadmin");
+    !isResident &&
+    (raw.isSuperadmin ??
+      raw.isGlobalSuperadmin ??
+      employee.isSuperadmin ??
+      roles.includes("superadmin"));
 
   return {
     ...raw,
+    accountType,
+    isResident,
     roles,
     permissions,
     isSuperadmin,
@@ -118,10 +124,11 @@ export function AuthProvider({ children }) {
   );
 
   const isSuperadmin = user?.isSuperadmin || user?.isGlobalSuperadmin || (user?.roles ?? []).includes("superadmin") || false;
+  const isResident = user?.accountType === "resident";
 
   const value = useMemo(
-    () => ({ user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin }),
-    [user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin]
+    () => ({ user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident }),
+    [user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

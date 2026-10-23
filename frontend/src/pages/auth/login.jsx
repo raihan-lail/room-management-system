@@ -3,7 +3,6 @@ import { Navigate, useNavigate } from "react-router-dom";
 
 import useAuth from "../../contexts/useAuth";
 import {
-  getDefaultRoute,
   getDefaultRouteForUser,
 } from "../../utils/permissions";
 
@@ -14,7 +13,7 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [submitting, setSubmitting] = useState(false);
-  const { status, login, hasPermission } = useAuth();
+  const { status, user, login } = useAuth();
   const navigate = useNavigate();
 
   if (status === "loading") {
@@ -22,7 +21,7 @@ export default function Login() {
   }
 
   if (status === "authenticated") {
-    return <Navigate to={getDefaultRoute(hasPermission)} replace />;
+    return <Navigate to={getDefaultRouteForUser(user)} replace />;
   }
 
   const handleSubmit = async (e) => {

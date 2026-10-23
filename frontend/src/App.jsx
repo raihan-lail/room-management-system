@@ -8,8 +8,11 @@ import {
 import "./App.css";
 import AuthProvider from "./contexts/auth.provider";
 import useAuth from "./contexts/useAuth";
-import ProtectedRoute, { RequirePermission } from "./components/ProtectedRoute";
-import { getDefaultRoute } from "./utils/permissions";
+import ProtectedRoute, {
+  RequireAccountType,
+  RequirePermission,
+} from "./components/ProtectedRoute";
+import { getDefaultRouteForUser } from "./utils/permissions";
 import Dashboard from "./pages/Dashboard";
 import BookingCalendarView from "./pages/bookings/BookingCalendarView";
 import BookingMapView from "./pages/bookings/BookingMapView";
@@ -40,7 +43,7 @@ import LocationManagement from "./pages/rooms/LocationManagement";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 
 function DefaultRedirect() {
-  const { status, hasPermission } = useAuth();
+  const { status, user } = useAuth();
 
   if (status === "loading") {
     return null;
@@ -50,7 +53,7 @@ function DefaultRedirect() {
     return <Navigate to="/login" replace />;
   }
 
-  return <Navigate to={getDefaultRoute(hasPermission)} replace />;
+  return <Navigate to={getDefaultRouteForUser(user)} replace />;
 }
 
 function App() {
@@ -64,6 +67,8 @@ function App() {
 
             <Route element={<ProtectedRoute />}>
               <Route path="/unauthorized" element={<Unauthorized />} />
+
+              <Route element={<RequireAccountType accountType="employee" />}>
               <Route
                 path="/dashboard"
                 element={
@@ -224,16 +229,25 @@ function App() {
                   </RequirePermission>
                 }
               />
+              </Route>
+
               <Route path="/change-password" element={<ChangePassword />} />
-              <Route path="/resident/history" element={<BookingHistory />} />
-              <Route
-                path="/resident/rating/:bookingId"
-                element={<BookingRating />}
-              />
-              <Route
-                path="/resident/complaints/:bookingId"
-                element={<BookingComplaints />}
-              />
+
+              <Route element={<RequireAccountType accountType="resident" />}>
+                <Route
+                  path="/resident"
+                  element={<Navigate to="/resident/history" replace />}
+                />
+                <Route path="/resident/history" element={<BookingHistory />} />
+                <Route
+                  path="/resident/rating/:bookingId"
+                  element={<BookingRating />}
+                />
+                <Route
+                  path="/resident/complaints/:bookingId"
+                  element={<BookingComplaints />}
+                />
+              </Route>
 
               <Route
                 path="/"

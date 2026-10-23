@@ -1,6 +1,6 @@
 :root {
   --brand-nav: #273896;
-  --brand-bold: #273896;
+  --brand-bold: rgb(39, 56, 150);
   --brand-soft: #e7ebff;
   --brand-danger: #ec242c;
   --brand-danger-soft: #ffe5e7;
@@ -4151,8 +4151,7 @@ textarea,
 }
 
 .import-message--error {
-  border: 1px solid var(--brand-danger);
-  background-color: var(--brand-danger-soft);
+  
 
   color: var(--brand-danger);
 }

@@ -1,17 +1,17 @@
 import { useNavigate } from "react-router-dom";
 
 import useAuth from "../contexts/useAuth";
-import { getDefaultRoute } from "../utils/permissions";
+import { getDefaultRouteForUser } from "../utils/permissions";
 
 export default function Unauthorized() {
   const navigate = useNavigate();
-  const { status, hasPermission } = useAuth();
+  const { status, user } = useAuth();
 
   if (status === "loading") {
     return null;
   }
 
-  const homeRoute = getDefaultRoute(hasPermission);
+  const homeRoute = getDefaultRouteForUser(user);
 
   return (
     <div>

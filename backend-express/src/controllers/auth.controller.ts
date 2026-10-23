@@ -20,46 +20,77 @@ async function buildAuthUser(userId: string) {
           },
         },
       },
+      resident: {
+        include: {
+          site: {
+            select: { id: true, name: true },
+          },
+        },
+      },
     },
   });
 
-  if (!user || !user.employee) {
+  if (!user) {
     return null;
   }
 
-  const roleNames = user.employee.roles.map(
-    (employeeRole) => employeeRole.role.name
-  );
+  if (user.employee) {
+    const roleNames = user.employee.roles.map(
+      (employeeRole) => employeeRole.role.name
+    );
 
-  const permissions = await getEmployeeEffectivePermissions(user.id);
+    const permissions = await getEmployeeEffectivePermissions(user.id);
 
-  const superadmin = user.employee.roles.some(
-    ({ role }) => role.name === "superadmin" && role.siteId === null
-  );
+    const superadmin = user.employee.roles.some(
+      ({ role }) => role.name === "superadmin" && role.siteId === null
+    );
 
-  const site = user.employee.siteId
-    ? await prisma.site.findUnique({
-        where: { id: user.employee.siteId },
-        select: { id: true, name: true },
-      })
-    : null;
+    const site = user.employee.siteId
+      ? await prisma.site.findUnique({
+          where: { id: user.employee.siteId },
+          select: { id: true, name: true },
+        })
+      : null;
 
-  return {
-    id: user.id,
-    email: user.email,
-    roles: roleNames,
-    permissions,
-    isSuperadmin: superadmin,
-    employee: {
-      id: user.employee.id,
-      name: user.employee.name,
-      siteId: user.employee.siteId,
-      siteName: site?.name ?? "GLOBAL",
-      site,
+    return {
+      id: user.id,
+      email: user.email,
+      accountType: "employee" as const,
       roles: roleNames,
       permissions,
-    },
-  };
+      isSuperadmin: superadmin,
+      employee: {
+        id: user.employee.id,
+        name: user.employee.name,
+        siteId: user.employee.siteId,
+        siteName: site?.name ?? "GLOBAL",
+        site,
+        roles: roleNames,
+        permissions,
+      },
+    };
+  }
+
+  if (user.resident) {
+    const resident = user.resident;
+
+    return {
+      id: user.id,
+      email: user.email,
+      accountType: "resident" as const,
+      roles: [] as string[],
+      permissions: [] as string[],
+      isSuperadmin: false,
+      resident: {
+        id: resident.id,
+        fullName: resident.fullName,
+        siteId: resident.siteId,
+        siteName: resident.site?.name ?? null,
+      },
+    };
+  }
+
+  return null;
 }
 
 
@@ -68,23 +99,24 @@ export async function login(
   res: Response
 ): Promise<void> {
   try {
-    const {
-      email,
-      password,
-      rememberMe = false,
-    } = req.body;
+    const { email, password, rememberMe = false } = req.body;
 
-    if (!email || !password) {
+    if (
+      typeof email !== "string" ||
+      !email.trim() ||
+      typeof password !== "string" ||
+      password.length === 0
+    ) {
       res.status(400).json({
         message: "Email and password are required",
       });
       return;
     }
 
+    const normalizedEmail = email.trim().toLowerCase();
+
     const user = await prisma.user.findUnique({
-      where: {
-        email,
-      },
+      where: { email: normalizedEmail },
       include: {
         employee: {
           include: {
@@ -95,6 +127,11 @@ export async function login(
             },
           },
         },
+        resident: {
+          include: {
+            site: true,
+          },
+        },
       },
     });
 
@@ -102,9 +139,10 @@ export async function login(
       await auditActor(req, null, {
         action: "login_failed",
         resource: "auth",
-        description: `Failed login attempt for ${typeof email === "string" ? email : "unknown email"}`,
-        after: { email: typeof email === "string" ? email : null },
+        description: "Failed login attempt",
+        after: { email: normalizedEmail },
       });
+
       res.status(401).json({
         message: "Invalid email or password",
       });
@@ -117,68 +155,136 @@ export async function login(
     );
 
     if (!passwordValid) {
-      await auditActor(req, { userId: user.id, name: user.employee?.name ?? null }, {
-        action: "login_failed",
-        resource: "auth",
-        resourceId: user.id,
-        description: `Failed login attempt for ${user.email}`,
-      });
+      await auditActor(
+        req,
+        {
+          userId: user.id,
+          name:
+            user.employee?.name ??
+            user.resident?.fullName ??
+            null,
+        },
+        {
+          action: "login_failed",
+          resource: "auth",
+          resourceId: user.id,
+          description: `Failed login attempt for ${user.email}`,
+        }
+      );
+
       res.status(401).json({
         message: "Invalid email or password",
       });
       return;
     }
 
-    if (!user.employee) {
-      await auditActor(req, { userId: user.id, name: null }, {
-        action: "login_failed",
-        resource: "auth",
-        resourceId: user.id,
-        description: `Login blocked: no employee account for ${user.email}`,
-      });
+    if (!user.isActive) {
+      await auditActor(
+        req,
+        {
+          userId: user.id,
+          name:
+            user.employee?.name ??
+            user.resident?.fullName ??
+            null,
+        },
+        {
+          action: "login_failed",
+          resource: "auth",
+          resourceId: user.id,
+          description: `Login blocked: inactive account ${user.email}`,
+        }
+      );
+
       res.status(403).json({
-        message: "Employee account not found",
+        message: "Your account is inactive. Please contact the administrator.",
       });
       return;
     }
 
-    const token = generateAccessToken(
-      user.id,
-      rememberMe
-    );
+    if (user.employee && user.resident) {
+      console.error(
+        `Account ${user.id} has both employee and resident profiles`
+      );
 
-    const cookieOptions: CookieOptions = {
-  httpOnly: true,
-  secure: process.env.NODE_ENV === "production",
-  sameSite: "lax",
-  path: "/",
-};
+      res.status(403).json({
+        message: "Account configuration error. Please contact the administrator.",
+      });
+      return;
+    }
 
-if (rememberMe) {
-  cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000;
-}
+    if (!user.employee && !user.resident) {
+      await auditActor(
+        req,
+        { userId: user.id, name: null },
+        {
+          action: "login_failed",
+          resource: "auth",
+          resourceId: user.id,
+          description: `Login blocked: no employee or resident profile for ${user.email}`,
+        }
+      );
 
-res.cookie("access_token", token, cookieOptions);
+      res.status(403).json({
+        message: "Account profile not found",
+      });
+      return;
+    }
+
+    const actorName =
+      user.employee?.name ??
+      user.resident?.fullName ??
+      null;
 
     const authUser = await buildAuthUser(user.id);
 
     if (!authUser) {
       res.status(403).json({
-        message: "Employee account not found",
+        message: "Account profile not found",
       });
       return;
     }
 
-    await auditActor(req, { userId: user.id, name: user.employee?.name ?? null }, {
-      action: "login",
-      resource: "auth",
-      resourceId: user.id,
-      description: `User ${user.email} logged in`,
-    });
+    const accountType = authUser.accountType;
+    const redirectTo =
+      accountType === "resident" ? "/resident/history" : "/dashboard";
+
+    const token = generateAccessToken(
+      user.id,
+      Boolean(rememberMe)
+    );
+
+    const cookieOptions: CookieOptions = {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      path: "/",
+    };
+
+    if (rememberMe === true) {
+      cookieOptions.maxAge = 30 * 24 * 60 * 60 * 1000;
+    }
+
+    res.cookie("access_token", token, cookieOptions);
+
+    await auditActor(
+      req,
+      { userId: user.id, name: actorName },
+      {
+        action: "login",
+        resource: "auth",
+        resourceId: user.id,
+        description: `${accountType} ${user.email} logged in`,
+      }
+    );
 
     res.status(200).json({
       message: "Login successful",
-      user: authUser,
+      user: {
+        ...authUser,
+        accountType,
+      },
+      redirectTo,
     });
   } catch (error) {
     console.error("Login error:", error);
@@ -203,12 +309,18 @@ export async function logout(
       auditUserId = payload.userId;
       const who = await prisma.user.findUnique({
         where: { id: payload.userId },
-        include: { employee: { select: { name: true } } },
+        include: {
+          employee: { select: { name: true } },
+          resident: { select: { fullName: true } },
+        },
       });
-      auditName = who?.employee?.name ?? null;
+      auditName =
+        who?.employee?.name ??
+        who?.resident?.fullName ??
+        null;
       (req as Request & { userId?: string }).userId = payload.userId;
     } catch {
-      // Invalid/expired token: still clear cookie and audit anonymously.
+     
     }
   }
 

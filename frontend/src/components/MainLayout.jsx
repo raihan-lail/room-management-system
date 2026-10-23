@@ -1,28 +1,28 @@
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import Navbar from "./Navbar";
-import { sidebarMenu } from "../data/sidebar";
+import { residentMenu, sidebarMenu } from "../data/sidebar";
+import useAuth from "../contexts/useAuth";
 
 const MOBILE_QUERY = "(max-width: 768px)";
 
 
 export default function MainLayout({ children }) {
-  /*
-   * On mobile the sidebar is a hidden drawer,
-   * so it must start collapsed.
-   */
+  
   const [isCollapsed, setIsCollapsed] = useState(
     () =>
       typeof window !== "undefined" &&
       window.matchMedia(MOBILE_QUERY).matches
   );
+  const { isResident } = useAuth();
+  const menuItems = isResident ? residentMenu : sidebarMenu;
 
   return (
     <div className={`layout ${isCollapsed ? "is-sidebar-collapsed" : ""}`}>
       <Sidebar
         isCollapsed={isCollapsed}
         onToggle={setIsCollapsed}
-        menuItems={sidebarMenu}
+        menuItems={menuItems}
       />
 
       <div className="layout__main">
