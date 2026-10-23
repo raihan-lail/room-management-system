@@ -1,7 +1,10 @@
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || "http://localhost:5000";
 
-export default async function apiRequest(path, { headers, ...options } = {}) {
+export default async function apiRequest(
+  path,
+  { headers, responseType, ...options } = {}
+) {
   const isFormData = options.body instanceof FormData;
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -13,14 +16,15 @@ export default async function apiRequest(path, { headers, ...options } = {}) {
     },
   });
 
-  let data;
-  try {
-    data = await response.json();
-  } catch {
-    data = null;
-  }
-
   if (!response.ok) {
+    let data;
+
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
     const error = new Error((data && data.message) || "Request failed");
 
     error.status = response.status;
@@ -29,5 +33,13 @@ export default async function apiRequest(path, { headers, ...options } = {}) {
     throw error;
   }
 
-  return data;
+  if (responseType === "blob") {
+    return response.blob();
+  }
+
+  try {
+    return await response.json();
+  } catch {
+    return null;
+  }
 }

@@ -1,14 +1,14 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
+import ExportModal from "../../components/modals/ExportModal";
 import ImportModal from "../../components/modals/ImportModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
 
 const PAGE_SIZE = 10;
-const FETCH_PAGE_SIZE = 100;
 
 const GENDER_OPTIONS = [
   { value: "MALE", label: "Male" },
@@ -42,6 +42,25 @@ const SORT_GETTERS = {
   department: (resident) => resident.department,
   title: (resident) => resident.title,
 };
+
+function getResidentList(response) {
+  return Array.isArray(response?.residents) ? response.residents : [];
+}
+
+function getPagination(response, currentPage) {
+  const pagination = response?.pagination ?? {};
+  const total = Number(pagination.total ?? 0);
+
+  return {
+    page: Number(pagination.page ?? currentPage),
+    pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
+    total,
+    totalPages: Math.max(
+      1,
+      Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+    ),
+  };
+}
 
 function buildResidentSchema({ isEdit, siteOptions }) {
   return {
@@ -146,37 +165,20 @@ function toResidentFormValues(resident) {
   };
 }
 
-async function fetchAllResidents() {
-  const firstPage = await apiRequest(
-    `/api/resident?page=1&pageSize=${FETCH_PAGE_SIZE}`,
-  );
-
-  const residents = firstPage.residents ?? [];
-  const totalPages = firstPage.pagination?.totalPages ?? 1;
-
-  if (totalPages <= 1) return residents;
-
-  const remainingPages = await Promise.all(
-    Array.from({ length: totalPages - 1 }, (_, index) =>
-      apiRequest(
-        `/api/resident?page=${index + 2}&pageSize=${FETCH_PAGE_SIZE}`,
-      ),
-    ),
-  );
-
-  return remainingPages.reduce(
-    (rows, page) => [...rows, ...(page.residents ?? [])],
-    residents,
-  );
-}
-
 export default function GuestManagement() {
   const [residents, setResidents] = useState([]);
   const [sites, setSites] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    pageSize: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -186,39 +188,86 @@ export default function GuestManagement() {
     direction: "asc",
   });
 
-  useEffect(() => {
-    let isActive = true;
+  const loadSites = useCallback(async () => {
+    try {
+      const response = await apiRequest("/api/site");
+      setSites(response?.data ?? []);
+    } catch (err) {
+      setError(err.message || "Failed to load sites");
+    }
+  }, []);
 
-    Promise.all([
-      fetchAllResidents(),
-      apiRequest("/api/site").catch(() => ({ data: [] })),
-    ])
-      .then(([residentData, siteData]) => {
-        if (!isActive) return;
+  const loadResidents = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
 
-        setResidents(
-          residentData.filter((resident) => resident.user?.isActive !== false),
-        );
-        setSites(siteData.data ?? []);
-      })
-      .catch((err) => {
-        if (!isActive) return;
-        setError(err.message || "Failed to load residents");
-      })
-      .finally(() => {
-        if (!isActive) return;
-        setIsLoading(false);
+    try {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        pageSize: String(PAGE_SIZE),
+        search: search.trim(),
       });
 
-    return () => {
-      isActive = false;
-    };
-  }, []);
+      const response = await apiRequest(`/api/resident?${params.toString()}`);
+      const pageInfo = getPagination(response, currentPage);
+
+      setResidents(getResidentList(response));
+      setPagination(pageInfo);
+
+      // Protect against a stale page after deletion or filtering.
+      if (pageInfo.totalPages > 0 && currentPage > pageInfo.totalPages) {
+        setCurrentPage(pageInfo.totalPages);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to load residents");
+      setResidents([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, search]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadResidents();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadResidents]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadSites();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadSites]);
 
   const siteOptions = useMemo(
     () => [
       { value: "", label: "Select site" },
       ...sites.map((site) => ({ value: site.id, label: site.name })),
+    ],
+    [sites],
+  );
+
+  const exportFilterFields = useMemo(
+    () => [
+      {
+        name: "search",
+        label: "Search",
+        type: "search",
+        placeholder: "Name, email, phone, company, department...",
+      },
+      {
+        name: "siteId",
+        label: "Site",
+        type: "select",
+        placeholderOption: "All sites",
+        options: sites.map((site) => ({
+          value: site.id,
+          label: site.name,
+        })),
+      },
     ],
     [sites],
   );
@@ -237,7 +286,7 @@ export default function GuestManagement() {
     setError("");
 
     try {
-      const data = await apiRequest("/api/resident", {
+      await apiRequest("/api/resident", {
         method: "POST",
         body: JSON.stringify({
           email: values.email,
@@ -254,8 +303,13 @@ export default function GuestManagement() {
         }),
       });
 
-      setResidents((prev) => [...prev, data.resident]);
+      setIsAddModalOpen(false);
       setCurrentPage(1);
+
+      // Refresh explicitly because the page may not have changed.
+      if (currentPage === 1) {
+        await loadResidents();
+      }
     } catch (err) {
       setError(err.message || "Failed to create resident");
     }
@@ -265,7 +319,7 @@ export default function GuestManagement() {
     setError("");
 
     try {
-      const data = await apiRequest(`/api/resident/${editingRow.id}`, {
+      await apiRequest(`/api/resident/${editingRow.id}`, {
         method: "PATCH",
         body: JSON.stringify({
           fullName: values.fullName,
@@ -278,9 +332,8 @@ export default function GuestManagement() {
         }),
       });
 
-      setResidents((prev) =>
-        prev.map((row) => (row.id === editingRow.id ? data.resident : row)),
-      );
+      setEditingRow(null);
+      await loadResidents();
     } catch (err) {
       setError(err.message || "Failed to update resident");
     }
@@ -292,7 +345,14 @@ export default function GuestManagement() {
     try {
       await apiRequest(`/api/resident/${deletingRow.id}`, { method: "DELETE" });
 
-      setResidents((prev) => prev.filter((row) => row.id !== deletingRow.id));
+      setDeletingRow(null);
+
+      // Reload the previous page if its last resident was deactivated.
+      if (residents.length === 1 && currentPage > 1) {
+        setCurrentPage((page) => page - 1);
+      } else {
+        await loadResidents();
+      }
     } catch (err) {
       setError(err.message || "Failed to deactivate resident");
     }
@@ -300,17 +360,11 @@ export default function GuestManagement() {
 
   const handleResidentsImported = async () => {
     setError("");
+    setCurrentPage(1);
 
-    try {
-      const residentData = await fetchAllResidents();
-
-      setResidents(
-        residentData.filter((resident) => resident.user?.isActive !== false),
-      );
-      setSearch("");
-      setCurrentPage(1);
-    } catch (err) {
-      setError(err.message || "Failed to reload residents");
+    // Reload explicitly because the page may not have changed.
+    if (currentPage === 1) {
+      await loadResidents();
     }
   };
 
@@ -319,36 +373,15 @@ export default function GuestManagement() {
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
-
-    setCurrentPage(1);
   };
 
-  const filteredResidents = useMemo(() => {
-    const query = search.trim().toLowerCase();
-
-    if (!query) return residents;
-
-    return residents.filter((resident) =>
-      [
-        resident.fullName,
-        resident.user?.email,
-        resident.phone,
-        resident.gender,
-        resident.nationality,
-        resident.mealType,
-        resident.company,
-        resident.department,
-        resident.title,
-      ].some((value) => (value || "").toString().toLowerCase().includes(query)),
-    );
-  }, [residents, search]);
-
+  // Sorting applies to the current server-returned page.
   const sortedResidents = useMemo(() => {
     const getValue = SORT_GETTERS[sortConfig.key];
 
-    if (!getValue) return filteredResidents;
+    if (!getValue) return residents;
 
-    return [...filteredResidents].sort((a, b) => {
+    return [...residents].sort((a, b) => {
       const aValue = (getValue(a) ?? "").toString().toLowerCase();
       const bValue = (getValue(b) ?? "").toString().toLowerCase();
 
@@ -362,20 +395,16 @@ export default function GuestManagement() {
 
       return 0;
     });
-  }, [filteredResidents, sortConfig]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedResidents.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-
-  const pagedResidents = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-
-    return sortedResidents.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedResidents, safePage]);
+  }, [residents, sortConfig]);
 
   const startRow =
-    filteredResidents.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredResidents.length);
+    pagination.total === 0
+      ? 0
+      : (pagination.page - 1) * pagination.pageSize + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.pageSize,
+    pagination.total,
+  );
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -427,14 +456,14 @@ export default function GuestManagement() {
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
               Bulk Import
             </FlexibleButton>
-             <button
-              type="button"
+            <FlexibleButton
+              permission="resident.export"
               className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
+              onClick={() => setIsExportModalOpen(true)}
             >
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
               Export Excel
-            </button>
+            </FlexibleButton>
           </div>
         </div>
 
@@ -548,18 +577,16 @@ export default function GuestManagement() {
                       Loading residents...
                     </td>
                   </tr>
-                ) : pagedResidents.length === 0 ? (
+                ) : sortedResidents.length === 0 ? (
                   <tr>
                     <td colSpan="11" className="muted">
                       No residents found.
                     </td>
                   </tr>
                 ) : (
-                  pagedResidents.map((resident, index) => (
+                  sortedResidents.map((resident, index) => (
                     <tr key={resident.id}>
-                      <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
-                      </td>
+                      <td className="table-col-no">{startRow + index}</td>
 
                       <td>{resident.fullName || "-"}</td>
 
@@ -598,14 +625,14 @@ export default function GuestManagement() {
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredResidents.length} residents
+              Showing {startRow}–{endRow} of {pagination.total} residents
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
+                disabled={isLoading || pagination.page <= 1}
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -613,15 +640,17 @@ export default function GuestManagement() {
               </button>
 
               <span className="office-page-info">
-                Page {safePage} of {totalPages}
+                Page {pagination.page} of {pagination.totalPages}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={isLoading || pagination.page >= pagination.totalPages}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((prev) =>
+                    Math.min(pagination.totalPages, prev + 1),
+                  )
                 }
               >
                 Next
@@ -652,6 +681,18 @@ export default function GuestManagement() {
           }
           onClose={() => setIsImportModalOpen(false)}
           onImported={handleResidentsImported}
+        />
+      )}
+
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Residents"
+          endpoint="/api/resident/export"
+          filename={`residents-${new Date().toISOString().slice(0, 10)}.xlsx`}
+          entityLabel="residents"
+          filterFields={exportFilterFields}
+          initialFilters={{ search }}
+          onClose={() => setIsExportModalOpen(false)}
         />
       )}
 

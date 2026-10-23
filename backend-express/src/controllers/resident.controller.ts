@@ -15,6 +15,7 @@ import { auditActor } from "../services/audit.service.js";
 import * as XLSX from "xlsx";
 
 
+
 import { getSiteScope, isValidEmail, normalizeEmail, normalizeHeader, parseBoolean, parseGender, parseInteger, readString, textValue } from "../utils/excel.js";
 import type { ImportResidentRow, ResidentRowError } from "../types/resident.type.js";
 
@@ -76,18 +77,25 @@ export async function listResidents(req: AuthRequest, res: Response) {
     const siteId =
       typeof req.query.siteId === "string" ? req.query.siteId : undefined;
 
+    const genderSearch = search ? parseGender(search) : null;
+
     const where: Prisma.ResidentWhereInput = {
       ...residentSiteFilter(actor),
       ...(siteId ? { siteId } : {}),
+      // Deactivated residents are hidden, matching the management UI.
+      user: { isActive: true },
       ...(search
         ? {
             OR: [
               { fullName: { contains: search, mode: "insensitive" } },
+              { phone: { contains: search, mode: "insensitive" } },
               { nationality: { contains: search, mode: "insensitive" } },
+              { mealType: { contains: search, mode: "insensitive" } },
               { company: { contains: search, mode: "insensitive" } },
               { department: { contains: search, mode: "insensitive" } },
               { title: { contains: search, mode: "insensitive" } },
               { user: { email: { contains: search, mode: "insensitive" } } },
+              ...(genderSearch ? [{ gender: genderSearch }] : []),
             ],
           }
         : {}),
@@ -366,12 +374,6 @@ export async function updateResident(req: AuthRequest, res: Response) {
       (typeof fullName !== "string" || !fullName.trim())
     ) {
       return res.status(400).json({ message: "fullName cannot be empty." });
-    }
-
-    const validMealTypes = ["REGULAR", "VEGETARIAN", "HALAL", "OTHER"];
-
-    if (mealType !== undefined && !validMealTypes.includes(mealType)) {
-      return res.status(400).json({ message: "Invalid mealType." });
     }
 
     const stringFields = {
@@ -867,5 +869,200 @@ export async function importResidentsFromExcel(
       duplicate: "An email address is already registered.",
       conflict: "Unable to import residents because of a database conflict.",
     });
+  }
+}
+
+export async function exportResidentsToExcel(
+  req: AuthRequest,
+  res: Response,
+) {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : "";
+
+    const requestedSiteId =
+      typeof req.query.siteId === "string"
+        ? req.query.siteId.trim()
+        : "";
+
+    // Non-global employees cannot export another site's residents.
+    if (
+      requestedSiteId &&
+      !isGlobalSuperadmin(actor) &&
+      requestedSiteId !== actor.siteId
+    ) {
+      return res.status(403).json({
+        message: "You cannot export residents from another site.",
+      });
+    }
+
+    const where: Prisma.ResidentWhereInput = {
+      ...residentSiteFilter(actor),
+      ...(requestedSiteId ? { siteId: requestedSiteId } : {}),
+      ...(search
+        ? {
+            OR: [
+              {
+                fullName: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                phone: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                nationality: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                company: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                department: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                title: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+              {
+                user: {
+                  email: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const residents = await prisma.resident.findMany({
+      where,
+      select: {
+        id: true,
+        fullName: true,
+        phone: true,
+        gender: true,
+        nationality: true,
+        mealType: true,
+        company: true,
+        department: true,
+        title: true,
+        status: true,
+        createdAt: true,
+        updatedAt: true,
+        user: {
+          select: {
+            email: true,
+            isActive: true,
+          },
+        },
+        site: {
+          select: {
+            name: true,
+            code: true,
+          },
+        },
+      },
+      orderBy: [{ fullName: "asc" }],
+    });
+
+    const rows = residents.map((resident) => ({
+      residentId: resident.id,
+      fullName: resident.fullName,
+      email: resident.user.email,
+      phone: resident.phone,
+      gender: resident.gender,
+      nationality: resident.nationality ?? "",
+      mealType: resident.mealType,
+      company: resident.company ?? "",
+      department: resident.department ?? "",
+      title: resident.title ?? "",
+      status: resident.status ?? "",
+      siteName: resident.site?.name ?? "",
+      siteCode: resident.site?.code ?? "",
+      accountActive: resident.user.isActive ? "YES" : "NO",
+      createdAt: resident.createdAt.toISOString(),
+      updatedAt: resident.updatedAt.toISOString(),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+
+    worksheet["!cols"] = [
+      { wch: 28 }, // residentId
+      { wch: 25 }, // fullName
+      { wch: 32 }, // email
+      { wch: 18 }, // phone
+      { wch: 12 }, // gender
+      { wch: 18 }, // nationality
+      { wch: 18 }, // mealType
+      { wch: 25 }, // company
+      { wch: 22 }, // department
+      { wch: 20 }, // title
+      { wch: 16 }, // status
+      { wch: 20 }, // siteName
+      { wch: 16 }, // siteCode
+      { wch: 16 }, // accountActive
+      { wch: 24 }, // createdAt
+      { wch: 24 }, // updatedAt
+    ];
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Residents");
+
+    const buffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
+
+    const filename = `residents-${new Date()
+      .toISOString()
+      .slice(0, 10)}.xlsx`;
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`,
+    );
+    res.setHeader("Cache-Control", "no-store");
+
+    await notifyActor(req, {
+      title: "Resident data export successfully",
+      message: `${residents.length} residents exported successfully`,
+      type: "SUCCESS",
+    });
+
+    await auditActor(req, actor, {
+      action: "Export",
+      resource: "resident",
+      description: `exported ${residents.length} residents to an excel file`, 
+    })
+
+    return res.status(200).send(buffer);
+  } catch (error) {
+    return handlePrismaError(error, res);
   }
 }
