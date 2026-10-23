@@ -83,6 +83,11 @@ export type Bed = Prisma.BedModel
  */
 export type RoomAllocation = Prisma.RoomAllocationModel
 /**
+ * Model Resident
+ * 
+ */
+export type Resident = Prisma.ResidentModel
+/**
  * Model Notification
  * 
  */

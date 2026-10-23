@@ -64,6 +64,7 @@ export const ModelName = {
   Room: 'Room',
   Bed: 'Bed',
   RoomAllocation: 'RoomAllocation',
+  Resident: 'Resident',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -88,6 +89,7 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   password: 'password',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -234,6 +236,26 @@ export const RoomAllocationScalarFieldEnum = {
 } as const
 
 export type RoomAllocationScalarFieldEnum = (typeof RoomAllocationScalarFieldEnum)[keyof typeof RoomAllocationScalarFieldEnum]
+
+
+export const ResidentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  siteId: 'siteId',
+  fullName: 'fullName',
+  phone: 'phone',
+  gender: 'gender',
+  nationality: 'nationality',
+  mealType: 'mealType',
+  company: 'company',
+  department: 'department',
+  title: 'title',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResidentScalarFieldEnum = (typeof ResidentScalarFieldEnum)[keyof typeof ResidentScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {

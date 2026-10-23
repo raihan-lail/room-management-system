@@ -6,6 +6,7 @@ import {
   useState,
 } from "react";
 import { createPortal } from "react-dom";
+import FlexibleButton from "./FlexibleButtons";
 
 const MENU_WIDTH = 150;
 const MENU_GAP = 8;
@@ -16,6 +17,7 @@ export default function TableRowActions({
   onView,
   onEdit,
   onDelete,
+  permission = "rooms.manage",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState(null);
@@ -101,9 +103,9 @@ export default function TableRowActions({
       )}
 
       {hasMenu && (
-        <button
+        <FlexibleButton
           ref={triggerRef}
-          type="button"
+          permission={permission}
           className="btn btn-neutral"
           title={onEdit ? `Edit or delete ${title}` : `Delete ${title}`}
           aria-label={onEdit ? `Edit or delete ${title}` : `Delete ${title}`}
@@ -119,7 +121,7 @@ export default function TableRowActions({
             }
             aria-hidden="true"
           />
-        </button>
+        </FlexibleButton>
       )}
 
       {isOpen &&

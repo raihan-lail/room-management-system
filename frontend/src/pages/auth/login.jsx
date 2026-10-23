@@ -44,13 +44,14 @@ export default function Login() {
     <div className="login-page">
       <div className="login-wrapper">
         <div className="login-card login-card-branded">
-          <p className="app-title">
-            INTERACTIVE MOCKUP DESIGN FOR ROOM/CAMP MANAGEMENT SYSTEMS
-          </p>
-          <h1 className="login-title">LOGIN</h1>
+          <div className="login-heading">
+            <h1 className="login-title">Login</h1>
+            <p className="login-subtitle">
+              Enter your email and password to continue.
+            </p>
+          </div>
 
           <form className="login-form" onSubmit={handleSubmit}>
-            <p>Enter your email and password to login.</p>
             <label className="form-field">
               <span>Email</span>
               <input
@@ -113,11 +114,23 @@ export default function Login() {
               {submitting ? "logging in..." : "login"}
             </button>
           </form>
+           {/*
+          <div className="login-info">
+            <p className="login-info-title">Need an account?</p>
+            <p className="login-info-list">1. Contact your supervisor if you're an employee.</p>
+            <p className="login-info-list">2. Apply a booking to receptionist via email if youre a resident.</p>
+          </div>
+          */}
         </div>
 
-        <div className="login-image-wrapper">
-          <img src="/logo.png" alt="" className="login-image" />
-        </div>
+        <aside className="login-brand-panel">
+          <img
+            src="/logo-white.png"
+            alt="Room Management System"
+            className="login-brand-logo"
+          />
+          <p className="login-brand-text">Camp Management System</p>
+        </aside>
       </div>
     </div>
   );

@@ -15,6 +15,7 @@ import { createServer } from "node:http";
 import roomRouter from "./routes/room.route";
 import bedRouter from "./routes/bed.route";
 import roomAllocationRouter from "./routes/room-allocation.route";
+import residentRouter from "./routes/resident.route";
 
 
 const app = express();
@@ -42,7 +43,9 @@ app.use("/api/rooms", roomRouter);
 app.use("/api/bed", bedRouter);
 app.use("/api/notification", notificationRouter);
 app.use("/api/audit", auditRouter);
-app.use("/api/room-allocation", roomAllocationRouter)
+app.use("/api/room-allocation", roomAllocationRouter);
+app.use("/api/resident", residentRouter);
+
 
 
 app.get("/", (_req, res) => {

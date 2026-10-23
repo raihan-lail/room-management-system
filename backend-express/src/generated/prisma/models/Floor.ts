@@ -495,10 +495,6 @@ export type IntFieldUpdateOperationsInput = {
   divide?: number
 }
 
-export type BoolFieldUpdateOperationsInput = {
-  set?: boolean
-}
-
 export type FloorCreateNestedOneWithoutRoomsInput = {
   create?: Prisma.XOR<Prisma.FloorCreateWithoutRoomsInput, Prisma.FloorUncheckedCreateWithoutRoomsInput>
   connectOrCreate?: Prisma.FloorCreateOrConnectWithoutRoomsInput

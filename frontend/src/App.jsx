@@ -37,6 +37,7 @@ import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
 import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
+import ForgotPassword from "./pages/auth/ForgotPassword";
 
 function DefaultRedirect() {
   const { status, hasPermission } = useAuth();
@@ -59,6 +60,7 @@ function App() {
         <div className="app-shell">
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/forgot-password" element={<ForgotPassword/>} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/unauthorized" element={<Unauthorized />} />

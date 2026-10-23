@@ -3,6 +3,7 @@ import type { Response } from "express";
 import { prisma } from "../lib/prisma.js";
 import { Prisma } from "../generated/prisma/client.js";
 
+
 import {
   getActorOrRespond,
   isGlobalSuperadmin,
@@ -16,6 +17,7 @@ import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
 import * as XLSX from "xlsx";
 import type { ImportRow, RowError } from "../types/room.type.js";
+import { getSiteScope, normalizeHeader, parseBoolean, parseInteger, textValue } from "../utils/excel.js";
 
 function roomSiteFilter(actor: Actor) {
   if (isGlobalSuperadmin(actor)) return {};
@@ -29,53 +31,7 @@ function roomSiteFilter(actor: Actor) {
   };
 }
 
-function textValue(value: unknown): string {
-  return value == null ? "" : String(value).trim();
-}
 
-function parseBoolean(value: unknown): boolean | null {
-  if (typeof value === "boolean") return value;
-
-  const valueText = textValue(value).toLowerCase();
-
-  if (["true", "1", "yes"].includes(valueText)) return true;
-  if (["false", "0", "no"].includes(valueText)) return false;
-
-  return null;
-}
-
-function parseInteger(value: unknown): number | null {
-  if (
-    typeof value === "number" &&
-    Number.isInteger(value)
-  ) {
-    return value;
-  }
-
-  const valueText = textValue(value);
-
-  if (!/^\d+$/.test(valueText)) return null;
-
-  const parsed = Number(valueText);
-  return Number.isSafeInteger(parsed) ? parsed : null;
-}
-
-function normalizeHeader(header: string): string {
-  return header.trim().replace(/\s+/g, "").toLowerCase();
-}
-
-function getSiteScope(actor: {
-  siteId: string | null;
-  roles: Array<{ role: { name: string; siteId: string | null } }>;
-}): Prisma.FloorWhereInput {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return {
-    location: {
-      siteId: actor.siteId ?? NO_MATCHING_ID,
-    },
-  };
-}
 
 function singleParam(value: unknown): string | undefined {
   if (typeof value !== "string") return undefined;

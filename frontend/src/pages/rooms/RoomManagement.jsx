@@ -6,7 +6,7 @@ import apiRequest from "../../api/client";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
-import ImportRoomsModal from "../../components/modals/ImportRoomsModal";
+import ImportModal from "../../components/modals/ImportModal";
 import { buildRoomSchema } from "../../components/modals/addFormSchemas";
 import FlexibleButton from "../../components/FlexibleButtons";
 
@@ -856,7 +856,15 @@ export default function RoomManagement() {
       )}
 
       {isImportModalOpen && (
-        <ImportRoomsModal
+        <ImportModal
+          title="Bulk Import Rooms"
+          templatePath="/excel/room_import_template.xlsx"
+          templateHint="Download the template, add your rooms, then upload the completed .xlsx file."
+          endpoint="/api/rooms/import"
+          entityLabel="Rooms"
+          successMessage={(result) =>
+            `${result.importedRooms ?? 0} room(s) and ${result.importedBeds ?? 0} bed(s) imported successfully.`
+          }
           onClose={() => setIsImportModalOpen(false)}
           onImported={handleRoomsImported}
         />

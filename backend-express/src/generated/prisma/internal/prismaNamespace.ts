@@ -80,12 +80,12 @@ export type PrismaVersion = {
 }
 
 /**
- * Prisma Client JS version: 7.10.0
- * Query Engine version: 0edf323efd1d98336f3f0a68684b56f689b900d3
+ * Prisma Client JS version: 7.10.1
+ * Query Engine version: d1b3f377ca835d73fd50954a5e22128b9ebdd6b8
  */
 export const prismaVersion: PrismaVersion = {
-  client: "7.10.0",
-  engine: "0edf323efd1d98336f3f0a68684b56f689b900d3"
+  client: "7.10.1",
+  engine: "d1b3f377ca835d73fd50954a5e22128b9ebdd6b8"
 }
 
 /**
@@ -410,6 +410,7 @@ export const ModelName = {
   Room: 'Room',
   Bed: 'Bed',
   RoomAllocation: 'RoomAllocation',
+  Resident: 'Resident',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -427,7 +428,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "notification" | "auditLog"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "notification" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1393,6 +1394,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    Resident: {
+      payload: Prisma.$ResidentPayload<ExtArgs>
+      fields: Prisma.ResidentFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ResidentFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ResidentFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        findFirst: {
+          args: Prisma.ResidentFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ResidentFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        findMany: {
+          args: Prisma.ResidentFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>[]
+        }
+        create: {
+          args: Prisma.ResidentCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        createMany: {
+          args: Prisma.ResidentCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ResidentCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>[]
+        }
+        delete: {
+          args: Prisma.ResidentDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        update: {
+          args: Prisma.ResidentUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        deleteMany: {
+          args: Prisma.ResidentDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ResidentUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ResidentUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>[]
+        }
+        upsert: {
+          args: Prisma.ResidentUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ResidentPayload>
+        }
+        aggregate: {
+          args: Prisma.ResidentAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateResident>
+        }
+        groupBy: {
+          args: Prisma.ResidentGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResidentGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ResidentCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ResidentCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -1584,6 +1659,7 @@ export const UserScalarFieldEnum = {
   id: 'id',
   email: 'email',
   password: 'password',
+  isActive: 'isActive',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
@@ -1732,6 +1808,26 @@ export const RoomAllocationScalarFieldEnum = {
 export type RoomAllocationScalarFieldEnum = (typeof RoomAllocationScalarFieldEnum)[keyof typeof RoomAllocationScalarFieldEnum]
 
 
+export const ResidentScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  siteId: 'siteId',
+  fullName: 'fullName',
+  phone: 'phone',
+  gender: 'gender',
+  nationality: 'nationality',
+  mealType: 'mealType',
+  company: 'company',
+  department: 'department',
+  title: 'title',
+  status: 'status',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ResidentScalarFieldEnum = (typeof ResidentScalarFieldEnum)[keyof typeof ResidentScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -1826,6 +1922,13 @@ export type ListStringFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaMod
 
 
 /**
+ * Reference to a field of type 'Boolean'
+ */
+export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
+    
+
+
+/**
  * Reference to a field of type 'DateTime'
  */
 export type DateTimeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'DateTime'>
@@ -1854,13 +1957,6 @@ export type ListIntFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel,
 
 
 /**
- * Reference to a field of type 'Boolean'
- */
-export type BooleanFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Boolean'>
-    
-
-
-/**
  * Reference to a field of type 'BedStatus'
  */
 export type EnumBedStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BedStatus'>
@@ -1871,6 +1967,20 @@ export type EnumBedStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$Prisma
  * Reference to a field of type 'BedStatus[]'
  */
 export type ListEnumBedStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BedStatus[]'>
+    
+
+
+/**
+ * Reference to a field of type 'Gender'
+ */
+export type EnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender'>
+    
+
+
+/**
+ * Reference to a field of type 'Gender[]'
+ */
+export type ListEnumGenderFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Gender[]'>
     
 
 
@@ -2065,6 +2175,7 @@ export type GlobalOmitConfig = {
   room?: Prisma.RoomOmit
   bed?: Prisma.BedOmit
   roomAllocation?: Prisma.RoomAllocationOmit
+  resident?: Prisma.ResidentOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
 }

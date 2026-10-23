@@ -54,7 +54,7 @@ async function buildAuthUser(userId: string) {
       id: user.employee.id,
       name: user.employee.name,
       siteId: user.employee.siteId,
-      siteName: site?.name ?? "Global",
+      siteName: site?.name ?? "GLOBAL",
       site,
       roles: roleNames,
       permissions,

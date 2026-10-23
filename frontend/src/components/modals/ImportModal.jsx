@@ -1,10 +1,20 @@
 import { useState } from "react";
 import apiRequest from "../../api/client";
 
-const TEMPLATE_PATH = "/excel/room_import_template.xlsx";
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
 
-export default function ImportRoomsModal({ onClose, onImported }) {
+export default function ImportModal({
+  title = "Bulk Import",
+  templatePath,
+  templateTitle = "Excel template",
+  templateHint,
+  endpoint,
+  entityLabel = "records",
+  rowErrorLabel,
+  successMessage,
+  onClose,
+  onImported,
+}) {
   const [file, setFile] = useState(null);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState("");
@@ -42,20 +52,30 @@ export default function ImportRoomsModal({ onClose, onImported }) {
     setResult(null);
 
     try {
-      const response = await apiRequest("/api/rooms/import", {
+      const response = await apiRequest(endpoint, {
         method: "POST",
         body: formData,
       });
 
       setResult(response);
       setFile(null);
-      onImported();
+      onImported?.(response);
     } catch (err) {
-      setError(err.message || "Failed to import rooms.");
+      setError(err.message || "Failed to import records.");
       setRowErrors(Array.isArray(err.data?.errors) ? err.data.errors : []);
     } finally {
       setImporting(false);
     }
+  };
+
+  const getRowLabel = (rowError) => {
+    if (typeof rowErrorLabel === "function") return rowErrorLabel(rowError);
+    return rowError.roomName || rowError.fullName || rowError.name || "";
+  };
+
+  const getSuccessMessage = () => {
+    if (typeof successMessage === "function") return successMessage(result);
+    return successMessage || result?.message || "Import completed successfully.";
   };
 
   return (
@@ -64,11 +84,11 @@ export default function ImportRoomsModal({ onClose, onImported }) {
         className="modal"
         role="dialog"
         aria-modal="true"
-        aria-label="Bulk Import Rooms"
+        aria-label={title}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal__header">
-          <h2 className="modal__title">Bulk Import Rooms</h2>
+          <h2 className="modal__title">{title}</h2>
 
           <button
             type="button"
@@ -83,18 +103,11 @@ export default function ImportRoomsModal({ onClose, onImported }) {
         <form className="modal__form" onSubmit={handleImport}>
           <div className="import-template">
             <div className="import-template__text">
-              <span className="import-template__title">Excel template</span>
-              <span className="import-template__hint">
-                Download the template, add your rooms, then upload the
-                completed .xlsx file.
-              </span>
+              <span className="import-template__title">{templateTitle}</span>
+              <span className="import-template__hint">{templateHint}</span>
             </div>
 
-            <a
-              className="btn btn-neutral"
-              href={TEMPLATE_PATH}
-              download
-            >
+            <a className="btn btn-neutral" href={templatePath} download>
               <i className="bi bi-download" aria-hidden="true" />
               Download Template
             </a>
@@ -130,21 +143,23 @@ export default function ImportRoomsModal({ onClose, onImported }) {
               </p>
 
               <ul className="import-errors__list">
-                {rowErrors.map((rowError, index) => (
-                  <li key={`${rowError.row}-${index}`}>
-                    Row {rowError.row}
-                    {rowError.roomName ? ` (${rowError.roomName})` : ""}:{" "}
-                    {rowError.message}
-                  </li>
-                ))}
+                {rowErrors.map((rowError, index) => {
+                  const label = getRowLabel(rowError);
+
+                  return (
+                    <li key={`${rowError.row}-${index}`}>
+                      Row {rowError.row}
+                      {label ? ` (${label})` : ""}: {rowError.message}
+                    </li>
+                  );
+                })}
               </ul>
             </div>
           )}
 
           {result && (
             <div className="import-message import-message--success" role="status">
-              {result.importedRooms} room(s) and {result.importedBeds} bed(s)
-              imported successfully.
+              {getSuccessMessage()}
             </div>
           )}
 
@@ -163,7 +178,7 @@ export default function ImportRoomsModal({ onClose, onImported }) {
               className="btn btn-primary"
               disabled={!file || importing}
             >
-              {importing ? "Importing..." : "Import Rooms"}
+              {importing ? "Importing..." : `Import ${entityLabel}`}
             </button>
           </div>
         </form>

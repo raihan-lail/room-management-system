@@ -4,9 +4,9 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "lint": "eslint .",
+    "dev": "bunx --bun vite",
+    "build": "bunx --bun vite build",
+    "lint": "bunx --bun eslint .",
     "preview": "vite preview"
   },
   "dependencies": {

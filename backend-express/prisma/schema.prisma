@@ -1,6 +1,9 @@
 generator client {
   provider = "prisma-client"
   output   = "../src/generated/prisma"
+  engineType = "library"
+  runtime    = "bun"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
@@ -11,11 +14,13 @@ model User {
   id       String @id @default(cuid())
   email    String @unique
   password String
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   employee Employee?
+  resident Resident?
     notifications Notification[]
     auditLogs AuditLog[] @relation("AuditLogActor")
 
@@ -32,6 +37,7 @@ model Site {
   employees Employee[]
   roles     Role[]
   Locations Location[]
+  residents Resident[]
 }
 
 model Employee {
@@ -202,6 +208,38 @@ model RoomAllocation {
   room Room @relation(fields: [roomId], references: [id], onDelete: Restrict)
 
   @@index([purpose])
+}
+
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+model Resident {
+  id          String   @id @default(cuid())
+  userId      String @unique
+  siteId      String
+  fullName    String
+  phone       String
+  gender      Gender
+  nationality String?
+  mealType    String
+  company     String?
+  department  String?
+  title       String?
+  status      String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  site Site? @relation(fields: [siteId], references: [id])
+
+   user User @relation(fields: [userId], references: [id])
+
+  @@index([siteId])
+  @@index([fullName])
+  @@index([company])
+  @@index([department])
 }
 
 model Notification {

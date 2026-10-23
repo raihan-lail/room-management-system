@@ -193,6 +193,7 @@ export type SiteWhereInput = {
   employees?: Prisma.EmployeeListRelationFilter
   roles?: Prisma.RoleListRelationFilter
   Locations?: Prisma.LocationListRelationFilter
+  residents?: Prisma.ResidentListRelationFilter
 }
 
 export type SiteOrderByWithRelationInput = {
@@ -205,6 +206,7 @@ export type SiteOrderByWithRelationInput = {
   employees?: Prisma.EmployeeOrderByRelationAggregateInput
   roles?: Prisma.RoleOrderByRelationAggregateInput
   Locations?: Prisma.LocationOrderByRelationAggregateInput
+  residents?: Prisma.ResidentOrderByRelationAggregateInput
 }
 
 export type SiteWhereUniqueInput = Prisma.AtLeast<{
@@ -220,6 +222,7 @@ export type SiteWhereUniqueInput = Prisma.AtLeast<{
   employees?: Prisma.EmployeeListRelationFilter
   roles?: Prisma.RoleListRelationFilter
   Locations?: Prisma.LocationListRelationFilter
+  residents?: Prisma.ResidentListRelationFilter
 }, "id" | "name" | "code">
 
 export type SiteOrderByWithAggregationInput = {
@@ -256,6 +259,7 @@ export type SiteCreateInput = {
   employees?: Prisma.EmployeeCreateNestedManyWithoutSiteInput
   roles?: Prisma.RoleCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateInput = {
@@ -268,6 +272,7 @@ export type SiteUncheckedCreateInput = {
   employees?: Prisma.EmployeeUncheckedCreateNestedManyWithoutSiteInput
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationUncheckedCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUpdateInput = {
@@ -280,6 +285,7 @@ export type SiteUpdateInput = {
   employees?: Prisma.EmployeeUpdateManyWithoutSiteNestedInput
   roles?: Prisma.RoleUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateInput = {
@@ -292,6 +298,7 @@ export type SiteUncheckedUpdateInput = {
   employees?: Prisma.EmployeeUncheckedUpdateManyWithoutSiteNestedInput
   roles?: Prisma.RoleUncheckedUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUncheckedUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteCreateManyInput = {
@@ -408,6 +415,22 @@ export type SiteUpdateOneRequiredWithoutLocationsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.SiteUpdateToOneWithWhereWithoutLocationsInput, Prisma.SiteUpdateWithoutLocationsInput>, Prisma.SiteUncheckedUpdateWithoutLocationsInput>
 }
 
+export type SiteCreateNestedOneWithoutResidentsInput = {
+  create?: Prisma.XOR<Prisma.SiteCreateWithoutResidentsInput, Prisma.SiteUncheckedCreateWithoutResidentsInput>
+  connectOrCreate?: Prisma.SiteCreateOrConnectWithoutResidentsInput
+  connect?: Prisma.SiteWhereUniqueInput
+}
+
+export type SiteUpdateOneWithoutResidentsNestedInput = {
+  create?: Prisma.XOR<Prisma.SiteCreateWithoutResidentsInput, Prisma.SiteUncheckedCreateWithoutResidentsInput>
+  connectOrCreate?: Prisma.SiteCreateOrConnectWithoutResidentsInput
+  upsert?: Prisma.SiteUpsertWithoutResidentsInput
+  disconnect?: Prisma.SiteWhereInput | boolean
+  delete?: Prisma.SiteWhereInput | boolean
+  connect?: Prisma.SiteWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.SiteUpdateToOneWithWhereWithoutResidentsInput, Prisma.SiteUpdateWithoutResidentsInput>, Prisma.SiteUncheckedUpdateWithoutResidentsInput>
+}
+
 export type SiteCreateWithoutEmployeesInput = {
   id?: string
   name: string
@@ -417,6 +440,7 @@ export type SiteCreateWithoutEmployeesInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateWithoutEmployeesInput = {
@@ -428,6 +452,7 @@ export type SiteUncheckedCreateWithoutEmployeesInput = {
   updatedAt?: Date | string
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationUncheckedCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteCreateOrConnectWithoutEmployeesInput = {
@@ -455,6 +480,7 @@ export type SiteUpdateWithoutEmployeesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateWithoutEmployeesInput = {
@@ -466,6 +492,7 @@ export type SiteUncheckedUpdateWithoutEmployeesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.RoleUncheckedUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUncheckedUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteCreateWithoutRolesInput = {
@@ -477,6 +504,7 @@ export type SiteCreateWithoutRolesInput = {
   updatedAt?: Date | string
   employees?: Prisma.EmployeeCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateWithoutRolesInput = {
@@ -488,6 +516,7 @@ export type SiteUncheckedCreateWithoutRolesInput = {
   updatedAt?: Date | string
   employees?: Prisma.EmployeeUncheckedCreateNestedManyWithoutSiteInput
   Locations?: Prisma.LocationUncheckedCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteCreateOrConnectWithoutRolesInput = {
@@ -515,6 +544,7 @@ export type SiteUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   employees?: Prisma.EmployeeUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateWithoutRolesInput = {
@@ -526,6 +556,7 @@ export type SiteUncheckedUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   employees?: Prisma.EmployeeUncheckedUpdateManyWithoutSiteNestedInput
   Locations?: Prisma.LocationUncheckedUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteCreateWithoutLocationsInput = {
@@ -537,6 +568,7 @@ export type SiteCreateWithoutLocationsInput = {
   updatedAt?: Date | string
   employees?: Prisma.EmployeeCreateNestedManyWithoutSiteInput
   roles?: Prisma.RoleCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentCreateNestedManyWithoutSiteInput
 }
 
 export type SiteUncheckedCreateWithoutLocationsInput = {
@@ -548,6 +580,7 @@ export type SiteUncheckedCreateWithoutLocationsInput = {
   updatedAt?: Date | string
   employees?: Prisma.EmployeeUncheckedCreateNestedManyWithoutSiteInput
   roles?: Prisma.RoleUncheckedCreateNestedManyWithoutSiteInput
+  residents?: Prisma.ResidentUncheckedCreateNestedManyWithoutSiteInput
 }
 
 export type SiteCreateOrConnectWithoutLocationsInput = {
@@ -575,6 +608,7 @@ export type SiteUpdateWithoutLocationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   employees?: Prisma.EmployeeUpdateManyWithoutSiteNestedInput
   roles?: Prisma.RoleUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUpdateManyWithoutSiteNestedInput
 }
 
 export type SiteUncheckedUpdateWithoutLocationsInput = {
@@ -586,6 +620,71 @@ export type SiteUncheckedUpdateWithoutLocationsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   employees?: Prisma.EmployeeUncheckedUpdateManyWithoutSiteNestedInput
   roles?: Prisma.RoleUncheckedUpdateManyWithoutSiteNestedInput
+  residents?: Prisma.ResidentUncheckedUpdateManyWithoutSiteNestedInput
+}
+
+export type SiteCreateWithoutResidentsInput = {
+  id?: string
+  name: string
+  code: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  employees?: Prisma.EmployeeCreateNestedManyWithoutSiteInput
+  roles?: Prisma.RoleCreateNestedManyWithoutSiteInput
+  Locations?: Prisma.LocationCreateNestedManyWithoutSiteInput
+}
+
+export type SiteUncheckedCreateWithoutResidentsInput = {
+  id?: string
+  name: string
+  code: string
+  description?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  employees?: Prisma.EmployeeUncheckedCreateNestedManyWithoutSiteInput
+  roles?: Prisma.RoleUncheckedCreateNestedManyWithoutSiteInput
+  Locations?: Prisma.LocationUncheckedCreateNestedManyWithoutSiteInput
+}
+
+export type SiteCreateOrConnectWithoutResidentsInput = {
+  where: Prisma.SiteWhereUniqueInput
+  create: Prisma.XOR<Prisma.SiteCreateWithoutResidentsInput, Prisma.SiteUncheckedCreateWithoutResidentsInput>
+}
+
+export type SiteUpsertWithoutResidentsInput = {
+  update: Prisma.XOR<Prisma.SiteUpdateWithoutResidentsInput, Prisma.SiteUncheckedUpdateWithoutResidentsInput>
+  create: Prisma.XOR<Prisma.SiteCreateWithoutResidentsInput, Prisma.SiteUncheckedCreateWithoutResidentsInput>
+  where?: Prisma.SiteWhereInput
+}
+
+export type SiteUpdateToOneWithWhereWithoutResidentsInput = {
+  where?: Prisma.SiteWhereInput
+  data: Prisma.XOR<Prisma.SiteUpdateWithoutResidentsInput, Prisma.SiteUncheckedUpdateWithoutResidentsInput>
+}
+
+export type SiteUpdateWithoutResidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  employees?: Prisma.EmployeeUpdateManyWithoutSiteNestedInput
+  roles?: Prisma.RoleUpdateManyWithoutSiteNestedInput
+  Locations?: Prisma.LocationUpdateManyWithoutSiteNestedInput
+}
+
+export type SiteUncheckedUpdateWithoutResidentsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  code?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  employees?: Prisma.EmployeeUncheckedUpdateManyWithoutSiteNestedInput
+  roles?: Prisma.RoleUncheckedUpdateManyWithoutSiteNestedInput
+  Locations?: Prisma.LocationUncheckedUpdateManyWithoutSiteNestedInput
 }
 
 
@@ -597,12 +696,14 @@ export type SiteCountOutputType = {
   employees: number
   roles: number
   Locations: number
+  residents: number
 }
 
 export type SiteCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   employees?: boolean | SiteCountOutputTypeCountEmployeesArgs
   roles?: boolean | SiteCountOutputTypeCountRolesArgs
   Locations?: boolean | SiteCountOutputTypeCountLocationsArgs
+  residents?: boolean | SiteCountOutputTypeCountResidentsArgs
 }
 
 /**
@@ -636,6 +737,13 @@ export type SiteCountOutputTypeCountLocationsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.LocationWhereInput
 }
 
+/**
+ * SiteCountOutputType without action
+ */
+export type SiteCountOutputTypeCountResidentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ResidentWhereInput
+}
+
 
 export type SiteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -647,6 +755,7 @@ export type SiteSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   employees?: boolean | Prisma.Site$employeesArgs<ExtArgs>
   roles?: boolean | Prisma.Site$rolesArgs<ExtArgs>
   Locations?: boolean | Prisma.Site$LocationsArgs<ExtArgs>
+  residents?: boolean | Prisma.Site$residentsArgs<ExtArgs>
   _count?: boolean | Prisma.SiteCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["site"]>
 
@@ -682,6 +791,7 @@ export type SiteInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   employees?: boolean | Prisma.Site$employeesArgs<ExtArgs>
   roles?: boolean | Prisma.Site$rolesArgs<ExtArgs>
   Locations?: boolean | Prisma.Site$LocationsArgs<ExtArgs>
+  residents?: boolean | Prisma.Site$residentsArgs<ExtArgs>
   _count?: boolean | Prisma.SiteCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type SiteIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -693,6 +803,7 @@ export type $SitePayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     employees: Prisma.$EmployeePayload<ExtArgs>[]
     roles: Prisma.$RolePayload<ExtArgs>[]
     Locations: Prisma.$LocationPayload<ExtArgs>[]
+    residents: Prisma.$ResidentPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1098,6 +1209,7 @@ export interface Prisma__SiteClient<T, Null = never, ExtArgs extends runtime.Typ
   employees<T extends Prisma.Site$employeesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$employeesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   roles<T extends Prisma.Site$rolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$RolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   Locations<T extends Prisma.Site$LocationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$LocationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$LocationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  residents<T extends Prisma.Site$residentsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Site$residentsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ResidentPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1595,6 +1707,30 @@ export type Site$LocationsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.LocationScalarFieldEnum | Prisma.LocationScalarFieldEnum[]
+}
+
+/**
+ * Site.residents
+ */
+export type Site$residentsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Resident
+   */
+  select?: Prisma.ResidentSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Resident
+   */
+  omit?: Prisma.ResidentOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ResidentInclude<ExtArgs> | null
+  where?: Prisma.ResidentWhereInput
+  orderBy?: Prisma.ResidentOrderByWithRelationInput | Prisma.ResidentOrderByWithRelationInput[]
+  cursor?: Prisma.ResidentWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ResidentScalarFieldEnum | Prisma.ResidentScalarFieldEnum[]
 }
 
 /**

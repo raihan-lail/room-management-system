@@ -3,7 +3,7 @@ import MainLayout from "../../components/MainLayout";
 import { useEffect, useState } from "react";
 import apiRequest from "../../api/client";
 
-const PAGE_SIZE = 10;
+const PAGE_SIZE = 20;
 
 const INITIAL_FILTERS = {
   actor: "",

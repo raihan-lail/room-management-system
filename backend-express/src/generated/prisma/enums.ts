@@ -17,3 +17,12 @@ export const BedStatus = {
 } as const
 
 export type BedStatus = (typeof BedStatus)[keyof typeof BedStatus]
+
+
+export const Gender = {
+  MALE: 'MALE',
+  FEMALE: 'FEMALE',
+  OTHER: 'OTHER'
+} as const
+
+export type Gender = (typeof Gender)[keyof typeof Gender]
