@@ -4,6 +4,8 @@
  - `backend`: Express + TypeScript + PostgreSQL + Prisma 7
 - `frontend`: React + Vite
 
+ALL RUN ON BUN
+
 ## FRONTEND
 ### TECH STACK
 - React
@@ -28,7 +30,7 @@ http://localhost:5173/
 ## BACKEND:
 
 ### TECH STACK:
-- Node JS V24.12.0
+- Bun 1.3.11
 - Express
 - TypeScript
 - PostgreSQL 18
@@ -38,14 +40,14 @@ http://localhost:5173/
 ### PREQUISITIES
 Before running the project, make sure you have installed:
 
-- Node JS V24.12.0 or newer
+- Bun 1.3.11 or newer
 - PostgreSQL 18 or newer
 - Git
 - Optional: Docker and Docker Compose
 
-check node js version:
+check Bun version:
 ```bash
-node -v
+bun -v
 ```
 check postgresql:
 ```bash
