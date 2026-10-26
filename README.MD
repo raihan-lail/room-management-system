@@ -22,6 +22,7 @@ room-management-system/
 │  │  └─ seeders/             # Permission, site and superadmin seeders
 │  ├─ src/
 │  │  ├─ controllers/         # Request handlers
+│  │  ├─ helpers/             # helper functions
 │  │  ├─ routes/              # Express routers
 │  │  ├─ middleware/          # Authentication and permission guards
 │  │  ├─ lib/                 # JWT, Prisma client, permissions
