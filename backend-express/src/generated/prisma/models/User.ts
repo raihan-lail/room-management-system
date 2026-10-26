@@ -194,6 +194,7 @@ export type UserWhereInput = {
   resident?: Prisma.XOR<Prisma.ResidentNullableScalarRelationFilter, Prisma.ResidentWhereInput> | null
   notifications?: Prisma.NotificationListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
+  bookingEvents?: Prisma.BookingEventListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -207,6 +208,7 @@ export type UserOrderByWithRelationInput = {
   resident?: Prisma.ResidentOrderByWithRelationInput
   notifications?: Prisma.NotificationOrderByRelationAggregateInput
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
+  bookingEvents?: Prisma.BookingEventOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -223,6 +225,7 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   resident?: Prisma.XOR<Prisma.ResidentNullableScalarRelationFilter, Prisma.ResidentWhereInput> | null
   notifications?: Prisma.NotificationListRelationFilter
   auditLogs?: Prisma.AuditLogListRelationFilter
+  bookingEvents?: Prisma.BookingEventListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -260,6 +263,7 @@ export type UserCreateInput = {
   resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -273,6 +277,7 @@ export type UserUncheckedCreateInput = {
   resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserUpdateInput = {
@@ -286,6 +291,7 @@ export type UserUpdateInput = {
   resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -299,6 +305,7 @@ export type UserUncheckedUpdateInput = {
   resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -405,6 +412,22 @@ export type UserUpdateOneRequiredWithoutResidentNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutResidentInput, Prisma.UserUpdateWithoutResidentInput>, Prisma.UserUncheckedUpdateWithoutResidentInput>
 }
 
+export type UserCreateNestedOneWithoutBookingEventsInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBookingEventsInput, Prisma.UserUncheckedCreateWithoutBookingEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingEventsInput
+  connect?: Prisma.UserWhereUniqueInput
+}
+
+export type UserUpdateOneWithoutBookingEventsNestedInput = {
+  create?: Prisma.XOR<Prisma.UserCreateWithoutBookingEventsInput, Prisma.UserUncheckedCreateWithoutBookingEventsInput>
+  connectOrCreate?: Prisma.UserCreateOrConnectWithoutBookingEventsInput
+  upsert?: Prisma.UserUpsertWithoutBookingEventsInput
+  disconnect?: Prisma.UserWhereInput | boolean
+  delete?: Prisma.UserWhereInput | boolean
+  connect?: Prisma.UserWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBookingEventsInput, Prisma.UserUpdateWithoutBookingEventsInput>, Prisma.UserUncheckedUpdateWithoutBookingEventsInput>
+}
+
 export type UserCreateNestedOneWithoutNotificationsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationsInput
@@ -445,6 +468,7 @@ export type UserCreateWithoutEmployeeInput = {
   resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateWithoutEmployeeInput = {
@@ -457,6 +481,7 @@ export type UserUncheckedCreateWithoutEmployeeInput = {
   resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserCreateOrConnectWithoutEmployeeInput = {
@@ -485,6 +510,7 @@ export type UserUpdateWithoutEmployeeInput = {
   resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmployeeInput = {
@@ -497,6 +523,7 @@ export type UserUncheckedUpdateWithoutEmployeeInput = {
   resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
 }
 
 export type UserCreateWithoutResidentInput = {
@@ -509,6 +536,7 @@ export type UserCreateWithoutResidentInput = {
   employee?: Prisma.EmployeeCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateWithoutResidentInput = {
@@ -521,6 +549,7 @@ export type UserUncheckedCreateWithoutResidentInput = {
   employee?: Prisma.EmployeeUncheckedCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserCreateOrConnectWithoutResidentInput = {
@@ -549,6 +578,7 @@ export type UserUpdateWithoutResidentInput = {
   employee?: Prisma.EmployeeUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutResidentInput = {
@@ -559,6 +589,75 @@ export type UserUncheckedUpdateWithoutResidentInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   employee?: Prisma.EmployeeUncheckedUpdateOneWithoutUserNestedInput
+  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
+}
+
+export type UserCreateWithoutBookingEventsInput = {
+  id?: string
+  email: string
+  password: string
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  employee?: Prisma.EmployeeCreateNestedOneWithoutUserInput
+  resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
+  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+}
+
+export type UserUncheckedCreateWithoutBookingEventsInput = {
+  id?: string
+  email: string
+  password: string
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  employee?: Prisma.EmployeeUncheckedCreateNestedOneWithoutUserInput
+  resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
+  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+}
+
+export type UserCreateOrConnectWithoutBookingEventsInput = {
+  where: Prisma.UserWhereUniqueInput
+  create: Prisma.XOR<Prisma.UserCreateWithoutBookingEventsInput, Prisma.UserUncheckedCreateWithoutBookingEventsInput>
+}
+
+export type UserUpsertWithoutBookingEventsInput = {
+  update: Prisma.XOR<Prisma.UserUpdateWithoutBookingEventsInput, Prisma.UserUncheckedUpdateWithoutBookingEventsInput>
+  create: Prisma.XOR<Prisma.UserCreateWithoutBookingEventsInput, Prisma.UserUncheckedCreateWithoutBookingEventsInput>
+  where?: Prisma.UserWhereInput
+}
+
+export type UserUpdateToOneWithWhereWithoutBookingEventsInput = {
+  where?: Prisma.UserWhereInput
+  data: Prisma.XOR<Prisma.UserUpdateWithoutBookingEventsInput, Prisma.UserUncheckedUpdateWithoutBookingEventsInput>
+}
+
+export type UserUpdateWithoutBookingEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  employee?: Prisma.EmployeeUpdateOneWithoutUserNestedInput
+  resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
+  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+}
+
+export type UserUncheckedUpdateWithoutBookingEventsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  email?: Prisma.StringFieldUpdateOperationsInput | string
+  password?: Prisma.StringFieldUpdateOperationsInput | string
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  employee?: Prisma.EmployeeUncheckedUpdateOneWithoutUserNestedInput
+  resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
 }
@@ -573,6 +672,7 @@ export type UserCreateWithoutNotificationsInput = {
   employee?: Prisma.EmployeeCreateNestedOneWithoutUserInput
   resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -585,6 +685,7 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   employee?: Prisma.EmployeeUncheckedCreateNestedOneWithoutUserInput
   resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
+  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -613,6 +714,7 @@ export type UserUpdateWithoutNotificationsInput = {
   employee?: Prisma.EmployeeUpdateOneWithoutUserNestedInput
   resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -625,6 +727,7 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   employee?: Prisma.EmployeeUncheckedUpdateOneWithoutUserNestedInput
   resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
+  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
 }
 
 export type UserCreateWithoutAuditLogsInput = {
@@ -637,6 +740,7 @@ export type UserCreateWithoutAuditLogsInput = {
   employee?: Prisma.EmployeeCreateNestedOneWithoutUserInput
   resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
+  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
 }
 
 export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -649,6 +753,7 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   employee?: Prisma.EmployeeUncheckedCreateNestedOneWithoutUserInput
   resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
+  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
 }
 
 export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -677,6 +782,7 @@ export type UserUpdateWithoutAuditLogsInput = {
   employee?: Prisma.EmployeeUpdateOneWithoutUserNestedInput
   resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
+  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -689,6 +795,7 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   employee?: Prisma.EmployeeUncheckedUpdateOneWithoutUserNestedInput
   resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
+  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
 }
 
 
@@ -699,11 +806,13 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
 export type UserCountOutputType = {
   notifications: number
   auditLogs: number
+  bookingEvents: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   notifications?: boolean | UserCountOutputTypeCountNotificationsArgs
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
+  bookingEvents?: boolean | UserCountOutputTypeCountBookingEventsArgs
 }
 
 /**
@@ -730,6 +839,13 @@ export type UserCountOutputTypeCountAuditLogsArgs<ExtArgs extends runtime.Types.
   where?: Prisma.AuditLogWhereInput
 }
 
+/**
+ * UserCountOutputType without action
+ */
+export type UserCountOutputTypeCountBookingEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingEventWhereInput
+}
+
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -742,6 +858,7 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   resident?: boolean | Prisma.User$residentArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
+  bookingEvents?: boolean | Prisma.User$bookingEventsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -778,6 +895,7 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   resident?: boolean | Prisma.User$residentArgs<ExtArgs>
   notifications?: boolean | Prisma.User$notificationsArgs<ExtArgs>
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
+  bookingEvents?: boolean | Prisma.User$bookingEventsArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -790,6 +908,7 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     resident: Prisma.$ResidentPayload<ExtArgs> | null
     notifications: Prisma.$NotificationPayload<ExtArgs>[]
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
+    bookingEvents: Prisma.$BookingEventPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1196,6 +1315,7 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   resident<T extends Prisma.User$residentArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$residentArgs<ExtArgs>>): Prisma.Prisma__ResidentClient<runtime.Types.Result.GetResult<Prisma.$ResidentPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   notifications<T extends Prisma.User$notificationsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$notificationsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$NotificationPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  bookingEvents<T extends Prisma.User$bookingEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1707,6 +1827,30 @@ export type User$auditLogsArgs<ExtArgs extends runtime.Types.Extensions.Internal
   take?: number
   skip?: number
   distinct?: Prisma.AuditLogScalarFieldEnum | Prisma.AuditLogScalarFieldEnum[]
+}
+
+/**
+ * User.bookingEvents
+ */
+export type User$bookingEventsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BookingEvent
+   */
+  select?: Prisma.BookingEventSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BookingEvent
+   */
+  omit?: Prisma.BookingEventOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingEventInclude<ExtArgs> | null
+  where?: Prisma.BookingEventWhereInput
+  orderBy?: Prisma.BookingEventOrderByWithRelationInput | Prisma.BookingEventOrderByWithRelationInput[]
+  cursor?: Prisma.BookingEventWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingEventScalarFieldEnum | Prisma.BookingEventScalarFieldEnum[]
 }
 
 /**

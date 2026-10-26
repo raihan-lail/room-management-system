@@ -1,23 +1,7 @@
 import type { Request, Response, NextFunction } from "express";
 import { prisma } from "../lib/prisma";
 import type { Prisma } from "../generated/prisma/client";
-
-function singleParam(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function listParam(value: unknown): string[] | undefined {
-  const raw = Array.isArray(value) ? value : [value];
-  const list = raw
-    .flatMap((entry) =>
-      typeof entry === "string" ? entry.split(",") : []
-    )
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return list.length > 0 ? [...new Set(list)] : undefined;
-}
+import { listParam, singleParam } from "../helpers/audit.helper.js";
 
 export async function getAuditLogs(
   req: Request,

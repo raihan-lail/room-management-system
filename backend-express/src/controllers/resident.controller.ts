@@ -8,7 +8,6 @@ import {
   getActorOrRespond,
   handlePrismaError,
   isGlobalSuperadmin,
-  NO_MATCHING_ID,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
@@ -16,41 +15,17 @@ import * as XLSX from "xlsx";
 
 
 
-import { getSiteScope, isValidEmail, normalizeEmail, normalizeHeader, parseBoolean, parseGender, parseInteger, readString, textValue } from "../utils/excel.js";
+import { isValidEmail, normalizeEmail, normalizeHeader, parseGender, readString } from "../utils/excel.js";
 import type { ImportResidentRow, ResidentRowError } from "../types/resident.type.js";
+import {
+  optionalString,
+  residentSiteFilter,
+  residentSiteScope,
+} from "../helpers/resident.helper.js";
 
 
 
 
-
-function residentSiteFilter(actor: {
-  siteId: string | null;
-  roles: Array<{ role: { name: string; siteId: string | null } }>;
-}): Prisma.ResidentWhereInput {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return {
-    siteId: actor.siteId ?? NO_MATCHING_ID,
-  };
-}
-
-
-function residentSiteScope(actor: {
-  siteId: string | null;
-  roles: Array<{ role: { name: string; siteId: string | null } }>;
-}): Prisma.SiteWhereInput {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return { id: actor.siteId ?? NO_MATCHING_ID };
-}
-
-
-function optionalString(value: unknown): string | null | undefined {
-  if (value === undefined) return undefined;
-  if (value === null) return null;
-  if (typeof value !== "string") return undefined;
-  return value.trim() || null;
-}
 
 export async function listResidents(req: AuthRequest, res: Response) {
   try {

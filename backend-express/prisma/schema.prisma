@@ -21,8 +21,10 @@ model User {
 
   employee Employee?
   resident Resident?
-    notifications Notification[]
-    auditLogs AuditLog[] @relation("AuditLogActor")
+  notifications Notification[]
+  auditLogs AuditLog[] @relation("AuditLogActor")
+
+  bookingEvents BookingEvent[] @relation("BookingEventActor")
 
 }
 
@@ -56,6 +58,7 @@ model Employee {
   permissions EmployeePermission[]
 
   user User @relation(fields: [userId], references: [id])
+  complaintsAssigned Complaint[] @relation("ComplaintAssignee")
 }
 
 model Role {
@@ -190,7 +193,8 @@ model Bed {
   updatedAt   DateTime @updatedAt
 
   room     Room      @relation(fields: [roomId], references: [id], onDelete: Restrict)
-  
+
+  bookings Booking[]
 
   @@unique([roomId, name])
   @@index([roomId])
@@ -236,11 +240,129 @@ model Resident {
 
    user User @relation(fields: [userId], references: [id])
 
+  bookings Booking[]
+
+
   @@index([siteId])
   @@index([fullName])
   @@index([company])
   @@index([department])
 }
+
+enum BookingStatus {
+  CONFIRMED
+  IN_HOUSE
+  HOME_LEAVE
+  CHECKED_OUT
+  CANCELLED
+  ARCHIVED
+}
+
+enum HomeLeaveStatus {
+  ACTIVE
+  RETURNED
+  CANCELLED
+}
+
+model Booking {
+  id          String        @id @default(cuid())
+  residentId  String
+  bedId       String
+  startedAt   DateTime
+  endedAt     DateTime
+  status      BookingStatus @default(CONFIRMED)
+
+  // Actual lifecycle timestamps
+  checkedInAt  DateTime?
+  checkedOutAt DateTime?
+  cancelledAt  DateTime?
+  archivedAt   DateTime?
+
+  // Used for no-show handling
+  noShowAt       DateTime?
+  cancellationReason String?
+
+  // Optional receptionist notes
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  resident    Resident @relation(fields: [residentId], references: [id])
+  bed         Bed      @relation(fields: [bedId], references: [id])
+  homeLeaves  HomeLeave[]
+  complaints  Complaint[]
+  events      BookingEvent[]
+
+  @@index([residentId, status])
+  @@index([bedId, status])
+  @@index([startedAt, status])
+  @@index([endedAt, status])
+}
+
+model HomeLeave {
+  id          String           @id @default(cuid())
+  bookingId   String
+  startedAt   DateTime
+  expectedReturnAt DateTime
+  returnedAt  DateTime?
+  status      HomeLeaveStatus  @default(ACTIVE)
+  reason      String?
+  notes       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+
+  @@index([bookingId, status])
+  @@index([expectedReturnAt, status])
+}
+
+model BookingEvent {
+  id          String   @id @default(cuid())
+  bookingId   String
+  actorUserId String?
+  action      String
+  description String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+  actor       User?   @relation("BookingEventActor", fields: [actorUserId], references: [id])
+
+  @@index([bookingId, createdAt])
+  @@index([actorUserId, createdAt])
+}
+
+enum ComplaintStatus {
+  OPEN
+  IN_PROGRESS
+  RESOLVED
+  CLOSED
+}
+
+model Complaint {
+  id          String          @id @default(cuid())
+  bookingId   String
+  title       String
+  description String
+  status      ComplaintStatus @default(OPEN)
+  assignedToId String?
+  resolvedAt  DateTime?
+  resolution  String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  booking     Booking @relation(fields: [bookingId], references: [id])
+  assignedTo  Employee? @relation("ComplaintAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@index([bookingId])
+  @@index([assignedToId, status])
+}
+
 
 model Notification {
   id        String   @id @default(cuid())

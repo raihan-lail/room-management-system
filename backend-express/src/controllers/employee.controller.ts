@@ -13,35 +13,7 @@ import {
 import { notifyActor } from "../services/notification.service.js";
 import { auditInTransaction } from "../services/audit.service.js";
 import type { EmployeeInput } from "../types/employee.type.js";
-
-const employeeSelect = {
-  id: true,
-  name: true,
-  userId: true,
-  siteId: true,
-  createdAt: true,
-  updatedAt: true,
-  user: {
-    select: {
-      id: true,
-      email: true,
-      createdAt: true,
-    },
-  },
-  site: true,
-  roles: {
-    select: {
-      role: {
-        select: {
-          id: true,
-          name: true,
-          description: true,
-          siteId: true,
-        },
-      },
-    },
-  },
-} as const;
+import { employeeSelect } from "../helpers/employee.helper.js";
 
 export async function listEmployees(
   req: AuthRequest,

@@ -10,45 +10,13 @@ import {
 } from "../utils/actor.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
-import type { Actor } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
-import { auditActor, auditInTransaction } from "../services/audit.service.js";
-
-function allocationSiteFilter(actor: {
-  siteId: string | null;
-  roles: Array<{ role: { name: string; siteId: string | null } }>;
-}): Prisma.RoomAllocationWhereInput {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return {
-    room: {
-      floor: {
-        location: {
-          siteId: actor.siteId ?? NO_MATCHING_ID,
-        },
-      },
-    },
-  };
-}
-
-function parsePositiveInt(value: unknown, fallback: number): number {
-  const parsed = Number.parseInt(String(value ?? ""), 10);
-  return Number.isInteger(parsed) && parsed > 0 ? parsed : fallback;
-}
-
-const allocationInclude = {
-  room: {
-    include: {
-      floor: {
-        include: {
-          location: {
-            include: { site: true },
-          },
-        },
-      },
-    },
-  },
-} satisfies Prisma.RoomAllocationInclude;
+import { auditActor } from "../services/audit.service.js";
+import {
+  allocationInclude,
+  allocationSiteFilter,
+  parsePositiveInt,
+} from "../helpers/room-allocation.helper.js";
 
 // GET /api/room-allocations
 export async function listRoomAllocations(

@@ -110,6 +110,26 @@ export type RoomAllocation = Prisma.RoomAllocationModel
  */
 export type Resident = Prisma.ResidentModel
 /**
+ * Model Booking
+ * 
+ */
+export type Booking = Prisma.BookingModel
+/**
+ * Model HomeLeave
+ * 
+ */
+export type HomeLeave = Prisma.HomeLeaveModel
+/**
+ * Model BookingEvent
+ * 
+ */
+export type BookingEvent = Prisma.BookingEventModel
+/**
+ * Model Complaint
+ * 
+ */
+export type Complaint = Prisma.ComplaintModel
+/**
  * Model Notification
  * 
  */

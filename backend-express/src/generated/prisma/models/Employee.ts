@@ -194,6 +194,7 @@ export type EmployeeWhereInput = {
   roles?: Prisma.EmployeeRoleListRelationFilter
   permissions?: Prisma.EmployeePermissionListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  complaintsAssigned?: Prisma.ComplaintListRelationFilter
 }
 
 export type EmployeeOrderByWithRelationInput = {
@@ -207,6 +208,7 @@ export type EmployeeOrderByWithRelationInput = {
   roles?: Prisma.EmployeeRoleOrderByRelationAggregateInput
   permissions?: Prisma.EmployeePermissionOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
+  complaintsAssigned?: Prisma.ComplaintOrderByRelationAggregateInput
 }
 
 export type EmployeeWhereUniqueInput = Prisma.AtLeast<{
@@ -223,6 +225,7 @@ export type EmployeeWhereUniqueInput = Prisma.AtLeast<{
   roles?: Prisma.EmployeeRoleListRelationFilter
   permissions?: Prisma.EmployeePermissionListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
+  complaintsAssigned?: Prisma.ComplaintListRelationFilter
 }, "id" | "userId">
 
 export type EmployeeOrderByWithAggregationInput = {
@@ -258,6 +261,7 @@ export type EmployeeCreateInput = {
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUncheckedCreateInput = {
@@ -269,6 +273,7 @@ export type EmployeeUncheckedCreateInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUpdateInput = {
@@ -280,6 +285,7 @@ export type EmployeeUpdateInput = {
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateInput = {
@@ -291,6 +297,7 @@ export type EmployeeUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeCreateManyInput = {
@@ -467,6 +474,22 @@ export type EmployeeUpdateOneRequiredWithoutPermissionsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EmployeeUpdateToOneWithWhereWithoutPermissionsInput, Prisma.EmployeeUpdateWithoutPermissionsInput>, Prisma.EmployeeUncheckedUpdateWithoutPermissionsInput>
 }
 
+export type EmployeeCreateNestedOneWithoutComplaintsAssignedInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedCreateWithoutComplaintsAssignedInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutComplaintsAssignedInput
+  connect?: Prisma.EmployeeWhereUniqueInput
+}
+
+export type EmployeeUpdateOneWithoutComplaintsAssignedNestedInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedCreateWithoutComplaintsAssignedInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutComplaintsAssignedInput
+  upsert?: Prisma.EmployeeUpsertWithoutComplaintsAssignedInput
+  disconnect?: Prisma.EmployeeWhereInput | boolean
+  delete?: Prisma.EmployeeWhereInput | boolean
+  connect?: Prisma.EmployeeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmployeeUpdateToOneWithWhereWithoutComplaintsAssignedInput, Prisma.EmployeeUpdateWithoutComplaintsAssignedInput>, Prisma.EmployeeUncheckedUpdateWithoutComplaintsAssignedInput>
+}
+
 export type EmployeeCreateWithoutUserInput = {
   id?: string
   name: string
@@ -475,6 +498,7 @@ export type EmployeeCreateWithoutUserInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUncheckedCreateWithoutUserInput = {
@@ -485,6 +509,7 @@ export type EmployeeUncheckedCreateWithoutUserInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeCreateOrConnectWithoutUserInput = {
@@ -511,6 +536,7 @@ export type EmployeeUpdateWithoutUserInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateWithoutUserInput = {
@@ -521,6 +547,7 @@ export type EmployeeUncheckedUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeCreateWithoutSiteInput = {
@@ -531,6 +558,7 @@ export type EmployeeCreateWithoutSiteInput = {
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUncheckedCreateWithoutSiteInput = {
@@ -541,6 +569,7 @@ export type EmployeeUncheckedCreateWithoutSiteInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeCreateOrConnectWithoutSiteInput = {
@@ -589,6 +618,7 @@ export type EmployeeCreateWithoutRolesInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUncheckedCreateWithoutRolesInput = {
@@ -599,6 +629,7 @@ export type EmployeeUncheckedCreateWithoutRolesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeCreateOrConnectWithoutRolesInput = {
@@ -625,6 +656,7 @@ export type EmployeeUpdateWithoutRolesInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateWithoutRolesInput = {
@@ -635,6 +667,7 @@ export type EmployeeUncheckedUpdateWithoutRolesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeCreateWithoutPermissionsInput = {
@@ -645,6 +678,7 @@ export type EmployeeCreateWithoutPermissionsInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeUncheckedCreateWithoutPermissionsInput = {
@@ -655,6 +689,7 @@ export type EmployeeUncheckedCreateWithoutPermissionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
 export type EmployeeCreateOrConnectWithoutPermissionsInput = {
@@ -681,6 +716,7 @@ export type EmployeeUpdateWithoutPermissionsInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateWithoutPermissionsInput = {
@@ -691,6 +727,67 @@ export type EmployeeUncheckedUpdateWithoutPermissionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
+}
+
+export type EmployeeCreateWithoutComplaintsAssignedInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
+  roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+}
+
+export type EmployeeUncheckedCreateWithoutComplaintsAssignedInput = {
+  id?: string
+  userId: string
+  name: string
+  siteId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+}
+
+export type EmployeeCreateOrConnectWithoutComplaintsAssignedInput = {
+  where: Prisma.EmployeeWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedCreateWithoutComplaintsAssignedInput>
+}
+
+export type EmployeeUpsertWithoutComplaintsAssignedInput = {
+  update: Prisma.XOR<Prisma.EmployeeUpdateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedUpdateWithoutComplaintsAssignedInput>
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedCreateWithoutComplaintsAssignedInput>
+  where?: Prisma.EmployeeWhereInput
+}
+
+export type EmployeeUpdateToOneWithWhereWithoutComplaintsAssignedInput = {
+  where?: Prisma.EmployeeWhereInput
+  data: Prisma.XOR<Prisma.EmployeeUpdateWithoutComplaintsAssignedInput, Prisma.EmployeeUncheckedUpdateWithoutComplaintsAssignedInput>
+}
+
+export type EmployeeUpdateWithoutComplaintsAssignedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
+  roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+}
+
+export type EmployeeUncheckedUpdateWithoutComplaintsAssignedInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  siteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
 }
 
 export type EmployeeCreateManySiteInput = {
@@ -709,6 +806,7 @@ export type EmployeeUpdateWithoutSiteInput = {
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateWithoutSiteInput = {
@@ -719,6 +817,7 @@ export type EmployeeUncheckedUpdateWithoutSiteInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeUncheckedUpdateManyWithoutSiteInput = {
@@ -737,11 +836,13 @@ export type EmployeeUncheckedUpdateManyWithoutSiteInput = {
 export type EmployeeCountOutputType = {
   roles: number
   permissions: number
+  complaintsAssigned: number
 }
 
 export type EmployeeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   roles?: boolean | EmployeeCountOutputTypeCountRolesArgs
   permissions?: boolean | EmployeeCountOutputTypeCountPermissionsArgs
+  complaintsAssigned?: boolean | EmployeeCountOutputTypeCountComplaintsAssignedArgs
 }
 
 /**
@@ -768,6 +869,13 @@ export type EmployeeCountOutputTypeCountPermissionsArgs<ExtArgs extends runtime.
   where?: Prisma.EmployeePermissionWhereInput
 }
 
+/**
+ * EmployeeCountOutputType without action
+ */
+export type EmployeeCountOutputTypeCountComplaintsAssignedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ComplaintWhereInput
+}
+
 
 export type EmployeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -780,6 +888,7 @@ export type EmployeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   roles?: boolean | Prisma.Employee$rolesArgs<ExtArgs>
   permissions?: boolean | Prisma.Employee$permissionsArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  complaintsAssigned?: boolean | Prisma.Employee$complaintsAssignedArgs<ExtArgs>
   _count?: boolean | Prisma.EmployeeCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["employee"]>
 
@@ -820,6 +929,7 @@ export type EmployeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   roles?: boolean | Prisma.Employee$rolesArgs<ExtArgs>
   permissions?: boolean | Prisma.Employee$permissionsArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
+  complaintsAssigned?: boolean | Prisma.Employee$complaintsAssignedArgs<ExtArgs>
   _count?: boolean | Prisma.EmployeeCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type EmployeeIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -838,6 +948,7 @@ export type $EmployeePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     roles: Prisma.$EmployeeRolePayload<ExtArgs>[]
     permissions: Prisma.$EmployeePermissionPayload<ExtArgs>[]
     user: Prisma.$UserPayload<ExtArgs>
+    complaintsAssigned: Prisma.$ComplaintPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1244,6 +1355,7 @@ export interface Prisma__EmployeeClient<T, Null = never, ExtArgs extends runtime
   roles<T extends Prisma.Employee$rolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeeRolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   permissions<T extends Prisma.Employee$permissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$permissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeePermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  complaintsAssigned<T extends Prisma.Employee$complaintsAssignedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$complaintsAssignedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComplaintPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1744,6 +1856,30 @@ export type Employee$permissionsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.EmployeePermissionScalarFieldEnum | Prisma.EmployeePermissionScalarFieldEnum[]
+}
+
+/**
+ * Employee.complaintsAssigned
+ */
+export type Employee$complaintsAssignedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Complaint
+   */
+  select?: Prisma.ComplaintSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Complaint
+   */
+  omit?: Prisma.ComplaintOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ComplaintInclude<ExtArgs> | null
+  where?: Prisma.ComplaintWhereInput
+  orderBy?: Prisma.ComplaintOrderByWithRelationInput | Prisma.ComplaintOrderByWithRelationInput[]
+  cursor?: Prisma.ComplaintWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ComplaintScalarFieldEnum | Prisma.ComplaintScalarFieldEnum[]
 }
 
 /**

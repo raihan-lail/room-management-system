@@ -207,6 +207,7 @@ export type BedWhereInput = {
   createdAt?: Prisma.DateTimeFilter<"Bed"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Bed"> | Date | string
   room?: Prisma.XOR<Prisma.RoomScalarRelationFilter, Prisma.RoomWhereInput>
+  bookings?: Prisma.BookingListRelationFilter
 }
 
 export type BedOrderByWithRelationInput = {
@@ -219,6 +220,7 @@ export type BedOrderByWithRelationInput = {
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   room?: Prisma.RoomOrderByWithRelationInput
+  bookings?: Prisma.BookingOrderByRelationAggregateInput
 }
 
 export type BedWhereUniqueInput = Prisma.AtLeast<{
@@ -235,6 +237,7 @@ export type BedWhereUniqueInput = Prisma.AtLeast<{
   createdAt?: Prisma.DateTimeFilter<"Bed"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Bed"> | Date | string
   room?: Prisma.XOR<Prisma.RoomScalarRelationFilter, Prisma.RoomWhereInput>
+  bookings?: Prisma.BookingListRelationFilter
 }, "id" | "roomId_name">
 
 export type BedOrderByWithAggregationInput = {
@@ -274,6 +277,7 @@ export type BedCreateInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   room: Prisma.RoomCreateNestedOneWithoutBedsInput
+  bookings?: Prisma.BookingCreateNestedManyWithoutBedInput
 }
 
 export type BedUncheckedCreateInput = {
@@ -285,6 +289,7 @@ export type BedUncheckedCreateInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutBedInput
 }
 
 export type BedUpdateInput = {
@@ -296,6 +301,7 @@ export type BedUpdateInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   room?: Prisma.RoomUpdateOneRequiredWithoutBedsNestedInput
+  bookings?: Prisma.BookingUpdateManyWithoutBedNestedInput
 }
 
 export type BedUncheckedUpdateInput = {
@@ -307,6 +313,7 @@ export type BedUncheckedUpdateInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutBedNestedInput
 }
 
 export type BedCreateManyInput = {
@@ -389,6 +396,11 @@ export type BedMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
+export type BedScalarRelationFilter = {
+  is?: Prisma.BedWhereInput
+  isNot?: Prisma.BedWhereInput
+}
+
 export type BedCreateNestedManyWithoutRoomInput = {
   create?: Prisma.XOR<Prisma.BedCreateWithoutRoomInput, Prisma.BedUncheckedCreateWithoutRoomInput> | Prisma.BedCreateWithoutRoomInput[] | Prisma.BedUncheckedCreateWithoutRoomInput[]
   connectOrCreate?: Prisma.BedCreateOrConnectWithoutRoomInput | Prisma.BedCreateOrConnectWithoutRoomInput[]
@@ -435,6 +447,20 @@ export type EnumBedStatusFieldUpdateOperationsInput = {
   set?: $Enums.BedStatus
 }
 
+export type BedCreateNestedOneWithoutBookingsInput = {
+  create?: Prisma.XOR<Prisma.BedCreateWithoutBookingsInput, Prisma.BedUncheckedCreateWithoutBookingsInput>
+  connectOrCreate?: Prisma.BedCreateOrConnectWithoutBookingsInput
+  connect?: Prisma.BedWhereUniqueInput
+}
+
+export type BedUpdateOneRequiredWithoutBookingsNestedInput = {
+  create?: Prisma.XOR<Prisma.BedCreateWithoutBookingsInput, Prisma.BedUncheckedCreateWithoutBookingsInput>
+  connectOrCreate?: Prisma.BedCreateOrConnectWithoutBookingsInput
+  upsert?: Prisma.BedUpsertWithoutBookingsInput
+  connect?: Prisma.BedWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.BedUpdateToOneWithWhereWithoutBookingsInput, Prisma.BedUpdateWithoutBookingsInput>, Prisma.BedUncheckedUpdateWithoutBookingsInput>
+}
+
 export type BedCreateWithoutRoomInput = {
   id?: string
   name: string
@@ -443,6 +469,7 @@ export type BedCreateWithoutRoomInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookings?: Prisma.BookingCreateNestedManyWithoutBedInput
 }
 
 export type BedUncheckedCreateWithoutRoomInput = {
@@ -453,6 +480,7 @@ export type BedUncheckedCreateWithoutRoomInput = {
   isActive?: boolean
   createdAt?: Date | string
   updatedAt?: Date | string
+  bookings?: Prisma.BookingUncheckedCreateNestedManyWithoutBedInput
 }
 
 export type BedCreateOrConnectWithoutRoomInput = {
@@ -495,6 +523,66 @@ export type BedScalarWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Bed"> | Date | string
 }
 
+export type BedCreateWithoutBookingsInput = {
+  id?: string
+  name: string
+  description?: string | null
+  status?: $Enums.BedStatus
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  room: Prisma.RoomCreateNestedOneWithoutBedsInput
+}
+
+export type BedUncheckedCreateWithoutBookingsInput = {
+  id?: string
+  roomId: string
+  name: string
+  description?: string | null
+  status?: $Enums.BedStatus
+  isActive?: boolean
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type BedCreateOrConnectWithoutBookingsInput = {
+  where: Prisma.BedWhereUniqueInput
+  create: Prisma.XOR<Prisma.BedCreateWithoutBookingsInput, Prisma.BedUncheckedCreateWithoutBookingsInput>
+}
+
+export type BedUpsertWithoutBookingsInput = {
+  update: Prisma.XOR<Prisma.BedUpdateWithoutBookingsInput, Prisma.BedUncheckedUpdateWithoutBookingsInput>
+  create: Prisma.XOR<Prisma.BedCreateWithoutBookingsInput, Prisma.BedUncheckedCreateWithoutBookingsInput>
+  where?: Prisma.BedWhereInput
+}
+
+export type BedUpdateToOneWithWhereWithoutBookingsInput = {
+  where?: Prisma.BedWhereInput
+  data: Prisma.XOR<Prisma.BedUpdateWithoutBookingsInput, Prisma.BedUncheckedUpdateWithoutBookingsInput>
+}
+
+export type BedUpdateWithoutBookingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumBedStatusFieldUpdateOperationsInput | $Enums.BedStatus
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  room?: Prisma.RoomUpdateOneRequiredWithoutBedsNestedInput
+}
+
+export type BedUncheckedUpdateWithoutBookingsInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  roomId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  status?: Prisma.EnumBedStatusFieldUpdateOperationsInput | $Enums.BedStatus
+  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type BedCreateManyRoomInput = {
   id?: string
   name: string
@@ -513,6 +601,7 @@ export type BedUpdateWithoutRoomInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookings?: Prisma.BookingUpdateManyWithoutBedNestedInput
 }
 
 export type BedUncheckedUpdateWithoutRoomInput = {
@@ -523,6 +612,7 @@ export type BedUncheckedUpdateWithoutRoomInput = {
   isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  bookings?: Prisma.BookingUncheckedUpdateManyWithoutBedNestedInput
 }
 
 export type BedUncheckedUpdateManyWithoutRoomInput = {
@@ -536,6 +626,35 @@ export type BedUncheckedUpdateManyWithoutRoomInput = {
 }
 
 
+/**
+ * Count Type BedCountOutputType
+ */
+
+export type BedCountOutputType = {
+  bookings: number
+}
+
+export type BedCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  bookings?: boolean | BedCountOutputTypeCountBookingsArgs
+}
+
+/**
+ * BedCountOutputType without action
+ */
+export type BedCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BedCountOutputType
+   */
+  select?: Prisma.BedCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * BedCountOutputType without action
+ */
+export type BedCountOutputTypeCountBookingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingWhereInput
+}
+
 
 export type BedSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -547,6 +666,8 @@ export type BedSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = ru
   createdAt?: boolean
   updatedAt?: boolean
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  bookings?: boolean | Prisma.Bed$bookingsArgs<ExtArgs>
+  _count?: boolean | Prisma.BedCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["bed"]>
 
 export type BedSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -587,6 +708,8 @@ export type BedSelectScalar = {
 export type BedOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "roomId" | "name" | "description" | "status" | "isActive" | "createdAt" | "updatedAt", ExtArgs["result"]["bed"]>
 export type BedInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
+  bookings?: boolean | Prisma.Bed$bookingsArgs<ExtArgs>
+  _count?: boolean | Prisma.BedCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type BedIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   room?: boolean | Prisma.RoomDefaultArgs<ExtArgs>
@@ -599,6 +722,7 @@ export type $BedPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   name: "Bed"
   objects: {
     room: Prisma.$RoomPayload<ExtArgs>
+    bookings: Prisma.$BookingPayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1004,6 +1128,7 @@ readonly fields: BedFieldRefs;
 export interface Prisma__BedClient<T, Null = never, ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
   readonly [Symbol.toStringTag]: "PrismaPromise"
   room<T extends Prisma.RoomDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.RoomDefaultArgs<ExtArgs>>): Prisma.Prisma__RoomClient<runtime.Types.Result.GetResult<Prisma.$RoomPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
+  bookings<T extends Prisma.Bed$bookingsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Bed$bookingsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1439,6 +1564,30 @@ export type BedDeleteManyArgs<ExtArgs extends runtime.Types.Extensions.InternalA
    * Limit how many Beds to delete.
    */
   limit?: number
+}
+
+/**
+ * Bed.bookings
+ */
+export type Bed$bookingsArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the Booking
+   */
+  select?: Prisma.BookingSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the Booking
+   */
+  omit?: Prisma.BookingOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingInclude<ExtArgs> | null
+  where?: Prisma.BookingWhereInput
+  orderBy?: Prisma.BookingOrderByWithRelationInput | Prisma.BookingOrderByWithRelationInput[]
+  cursor?: Prisma.BookingWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingScalarFieldEnum | Prisma.BookingScalarFieldEnum[]
 }
 
 /**

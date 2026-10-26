@@ -1,4 +1,4 @@
-import type { Request, Response } from "express";
+import type { Response } from "express";
 
 import { prisma } from "../lib/prisma.js";
 
@@ -9,47 +9,15 @@ import {
   NO_MATCHING_ID,
 } from "../utils/actor.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
-import type { Actor } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { Prisma } from "../generated/prisma/client.js";
-
-const BED_STATUSES = [
-  "VACANT",
-  "BOOKED",
-  "OCCUPIED",
-  "HOME_LEAVE",
-] as const;
-
-type BedStatus = (typeof BED_STATUSES)[number];
-
-function singleParam(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed || undefined;
-}
-
-function parseBoolean(value: unknown): boolean | undefined {
-  if (value === "true") return true;
-  if (value === "false") return false;
-  return undefined;
-}
-
-
-
-function bedSiteFilter(actor: Actor) {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return {
-    room: {
-      floor: {
-        location: {
-          siteId: actor.siteId ?? NO_MATCHING_ID,
-        },
-      },
-    },
-  };
-}
+import {
+  BED_STATUSES,
+  bedSiteFilter,
+  singleParam,
+  type BedStatus,
+} from "../helpers/bed.helper.js";
 
 export async function listBeds(req: AuthRequest, res: Response) {
   try {

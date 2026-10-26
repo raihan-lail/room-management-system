@@ -13,25 +13,10 @@ import {
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
-
-const LOCATION_ERROR_MESSAGES = {
-  duplicate:
-    "A location or floor with the same unique name or number already exists",
-  notFound: "Record not found",
-};
-
-function validFloorInput(floor: FloorInput): boolean {
-  return (
-    typeof floor.name === "string" &&
-    floor.name.trim().length > 0 &&
-    Number.isInteger(floor.floorNumber) &&
-    (floor.description === undefined ||
-      floor.description === null ||
-      typeof floor.description === "string") &&
-    (floor.isActive === undefined ||
-      typeof floor.isActive === "boolean")
-  );
-}
+import {
+  LOCATION_ERROR_MESSAGES,
+  validFloorInput,
+} from "../helpers/location.helper.js";
 
 export async function listLocations(
   req: AuthRequest,

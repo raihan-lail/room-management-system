@@ -12,50 +12,17 @@ import {
 } from "../utils/actor.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
-import type { Actor } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
 import * as XLSX from "xlsx";
 import type { ImportRow, RowError } from "../types/room.type.js";
 import { getSiteScope, normalizeHeader, parseBoolean, parseInteger, textValue } from "../utils/excel.js";
-
-function roomSiteFilter(actor: Actor) {
-  if (isGlobalSuperadmin(actor)) return {};
-
-  return {
-    floor: {
-      location: {
-        siteId: actor.siteId ?? NO_MATCHING_ID,
-      },
-    },
-  };
-}
-
-
-
-function singleParam(value: unknown): string | undefined {
-  if (typeof value !== "string") return undefined;
-  const trimmed = value.trim();
-  return trimmed ? trimmed : undefined;
-}
-
-function listParam(value: unknown): string[] | undefined {
-  const raw = Array.isArray(value) ? value : [value];
-  const list = raw
-    .flatMap((entry) => (typeof entry === "string" ? entry.split(",") : []))
-    .map((entry) => entry.trim())
-    .filter(Boolean);
-  return list.length > 0 ? [...new Set(list)] : undefined;
-}
-
-function booleanParam(value: unknown): boolean | undefined {
-  const raw = singleParam(value)?.toLowerCase();
-
-  if (raw === "true") return true;
-  if (raw === "false") return false;
-
-  return undefined;
-}
+import {
+  booleanParam,
+  listParam,
+  roomSiteFilter,
+  singleParam,
+} from "../helpers/room.helper.js";
 
 export async function listRooms(req: AuthRequest, res: Response) {
   try {

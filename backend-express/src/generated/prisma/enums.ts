@@ -26,3 +26,34 @@ export const Gender = {
 } as const
 
 export type Gender = (typeof Gender)[keyof typeof Gender]
+
+
+export const BookingStatus = {
+  CONFIRMED: 'CONFIRMED',
+  IN_HOUSE: 'IN_HOUSE',
+  HOME_LEAVE: 'HOME_LEAVE',
+  CHECKED_OUT: 'CHECKED_OUT',
+  CANCELLED: 'CANCELLED',
+  ARCHIVED: 'ARCHIVED'
+} as const
+
+export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
+
+
+export const HomeLeaveStatus = {
+  ACTIVE: 'ACTIVE',
+  RETURNED: 'RETURNED',
+  CANCELLED: 'CANCELLED'
+} as const
+
+export type HomeLeaveStatus = (typeof HomeLeaveStatus)[keyof typeof HomeLeaveStatus]
+
+
+export const ComplaintStatus = {
+  OPEN: 'OPEN',
+  IN_PROGRESS: 'IN_PROGRESS',
+  RESOLVED: 'RESOLVED',
+  CLOSED: 'CLOSED'
+} as const
+
+export type ComplaintStatus = (typeof ComplaintStatus)[keyof typeof ComplaintStatus]

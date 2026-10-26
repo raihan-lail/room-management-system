@@ -65,6 +65,10 @@ export const ModelName = {
   Bed: 'Bed',
   RoomAllocation: 'RoomAllocation',
   Resident: 'Resident',
+  Booking: 'Booking',
+  HomeLeave: 'HomeLeave',
+  BookingEvent: 'BookingEvent',
+  Complaint: 'Complaint',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -256,6 +260,72 @@ export const ResidentScalarFieldEnum = {
 } as const
 
 export type ResidentScalarFieldEnum = (typeof ResidentScalarFieldEnum)[keyof typeof ResidentScalarFieldEnum]
+
+
+export const BookingScalarFieldEnum = {
+  id: 'id',
+  residentId: 'residentId',
+  bedId: 'bedId',
+  startedAt: 'startedAt',
+  endedAt: 'endedAt',
+  status: 'status',
+  checkedInAt: 'checkedInAt',
+  checkedOutAt: 'checkedOutAt',
+  cancelledAt: 'cancelledAt',
+  archivedAt: 'archivedAt',
+  noShowAt: 'noShowAt',
+  cancellationReason: 'cancellationReason',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookingScalarFieldEnum = (typeof BookingScalarFieldEnum)[keyof typeof BookingScalarFieldEnum]
+
+
+export const HomeLeaveScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  startedAt: 'startedAt',
+  expectedReturnAt: 'expectedReturnAt',
+  returnedAt: 'returnedAt',
+  status: 'status',
+  reason: 'reason',
+  notes: 'notes',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type HomeLeaveScalarFieldEnum = (typeof HomeLeaveScalarFieldEnum)[keyof typeof HomeLeaveScalarFieldEnum]
+
+
+export const BookingEventScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  actorUserId: 'actorUserId',
+  action: 'action',
+  description: 'description',
+  metadata: 'metadata',
+  createdAt: 'createdAt'
+} as const
+
+export type BookingEventScalarFieldEnum = (typeof BookingEventScalarFieldEnum)[keyof typeof BookingEventScalarFieldEnum]
+
+
+export const ComplaintScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  title: 'title',
+  description: 'description',
+  status: 'status',
+  assignedToId: 'assignedToId',
+  resolvedAt: 'resolvedAt',
+  resolution: 'resolution',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type ComplaintScalarFieldEnum = (typeof ComplaintScalarFieldEnum)[keyof typeof ComplaintScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {
