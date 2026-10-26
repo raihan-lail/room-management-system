@@ -987,6 +987,14 @@ export async function exportResidentsToExcel(
       orderBy: [{ fullName: "asc" }],
     });
 
+    if (residents.length === 0) {
+      return res.status(400).json({
+        message: search
+          ? "No residents match the selected filters. Nothing to export."
+          : "There are no residents to export.",
+      });
+    }
+
     const rows = residents.map((resident) => ({
       residentId: resident.id,
       fullName: resident.fullName,
