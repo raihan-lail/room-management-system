@@ -48,15 +48,7 @@ const VIEW_DAYS = {
   BIWEEKLY: 13,
 };
 
-/*
- * Booking statuses.
- * The key is the normalized status and is used to
- * build every status class name:
- *   .booking-block.booking-<key>
- *   .calendar-legend__dot--<key>
- *   .tooltip-status--<key>
- * Colors live in App.css as --status-<key>-*
- */
+
 const STATUS_META = {
   in_house: { label: "In house" },
   confirmed: { label: "Confirmed" },

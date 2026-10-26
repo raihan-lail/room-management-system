@@ -26,6 +26,7 @@ import {
   validateBookingDates,
   type BookingTab,
 } from "../helpers/booking.helper.js";
+import { notifyActor } from "../services/notification.service.js";
 
 
 
@@ -512,6 +513,13 @@ export async function createBooking(
       description: `Booking created for resident ${residentId}.`,
     });
 
+    await notifyActor(req, {
+      title: "Booking Successfully Created",
+      message:`Booking ${result.id} successfully created for resident ${result.resident.fullName}`,
+      type: "SUCCESS"
+    })
+
+
     res.status(201).json({
       message: "Booking created successfully.",
       data: result,
@@ -614,7 +622,13 @@ export async function checkInBooking(
       bookingId: booking.id,
       action: "booking_checked_in",
       description: "Resident checked in.",
-    });
+    })
+
+    await notifyActor(req, {
+      title: "Resident checked in",
+      message: `Resident ${booking.resident.fullName} with booking id ${booking.id} successfully checked in`,
+      type: "SUCCESS"
+    })
 
     res.status(200).json({
       message: "Resident checked in successfully.",
@@ -712,6 +726,11 @@ export async function cancelBooking(
       action: "booking_cancelled",
       description: reason,
     });
+
+    await notifyActor( req, {
+      title: "Booking cancelled",
+      message: `Booking ${booking.id} cancelled`
+    })
 
     res.status(200).json({
       message: "Booking cancelled successfully.",
@@ -834,6 +853,11 @@ export async function startHomeLeave(
       action: "home_leave_started",
       description: "Resident started home leave.",
     });
+
+    await notifyActor(req, {
+      title:" Resident started home leave",
+      message: `Resident with booking id ${result.bookingId} started home leave`
+    })
 
     res.status(201).json({
       message: "Home leave recorded successfully.",
@@ -959,6 +983,11 @@ export async function returnFromHomeLeave(
       description: "Resident returned from home leave.",
     });
 
+    await notifyActor(req, {
+      title:"Resident returned from home leave",
+      message:`Resident ${result.resident.fullName} with booking id ${result.id} returned from home leave`,
+    })
+
     res.status(200).json({
       message: "Resident return recorded successfully.",
       data: result,
@@ -1064,6 +1093,11 @@ export async function extendBooking(
       description: `Booking extended until ${newEndedAt.toISOString()}.`,
     });
 
+    await notifyActor(req, {
+      title:"Booking Extended",
+      message: `Booking ${result.id} for resident ${result.resident.fullName} successfully extended`
+    })
+
     res.status(200).json({
       message: "Booking extended successfully.",
       data: result,
@@ -1168,6 +1202,11 @@ export async function checkOutBooking(
       description: "Resident checked out.",
     });
 
+    await notifyActor(req, {
+      title:"Resident checked out",
+      message:`Resident ${booking.resident.fullName} with booking id ${booking.id} checked out`
+    })
+
     res.status(200).json({
       message: "Resident checked out successfully.",
       data: booking,
@@ -1255,6 +1294,12 @@ export async function archiveBooking(
       action: "booking_archived",
       description: "Booking archived.",
     });
+
+    await notifyActor(req, {
+      title:"Booking Archived",
+      message: `Booking ${result.id} successfully archived`,
+      type: "SUCCESS"
+    })
 
     res.status(200).json({
       message: "Booking archived successfully.",
