@@ -2130,6 +2130,7 @@ export type ResidentScalarFieldEnum = (typeof ResidentScalarFieldEnum)[keyof typ
 
 export const BookingScalarFieldEnum = {
   id: 'id',
+  bookingNumber: 'bookingNumber',
   residentId: 'residentId',
   bedId: 'bedId',
   startedAt: 'startedAt',

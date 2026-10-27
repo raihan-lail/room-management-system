@@ -483,7 +483,7 @@ export default function BookingTableView() {
                   sortedBookings.map((booking) => (
                     <tr key={booking.id}>
                       <td>
-                        <strong>{booking.id || "-"}</strong>
+                        <strong>{booking.bookingNumber || "-"}</strong>
                       </td>
 
                       <td>

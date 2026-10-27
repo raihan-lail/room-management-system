@@ -266,6 +266,7 @@ enum HomeLeaveStatus {
 
 model Booking {
   id          String        @id @default(cuid())
+  bookingNumber String   @unique @default(dbgenerated())
   residentId  String
   bedId       String
   startedAt   DateTime

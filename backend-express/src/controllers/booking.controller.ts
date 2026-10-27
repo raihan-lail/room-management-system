@@ -559,6 +559,7 @@ export async function exportBookingsToExcel(
     }
 
     const rows = bookings.map((booking) => ({
+      "Booking ID": booking.bookingNumber,
       "Room Name": booking.bed.room.name,
       "Bed Name": booking.bed.name,
       "Booking Status": booking.status,
@@ -803,14 +804,14 @@ export async function createBooking(
     });
 
     await auditBooking(req, actor, {
-      bookingId: result.id,
+      bookingId: result.bookingNumber,
       action: "booking_created",
-      description: `Booking created for resident ${residentId}.`,
+      description: `Booking ${result.bookingNumber} created for resident ${result.resident.fullName}.`,
     });
 
     await notifyActor(req, {
       title: "Booking Successfully Created",
-      message:`Booking ${result.id} successfully created for resident ${result.resident.fullName}`,
+      message:`Booking ${result.bookingNumber} successfully created for resident ${result.resident.fullName}`,
       type: "SUCCESS"
     })
 
@@ -914,14 +915,14 @@ export async function checkInBooking(
     });
 
     await auditBooking(req, actor, {
-      bookingId: booking.id,
+      bookingId: booking.bookingNumber,
       action: "booking_checked_in",
       description: "Resident checked in.",
     })
 
     await notifyActor(req, {
       title: "Resident checked in",
-      message: `Resident ${booking.resident.fullName} with booking id ${booking.id} successfully checked in`,
+      message: `Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} successfully checked in`,
       type: "SUCCESS"
     })
 
@@ -1017,14 +1018,14 @@ export async function cancelBooking(
     });
 
     await auditBooking(req, actor, {
-      bookingId: booking.id,
+      bookingId: booking.bookingNumber,
       action: "booking_cancelled",
       description: reason,
     });
 
     await notifyActor( req, {
       title: "Booking cancelled",
-      message: `Booking ${booking.id} cancelled`
+      message: `Booking ${booking.bookingNumber} cancelled`
     })
 
     res.status(200).json({

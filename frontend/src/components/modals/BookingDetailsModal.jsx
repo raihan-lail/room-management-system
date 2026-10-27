@@ -82,7 +82,7 @@ export default function BookingDetailsModal({ bookingId, onClose }) {
 
   const bookingFields = booking
     ? [
-        { label: "Booking ID", value: booking.id },
+        { label: "Booking ID", value: booking.bookingNumber },
         {
           label: "Status",
           value: booking.status,
