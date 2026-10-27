@@ -1,24 +1,27 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
+import apiRequest from "../api/client";
 import TableRowActions from "../components/TableRowActions";
 import AddModal from "../components/modals/AddModal";
 import BookingModal from "../components/modals/BookingModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
+FlexibleButton
 import {
   addFormSchemas,
   buildRow,
 } from "../components/modals/addFormSchemas";
-import bookings from "../data/bookings";
 import { homeLeaveData } from "../data/homeLeaves";
+import FlexibleButton from "../components/FlexibleButtons";
 
 
 const PAGE_SIZE = 10;
+const BOOKING_TABS = ["arrival", "in-house", "near-end", "departure"];
 
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
-  { id: "in_house", label: "In House", icon: "bi-house-door", title: "Current In House" },
+  { id: "in-house", label: "In House", icon: "bi-house-door", title: "Current In House" },
    { id: "home_leave", label: "Home Leave", icon: "bi-door-open", title: "Current Home Leave" },
-   { id: "near_end", label: "Near End Date", icon: "bi-door-open", title: "Ended Soon" },
+   { id: "near-end", label: "Near End Date", icon: "bi-door-open", title: "Ended Soon" },
   { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 
@@ -114,7 +117,20 @@ export default function FrontDesk() {
     key: null,
     direction: "asc",
   });
-  const [bookingList, setBookingList] = useState(bookings);
+  const [bookingList, setBookingList] = useState([]);
+  const [bookingPagination, setBookingPagination] = useState({ total: 0, totalPages: 1 });
+  const [bookingCounts, setBookingCounts] = useState({
+    arrival: 0,
+    "in-house": 0,
+    "near-end": 0,
+    departure: 0,
+  });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [isSavingAction, setIsSavingAction] = useState(false);
+  const [actionError, setActionError] = useState("");
+  const [extendingRow, setExtendingRow] = useState(null);
+  const [extensionDate, setExtensionDate] = useState("");
   const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
@@ -137,31 +153,93 @@ export default function FrontDesk() {
   const handleSegmentChange = (nextSegment) => {
     setSegment(nextSegment);
     setCurrentPage(1);
+    setError("");
+    setActionError("");
   };
 
-  const segmentCounts = useMemo(() => {
-    return SEGMENTS.reduce((counts, item) => {
-      const source =
-        item.id === "home_leave" ? homeLeaveList : bookingList;
-
-      counts[item.id] = source.filter((booking) =>
-        matchesSegment(booking, item.id, today),
-      ).length;
-
-      return counts;
-    }, {});
-  }, [bookingList, homeLeaveList, today]);
-
-  const segmentBookings = useMemo(() => {
-    const source = segment === "home_leave" ? homeLeaveList : bookingList;
-
-    return source.filter((booking) =>
-      matchesSegment(booking, segment, today),
-    );
-  }, [bookingList, homeLeaveList, segment, today]);
-
-  const activeSegment = SEGMENTS.find((item) => item.id === segment);
   const isHomeLeave = segment === "home_leave";
+  const activeSegment = SEGMENTS.find((item) => item.id === segment);
+
+  const loadBookings = useCallback(async () => {
+    if (segment === "home_leave") return;
+
+    setIsLoading(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        tab: segment,
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+        date: selectedDate,
+      });
+      if (search.trim()) params.set("search", search.trim());
+
+      const countRequests = BOOKING_TABS
+        .filter((tab) => tab !== segment)
+        .map(async (tab) => {
+          const countParams = new URLSearchParams({
+            tab,
+            page: "1",
+            limit: "1",
+            date: selectedDate,
+          });
+          if (search.trim()) countParams.set("search", search.trim());
+          const countResponse = await apiRequest(`/api/booking?${countParams.toString()}`);
+          return [tab, Number(countResponse?.pagination?.total ?? 0)];
+        });
+
+      const [response, ...otherCounts] = await Promise.all([
+        apiRequest(`/api/booking?${params.toString()}`),
+        ...countRequests,
+      ]);
+      const pagination = response?.pagination ?? {};
+      const total = Number(pagination.total ?? 0);
+      setBookingCounts({
+        ...Object.fromEntries(otherCounts),
+        [segment]: total,
+      });
+      setBookingList((Array.isArray(response?.data) ? response.data : []).map((booking) => ({
+        ...booking,
+        room: booking.bed?.room?.name ?? "",
+        guest: {
+          name: booking.resident?.fullName ?? "",
+          gender: booking.resident?.gender ?? "",
+          country: booking.resident?.nationality ?? "",
+          dept: booking.resident?.department ?? "",
+          meal_type: booking.resident?.mealType ?? "",
+        },
+        booked_at: booking.createdAt?.slice(0, 10) ?? "",
+        started_at: booking.startedAt?.slice(0, 10) ?? "",
+        ended_at: booking.endedAt?.slice(0, 10) ?? "",
+      })));
+      const totalPages = Math.max(1, Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)));
+      setBookingPagination({ total, totalPages });
+      if (currentPage > totalPages) setCurrentPage(totalPages);
+    } catch (err) {
+      setError(err.message || "Failed to load bookings.");
+      setBookingList([]);
+      setBookingPagination({ total: 0, totalPages: 1 });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, search, segment, selectedDate]);
+
+  useEffect(() => {
+  const timer = window.setTimeout(() => {
+    loadBookings();
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadBookings]);
+
+  const segmentCounts = useMemo(() => ({
+    ...bookingCounts,
+    home_leave: homeLeaveList.filter((booking) => matchesSegment(booking, "home_leave", today)).length,
+  }), [bookingCounts, homeLeaveList, today]);
+
+  const segmentBookings = useMemo(() => isHomeLeave
+    ? homeLeaveList.filter((booking) => matchesSegment(booking, segment, today))
+    : bookingList, [bookingList, homeLeaveList, isHomeLeave, segment, today]);
 
   /*
    * Both segments are edited and deleted through the
@@ -186,6 +264,34 @@ export default function FrontDesk() {
     setActiveList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
+  const performBookingAction = async (booking, action, body) => {
+    setIsSavingAction(true);
+    setActionError("");
+    try {
+      await apiRequest(`/api/booking/${booking.id}/${action}`, {
+        method: "POST",
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      await loadBookings();
+    } catch (err) {
+      setActionError(err.message || "Booking action failed.");
+    } finally {
+      setIsSavingAction(false);
+      setExtendingRow(null);
+    }
+  };
+
+  const submitExtension = (event) => {
+    event.preventDefault();
+    if (!extendingRow || !extensionDate || extensionDate <= extendingRow.ended_at) {
+      setActionError("Choose an end date later than the current end date.");
+      return;
+    }
+    performBookingAction(extendingRow, "extend", {
+      endedAt: new Date(`${extensionDate}T00:00:00.000Z`).toISOString(),
+    });
+  };
+
   const handleSort = (key) => {
     setSortConfig((prev) => ({
       key,
@@ -196,7 +302,8 @@ export default function FrontDesk() {
   };
 
   const filteredBookings = useMemo(() => {
-    const query = search.trim().toLowerCase();
+      if (!isHomeLeave) return segmentBookings;
+      const query = search.trim().toLowerCase();
 
     if (!query) return segmentBookings;
 
@@ -328,18 +435,20 @@ export default function FrontDesk() {
     });
   }, [filteredBookings, isHomeLeave, sortConfig, today]);
 
-  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE));
+  const totalPages = isHomeLeave
+    ? Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE))
+    : bookingPagination.totalPages;
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedBookings = useMemo(() => {
     const startIndex = (safePage - 1) * PAGE_SIZE;
 
-    return sortedBookings.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedBookings, safePage]);
+    return isHomeLeave ? sortedBookings.slice(startIndex, startIndex + PAGE_SIZE) : sortedBookings;
+  }, [isHomeLeave, sortedBookings, safePage]);
 
   const startRow =
-    filteredBookings.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredBookings.length);
+    (isHomeLeave ? filteredBookings.length : bookingPagination.total) === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endRow = Math.min(safePage * PAGE_SIZE, isHomeLeave ? filteredBookings.length : bookingPagination.total);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -388,7 +497,7 @@ export default function FrontDesk() {
                     
                     {item.label}
                     <span className="frontdesk-segment__count">
-                      {segmentCounts[item.id]}
+                      {segmentCounts[item.id] ?? 0}
                     </span>
                   </button>
                 ))}
@@ -622,7 +731,11 @@ aria-label={
               </thead>
 
               <tbody>
-                {pagedBookings.length === 0 ? (
+                {error ? (
+                  <tr><td colSpan={isHomeLeave ? "9" : "13"} className="muted">{error}</td></tr>
+                ) : isLoading ? (
+                  <tr><td colSpan={isHomeLeave ? "9" : "13"} className="muted">Loading {activeSegment.label.toLowerCase()}...</td></tr>
+                ) : pagedBookings.length === 0 ? (
                   <tr>
                     <td colSpan={isHomeLeave ? "9" : "13"} className="muted">
                       No {activeSegment.label.toLowerCase()} found.
@@ -634,7 +747,7 @@ aria-label={
                       key={
                         isHomeLeave
                           ? booking.booking_id
-                          : `${booking.room}-${booking.started_at}-${index}`
+                          : booking.id
                       }
                     >
                       <td className="table-col-no">
@@ -704,15 +817,17 @@ aria-label={
                           <td>{booking.notes || "-"}</td>
 
                           <td>
-                            <TableRowActions
-                              label="booking"
-                              rowLabel={booking.guest?.name}
-                              onView={() =>
-                                console.log("View booking:", booking)
-                              }
-                              onEdit={() => setEditingRow(booking)}
-                              onDelete={() => setDeletingRow(booking)}
-                            />
+                            {segment === "arrival" ? (
+                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-in")}>Check In</FlexibleButton>
+                            ) : segment === "near-end" ? (
+                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setExtendingRow(booking); setExtensionDate(""); }}>Extend</FlexibleButton>
+                            ) : segment === "departure" ? (
+                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-out")}>Check Out</FlexibleButton>
+                            ) : segment === "in-house" ? (
+                              "-"
+                            ) : (
+                              <TableRowActions label="booking" rowLabel={booking.guest?.name} onView={() => console.log("View booking:", booking)} onEdit={() => setEditingRow(booking)} onDelete={() => setDeletingRow(booking)} />
+                            )}
                           </td>
                         </>
                       )}
@@ -726,7 +841,7 @@ aria-label={
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredBookings.length}{" "}
+              Showing {startRow}–{endRow} of {isHomeLeave ? filteredBookings.length : bookingPagination.total}{" "}
               {activeSegment.label.toLowerCase()}
             </span>
 
@@ -734,7 +849,7 @@ aria-label={
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
+                disabled={isLoading || safePage <= 1}
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -748,7 +863,7 @@ aria-label={
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={isLoading || safePage >= totalPages}
                 onClick={() =>
                   setCurrentPage((prev) => Math.min(totalPages, prev + 1))
                 }
@@ -789,6 +904,57 @@ aria-label={
           onClose={() => setDeletingRow(null)}
           onConfirm={handleDeleteRow}
         />
+      )}
+
+      {extendingRow && (
+        <div
+          className="modal-overlay"
+          onMouseDown={() => !isSavingAction && setExtendingRow(null)}
+        >
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="extend-booking-title"
+            onSubmit={submitExtension}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal__header">
+              <h2 className="modal__title" id="extend-booking-title">Extend Stay</h2>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={() => setExtendingRow(null)}
+                aria-label="Close"
+                disabled={isSavingAction}
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="modal__message">
+              Choose a new end date for {extendingRow.guest?.name || "this booking"}.
+            </p>
+            <label className="frontdesk-date">
+              <span>New end date</span>
+              <input
+                type="date"
+                required
+                min={extendingRow.ended_at}
+                value={extensionDate}
+                onChange={(event) => setExtensionDate(event.target.value)}
+              />
+            </label>
+            {actionError && <p role="alert">{actionError}</p>}
+            <div className="modal__actions">
+              <button type="button" className="btn btn-neutral" onClick={() => setExtendingRow(null)} disabled={isSavingAction}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={isSavingAction}>{isSavingAction ? "Saving..." : "Extend Stay"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {actionError && !extendingRow && (
+        <div className="error-message" role="alert">{actionError}</div>
       )}
     </MainLayout>
   );
