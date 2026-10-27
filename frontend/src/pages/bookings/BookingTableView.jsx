@@ -3,6 +3,7 @@ import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import BookingCreateModal from "../../components/modals/BookingCreateModal";
 import BookingDetailsModal from "../../components/modals/BookingDetailsModal";
+import BookingEditModal from "../../components/modals/BookingEditModal";
 import FlexibleButton from "../../components/FlexibleButtons";
 import apiRequest from "../../api/client";
 
@@ -110,6 +111,7 @@ export default function BookingTableView() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewingBookingId, setViewingBookingId] = useState(null);
+  const [editingBooking, setEditingBooking] = useState(null);
 
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
@@ -222,7 +224,7 @@ export default function BookingTableView() {
     setCurrentPage(1);
   };
 
-  const handleBookingCreated = useCallback(async () => {
+  const handleBookingChanged = useCallback(async () => {
     if (currentPage === 1) {
       await loadBookings();
       return;
@@ -497,11 +499,23 @@ export default function BookingTableView() {
                       <td>{booking.notes || "-"}</td>
 
                       <td>
-                        <TableRowActions
-                          label="booking"
-                          rowLabel={booking.resident?.fullName}
-                          onView={() => setViewingBookingId(booking.id)}
-                        />
+                        <div className="table-actions">
+                          <TableRowActions
+                            label="booking"
+                            rowLabel={booking.resident?.fullName}
+                            onView={() => setViewingBookingId(booking.id)}
+                          />
+                          <FlexibleButton
+                            permission="bookings.create"
+                            className="btn btn-neutral"
+                            title={booking.status === "CONFIRMED" ? "Edit booking" : "Only confirmed bookings can be edited"}
+                            aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
+                            disabled={booking.status !== "CONFIRMED"}
+                            onClick={() => setEditingBooking(booking)}
+                          >
+                            <i className="bi bi-pencil-square" aria-hidden="true" />
+                          </FlexibleButton>
+                        </div>
                       </td>
                     </tr>
                   ))
@@ -554,7 +568,7 @@ export default function BookingTableView() {
       {isAddModalOpen && (
         <BookingCreateModal
           onClose={() => setIsAddModalOpen(false)}
-          onCreated={handleBookingCreated}
+          onCreated={handleBookingChanged}
         />
       )}
 
@@ -562,6 +576,14 @@ export default function BookingTableView() {
         <BookingDetailsModal
           bookingId={viewingBookingId}
           onClose={() => setViewingBookingId(null)}
+        />
+      )}
+
+      {editingBooking && (
+        <BookingEditModal
+          booking={editingBooking}
+          onClose={() => setEditingBooking(null)}
+          onUpdated={handleBookingChanged}
         />
       )}
     </MainLayout>
