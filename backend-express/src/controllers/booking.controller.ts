@@ -1,9 +1,11 @@
 import type { Response } from "express";
 import {
   BookingStatus,
+  Gender,
   HomeLeaveStatus,
   Prisma,
 } from "../generated/prisma/client.js";
+import * as XLSX from "xlsx";
 
 import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -27,6 +29,7 @@ import {
   type BookingTab,
 } from "../helpers/booking.helper.js";
 import { notifyActor } from "../services/notification.service.js";
+import { auditActor } from "../services/audit.service.js";
 
 
 
@@ -316,6 +319,251 @@ export async function listBookings(
   } catch (error) {
     console.error("List bookings error:", error);
     sendError(res, 500, "Failed to retrieve bookings.");
+  }
+}
+
+export async function exportBookingsToExcel(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const getParam = (...names: string[]) => {
+      for (const name of names) {
+        const value = req.query[name];
+        if (typeof value === "string" && value.trim()) return value.trim();
+      }
+      return "";
+    };
+
+    const dateRange = (fromValue: string, toValue: string) => {
+      const fromIsDay = /^\d{4}-\d{2}-\d{2}$/.test(fromValue);
+      const toIsDay = /^\d{4}-\d{2}-\d{2}$/.test(toValue);
+      const fromRange = fromIsDay
+        ? getSiteDateRange(fromValue)
+        : null;
+      const toRange = toIsDay
+        ? getSiteDateRange(toValue)
+        : null;
+      const from = fromValue
+        ? (fromRange?.start ?? (fromIsDay ? null : parseDate(fromValue)))
+        : null;
+      const to = toValue
+        ? (toRange?.end ?? (toIsDay ? null : parseDate(toValue)))
+        : null;
+      if ((fromValue && !from) || (toValue && !to)) return null;
+      return {
+        ...(from ? { gte: from } : {}),
+        ...(to ? (toRange ? { lt: to } : { lte: to }) : {}),
+      };
+    };
+
+    const requestedSiteId = getParam("siteId", "site_id");
+    if (requestedSiteId && !isGlobalSuperadmin(actor) && requestedSiteId !== actor.siteId) {
+      sendError(res, 403, "You cannot export bookings from another site.");
+      return;
+    }
+
+    const bookedAtExact = getParam("bookedAt", "booked_at", "bookedDate");
+    const bookedAtFrom = getParam("bookedAtFrom", "booked_at_from", "createdAtFrom") || bookedAtExact;
+    const bookedAtTo = getParam("bookedAtTo", "booked_at_to", "createdAtTo") || bookedAtExact;
+    const startedAtExact = getParam("startedAt", "started_at", "startedDate");
+    const startedAtFrom = getParam("startedAtFrom", "started_at_from") || startedAtExact;
+    const startedAtTo = getParam("startedAtTo", "started_at_to") || startedAtExact;
+    const bookedAtFilter = dateRange(bookedAtFrom, bookedAtTo);
+    const startedAtFilter = dateRange(startedAtFrom, startedAtTo);
+    if (bookedAtFilter === null || startedAtFilter === null) {
+      sendError(res, 400, "Invalid date filter. Use YYYY-MM-DD or a valid date-time.");
+      return;
+    }
+
+    const genderInput = getParam("gender").toUpperCase();
+    if (genderInput && !Object.values(Gender).includes(genderInput as Gender)) {
+      sendError(res, 400, "Invalid gender filter.");
+      return;
+    }
+    const statusInput = getParam("status").toUpperCase();
+    if (statusInput && !Object.values(BookingStatus).includes(statusInput as BookingStatus)) {
+      sendError(res, 400, "Invalid booking status filter.");
+      return;
+    }
+
+    const residentFilters: Prisma.ResidentWhereInput = {};
+    const residentName = getParam("residentName", "resident_name", "name");
+    const nationality = getParam("country", "nationality");
+    const company = getParam("company");
+    const title = getParam("title");
+    const mealType = getParam("mealType", "meal_type");
+    const department = getParam("department");
+    if (residentName) residentFilters.fullName = { contains: residentName, mode: "insensitive" };
+    if (nationality) residentFilters.nationality = { contains: nationality, mode: "insensitive" };
+    if (company) residentFilters.company = { contains: company, mode: "insensitive" };
+    if (title) residentFilters.title = { contains: title, mode: "insensitive" };
+    if (mealType) residentFilters.mealType = { contains: mealType, mode: "insensitive" };
+    if (department) residentFilters.department = { contains: department, mode: "insensitive" };
+    if (genderInput) residentFilters.gender = genderInput as Gender;
+
+    const roomName = getParam("roomName", "room_name", "room");
+    const bedName = getParam("bedName", "bed_name", "bed");
+    const bedFilters: Prisma.BedWhereInput = {};
+    if (roomName) bedFilters.room = { name: { contains: roomName, mode: "insensitive" } };
+    if (bedName) bedFilters.name = { contains: bedName, mode: "insensitive" };
+
+    const search = getParam("search");
+    const siteFilter: Prisma.BookingWhereInput = requestedSiteId
+      ? {
+          bed: {
+            room: {
+              floor: {
+                location: {
+                  siteId: requestedSiteId,
+                },
+              },
+            },
+          },
+        }
+      : {};
+    const searchFilter: Prisma.BookingWhereInput | null = search
+      ? {
+          OR: [
+            {
+              resident: {
+                fullName: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+            {
+              resident: {
+                nationality: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+            {
+              resident: {
+                company: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+            {
+              resident: {
+                title: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+            {
+              bed: {
+                name: {
+                  contains: search,
+                  mode: "insensitive",
+                },
+              },
+            },
+            {
+              bed: {
+                room: {
+                  name: {
+                    contains: search,
+                    mode: "insensitive",
+                  },
+                },
+              },
+            },
+          ],
+        }
+      : null;
+
+    const andFilters: Prisma.BookingWhereInput[] = [
+      getSiteBookingFilter(actor),
+      siteFilter,
+      ...(bookedAtFilter ? [{ createdAt: bookedAtFilter }] : []),
+      ...(startedAtFilter ? [{ startedAt: startedAtFilter }] : []),
+      ...(statusInput ? [{ status: statusInput as BookingStatus }] : []),
+      ...(Object.keys(residentFilters).length
+        ? [{ resident: residentFilters }]
+        : []),
+      ...(Object.keys(bedFilters).length ? [{ bed: bedFilters }] : []),
+      ...(searchFilter ? [searchFilter] : []),
+    ];
+
+    const bookings = await prisma.booking.findMany({
+      where: { AND: andFilters },
+      include: {
+        resident: {
+          select: {
+            fullName: true,
+            nationality: true,
+            mealType: true,
+            gender: true,
+            company: true,
+            title: true,
+          },
+        },
+        bed: { include: { room: { select: { name: true } } } },
+      },
+      orderBy: [{ createdAt: "desc" }, { startedAt: "asc" }],
+    });
+
+    if (bookings.length === 0) {
+      sendError(res, 400, "No bookings match the selected filters. Nothing to export.");
+      return;
+    }
+
+    const rows = bookings.map((booking) => ({
+      "Room Name": booking.bed.room.name,
+      "Bed Name": booking.bed.name,
+      "Booking Status": booking.status,
+      "Resident Name": booking.resident.fullName,
+      Nationality: booking.resident.nationality ?? "",
+      "Meal Type": booking.resident.mealType,
+      Gender: booking.resident.gender,
+      Company: booking.resident.company ?? "",
+      Title: booking.resident.title ?? "",
+      "Started At": booking.startedAt.toISOString(),
+      "Ended At": booking.endedAt.toISOString(),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 28 }, { wch: 20 },
+      { wch: 18 }, { wch: 14 }, { wch: 25 }, { wch: 20 }, { wch: 24 }, { wch: 24 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Bookings");
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const filename = `bookings-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    await notifyActor(req, {
+      title: "Booking data export successfully",
+      message: `${bookings.length} bookings exported successfully`,
+      type: "SUCCESS",
+    });
+    await auditActor(req, actor, {
+      action: "Export",
+      resource: "booking",
+      description: `Exported ${bookings.length} bookings to an Excel file.`,
+    });
+
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "no-store");
+
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Export bookings error:", error);
+
+    if (res.headersSent) return;
+
+    sendError(res, 500, "Failed to export bookings.");
   }
 }
 

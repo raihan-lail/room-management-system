@@ -4,6 +4,7 @@ import TableRowActions from "../../components/TableRowActions";
 import BookingCreateModal from "../../components/modals/BookingCreateModal";
 import BookingDetailsModal from "../../components/modals/BookingDetailsModal";
 import BookingEditModal from "../../components/modals/BookingEditModal";
+import ExportModal from "../../components/modals/ExportModal";
 import FlexibleButton from "../../components/FlexibleButtons";
 import apiRequest from "../../api/client";
 
@@ -112,6 +113,25 @@ export default function BookingTableView() {
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [viewingBookingId, setViewingBookingId] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+
+  const exportFilterFields = useMemo(() => [
+    { name: "search", label: "Search", type: "search", placeholder: "Resident, room, bed, company..." },
+    { name: "status", label: "Status", type: "select", placeholderOption: "All statuses", options: STATUS_OPTIONS.map((status) => ({ value: status, label: formatStatus(status) })) },
+    { name: "startedAtFrom", label: "Start From", type: "date" },
+    { name: "startedAtTo", label: "Start To", type: "date" },
+    { name: "bookedAtFrom", label: "Booked From", type: "date" },
+    { name: "bookedAtTo", label: "Booked To", type: "date" },
+    { name: "residentName", label: "Resident Name" },
+    { name: "country", label: "Country" },
+    { name: "gender", label: "Gender", type: "select", placeholderOption: "All genders", options: Object.entries(GENDER_LABELS).map(([value, label]) => ({ value, label })) },
+    { name: "company", label: "Company" },
+    { name: "title", label: "Title" },
+    { name: "department", label: "Department" },
+    { name: "mealType", label: "Meal Type" },
+    { name: "roomName", label: "Room" },
+    { name: "bedName", label: "Bed" },
+  ], []);
 
   const loadBookings = useCallback(async () => {
     setIsLoading(true);
@@ -303,6 +323,14 @@ export default function BookingTableView() {
               />
             </label>
 
+            <FlexibleButton
+              permission="bookings.export"
+              className="btn btn-neutral"
+              onClick={() => setIsExportModalOpen(true)}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export
+            </FlexibleButton>
             <FlexibleButton
               permission="bookings.create"
               className="btn btn-primary"
@@ -584,6 +612,18 @@ export default function BookingTableView() {
           booking={editingBooking}
           onClose={() => setEditingBooking(null)}
           onUpdated={handleBookingChanged}
+        />
+      )}
+
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Bookings"
+          endpoint="/api/booking/export"
+          filename="bookings.xlsx"
+          entityLabel="bookings"
+          filterFields={exportFilterFields}
+          initialFilters={{ search, status: statusFilter, startedAtFrom, startedAtTo }}
+          onClose={() => setIsExportModalOpen(false)}
         />
       )}
     </MainLayout>

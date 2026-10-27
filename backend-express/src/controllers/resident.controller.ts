@@ -754,8 +754,7 @@ export async function importResidentsFromExcel(
       });
     }
 
-    // Hash unique, randomly generated initial passwords before the transaction.
-    // Never return or log these passwords.
+    
   const preparedRows = await Promise.all(
   eligibleRows.map(async ({ resident, siteId }) => {
     const passwordHash = await argon2.hash(resident.password, {
