@@ -91,15 +91,15 @@ export default function TableRowActions({
   return (
     <div className="table-actions">
       {onView && (
-        <button
-          type="button"
+        <FlexibleButton
+          permission="bookings.read"
           className="btn btn-neutral"
           title={`View ${title}`}
           aria-label={`View ${title}`}
           onClick={onView}
         >
           <i className="bi bi-eye" aria-hidden="true" />
-        </button>
+        </FlexibleButton>
       )}
 
       {hasMenu && (

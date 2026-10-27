@@ -884,7 +884,7 @@ export default function RoomManagement() {
                     <h3 className="detail-card__title">Booking</h3>
                     <div className="detail-grid">
                       {Object.entries({
-                        "Booking ID": selectedBooking.id,
+                        "Booking ID": selectedBooking.bookingNumber,
                         "Resident ID": selectedBooking.residentId,
                         "Bed ID": selectedBooking.bedId,
                         Status: selectedBooking.status,
