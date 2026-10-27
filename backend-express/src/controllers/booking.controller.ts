@@ -1018,6 +1018,172 @@ export async function returnFromHomeLeave(
   }
 }
 
+export async function updateBooking(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const { residentId, bedId, startedAt: startedAtInput, endedAt: endedAtInput, notes } = req.body ?? {};
+    const allowedFields = new Set(["residentId", "bedId", "startedAt", "endedAt", "notes"]);
+    const unsupportedField = Object.keys(req.body ?? {}).find((field) => !allowedFields.has(field));
+    if (unsupportedField) {
+      sendError(res, 400, `Unsupported booking field: ${unsupportedField}.`);
+      return;
+    }
+    if (Object.keys(req.body ?? {}).length === 0) {
+      sendError(res, 400, "At least one booking field must be provided.");
+      return;
+    }
+    if (residentId !== undefined && (typeof residentId !== "string" || !residentId.trim())) {
+      sendError(res, 400, "residentId must be a non-empty string.");
+      return;
+    }
+    if (bedId !== undefined && (typeof bedId !== "string" || !bedId.trim())) {
+      sendError(res, 400, "bedId must be a non-empty string.");
+      return;
+    }
+    if (startedAtInput !== undefined && !parseDate(startedAtInput)) {
+      sendError(res, 400, "startedAt must be a valid date.");
+      return;
+    }
+    if (endedAtInput !== undefined && !parseDate(endedAtInput)) {
+      sendError(res, 400, "endedAt must be a valid date.");
+      return;
+    }
+    if (notes !== undefined && notes !== null && typeof notes !== "string") {
+      sendError(res, 400, "notes must be a string or null.");
+      return;
+    }
+
+    const result = await prisma.$transaction(async (tx) => {
+      const before = await tx.booking.findFirst({
+        where: { id: req.params.id as string, ...getSiteBookingFilter(actor) },
+        include: { resident: true, bed: { include: { room: true } } },
+      });
+      if (!before) {
+        throw Object.assign(new Error("Booking not found."), { statusCode: 404 });
+      }
+      if (before.status !== BookingStatus.CONFIRMED) {
+        throw Object.assign(new Error("Only confirmed bookings can be edited."), { statusCode: 409 });
+      }
+
+      const targetResidentId = residentId ?? before.residentId;
+      const targetBedId = bedId ?? before.bedId;
+      const targetStartedAt = startedAtInput !== undefined ? parseDate(startedAtInput)! : before.startedAt;
+      const targetEndedAt = endedAtInput !== undefined ? parseDate(endedAtInput)! : before.endedAt;
+
+      if (residentId !== undefined) {
+        const resident = await tx.resident.findFirst({
+          where: { id: targetResidentId, ...getSiteResidentFilter(actor), user: { isActive: true } },
+          select: { id: true },
+        });
+        if (!resident) {
+          throw Object.assign(new Error("Resident not found or not accessible."), { statusCode: 404 });
+        }
+      }
+      if (bedId !== undefined) {
+        const bed = await tx.bed.findFirst({
+          where: {
+            id: targetBedId,
+            isActive: true,
+            ...getSiteBedFilter(actor),
+            room: {
+              isBookable: true,
+              floor: {
+                location: {
+                  siteId: isGlobalSuperadmin(actor) ? undefined : actor.siteId ?? NO_MATCHING_ID,
+                },
+              },
+            },
+          },
+          select: { id: true },
+        });
+        if (!bed) {
+          throw Object.assign(new Error("Bed not found, inactive, or not bookable."), { statusCode: 404 });
+        }
+      }
+
+      const conflict = await validateBookingDates(tx, {
+        bedId: targetBedId,
+        startedAt: targetStartedAt,
+        endedAt: targetEndedAt,
+        excludeBookingId: before.id,
+      });
+      if (conflict) {
+        throw Object.assign(new Error(conflict), { statusCode: 409 });
+      }
+
+      const after = await tx.booking.update({
+        where: { id: before.id },
+        data: {
+          ...(residentId !== undefined ? { residentId: targetResidentId } : {}),
+          ...(bedId !== undefined ? { bedId: targetBedId } : {}),
+          ...(startedAtInput !== undefined ? { startedAt: targetStartedAt } : {}),
+          ...(endedAtInput !== undefined ? { endedAt: targetEndedAt } : {}),
+          ...(notes !== undefined ? { notes: typeof notes === "string" ? notes.trim() || null : null } : {}),
+        },
+        include: { resident: true, bed: { include: { room: true } } },
+      });
+
+      if (before.bedId !== after.bedId) {
+        await refreshBedStatus(tx, before.bedId);
+        await refreshBedStatus(tx, after.bedId);
+      } else if (before.startedAt.getTime() !== after.startedAt.getTime() || before.endedAt.getTime() !== after.endedAt.getTime()) {
+        await refreshBedStatus(tx, after.bedId);
+      }
+
+      await createBookingEvent(tx, {
+        bookingId: after.id,
+        actorUserId: req.userId!,
+        action: "booking_updated",
+        description: "Booking details updated.",
+        metadata: {
+          previous: {
+            residentId: before.residentId,
+            bedId: before.bedId,
+            startedAt: before.startedAt.toISOString(),
+            endedAt: before.endedAt.toISOString(),
+            notes: before.notes,
+          },
+          updated: {
+            residentId: after.residentId,
+            bedId: after.bedId,
+            startedAt: after.startedAt.toISOString(),
+            endedAt: after.endedAt.toISOString(),
+            notes: after.notes,
+          },
+        },
+      });
+      return after;
+    });
+
+    await auditBooking(req, actor, {
+      bookingId: result.id,
+      action: "booking_updated",
+      description: `Booking details updated for resident ${result.resident.fullName}.`,
+    });
+    await notifyActor(req, {
+      title: "Booking Updated",
+      message: `Booking for ${result.resident.fullName} was updated successfully.`,
+      type: "INFO",
+    });
+    res.status(200).json({ message: "Booking updated successfully.", data: result });
+  } catch (error) {
+    const statusCode = typeof error === "object" && error !== null && "statusCode" in error && typeof error.statusCode === "number"
+      ? error.statusCode
+      : 0;
+    if (statusCode) {
+      sendError(res, statusCode, (error as Error).message);
+      return;
+    }
+    console.error("Update booking error:", error);
+    sendError(res, 500, "Failed to update booking.");
+  }
+}
+
 export async function extendBooking(
   req: AuthRequest,
   res: Response

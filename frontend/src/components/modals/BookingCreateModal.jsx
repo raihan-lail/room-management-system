@@ -10,43 +10,6 @@ const GENDER_OPTIONS = [
   { value: "OTHER", label: "Other" },
 ];
 
-
-
-const GENDER_LABELS = {
-  MALE: "Male",
-  FEMALE: "Female",
-  OTHER: "Other",
-};
-
-const MEAL_TYPE_LABELS = {
-  REGULAR: "Regular",
-  VEGETARIAN: "Vegetarian",
-  HALAL: "Halal",
-  OTHER: "Other",
-};
-
-const RESIDENT_DETAIL_FIELDS = [
-  { name: "fullName", label: "Full Name" },
-  { name: "email", label: "Email", getValue: (resident) => resident.user?.email },
-  { name: "phone", label: "Phone" },
-  {
-    name: "gender",
-    label: "Gender",
-    getValue: (resident) => GENDER_LABELS[resident.gender] ?? resident.gender,
-  },
-  { name: "nationality", label: "Nationality" },
-  {
-    name: "mealType",
-    label: "Meal Type",
-    getValue: (resident) =>
-      MEAL_TYPE_LABELS[resident.mealType] ?? resident.mealType,
-  },
-  { name: "company", label: "Company" },
-  { name: "department", label: "Department" },
-  { name: "title", label: "Title" },
-  { name: "site", label: "Site", getValue: (resident) => resident.site?.name },
-];
-
 const EMPTY_VALUES = {
   residentId: "",
   bedId: "",
@@ -69,12 +32,7 @@ const EMPTY_NEW_RESIDENT = {
   title: "",
 };
 
-function getResidentDetails(resident) {
-  return RESIDENT_DETAIL_FIELDS.map((field) => ({
-    ...field,
-    value: field.getValue ? field.getValue(resident) : resident[field.name],
-  }));
-}
+
 
 export default function BookingCreateModal({ onClose, onCreated }) {
   const { user, hasPermission } = useAuth();
@@ -188,8 +146,7 @@ export default function BookingCreateModal({ onClose, onCreated }) {
     return [];
   }, [sites, user]);
 
-  const selectedResident =
-    residents.find((resident) => resident.id === values.residentId) ?? null;
+  
 
   const handleChange = (name, value) => {
     setValues((prev) => ({ ...prev, [name]: value }));
@@ -399,23 +356,7 @@ export default function BookingCreateModal({ onClose, onCreated }) {
                   onChange={handleChange}
                 />
 
-                {selectedResident && (
-                  <div className="modal__grid">
-                    {getResidentDetails(selectedResident).map((field) => (
-                      <ModalField
-                        key={field.name}
-                        field={{
-                          name: field.name,
-                          label: field.label,
-                          type: "text",
-                          readOnly: true,
-                        }}
-                        value={field.value ?? ""}
-                        onChange={() => {}}
-                      />
-                    ))}
-                  </div>
-                )}
+                
               </>
             ) : (
               <>
