@@ -412,6 +412,45 @@ export async function exportBookingsToExcel(
     if (bedName) bedFilters.name = { contains: bedName, mode: "insensitive" };
 
     const search = getParam("search");
+    const frontdeskTab = getParam("frontdeskTab");
+    const frontdeskDate = getParam("date");
+    const frontdeskRange = frontdeskDate ? getSiteDateRange(frontdeskDate) : null;
+    if (frontdeskTab && !["arrival", "in-house", "home_leave", "near-end", "departure"].includes(frontdeskTab)) {
+      sendError(res, 400, "Invalid frontdesk tab.");
+      return;
+    }
+    if (frontdeskDate && !frontdeskRange) {
+      sendError(res, 400, "Invalid frontdesk date. Use YYYY-MM-DD.");
+      return;
+    }
+    const tabFilters: Prisma.BookingWhereInput[] = [];
+    if (frontdeskTab && frontdeskRange) {
+      const { start, end } = frontdeskRange;
+      switch (frontdeskTab) {
+        case "arrival":
+          tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { gte: start, lt: end } });
+          break;
+        case "in-house":
+          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } });
+          break;
+        case "home_leave":
+          tabFilters.push(
+            { status: BookingStatus.HOME_LEAVE },
+            { startedAt: { lte: end } },
+            { endedAt: { gte: start } },
+          );
+          break;
+        case "near-end": {
+          const threeDaysLater = new Date(start);
+          threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
+          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: threeDaysLater } });
+          break;
+        }
+        case "departure":
+          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: end } });
+          break;
+      }
+    }
     const siteFilter: Prisma.BookingWhereInput = requestedSiteId
       ? {
           bed: {
@@ -484,6 +523,7 @@ export async function exportBookingsToExcel(
 
     const andFilters: Prisma.BookingWhereInput[] = [
       getSiteBookingFilter(actor),
+      ...tabFilters,
       siteFilter,
       ...(bookedAtFilter ? [{ createdAt: bookedAtFilter }] : []),
       ...(startedAtFilter ? [{ startedAt: startedAtFilter }] : []),

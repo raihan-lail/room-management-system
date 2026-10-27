@@ -38,6 +38,7 @@ export default function ExportModal({
   entityLabel = "records",
   filterFields = [],
   initialFilters = {},
+  extraParams = {},
   onClose,
   onExported,
 }) {
@@ -82,6 +83,12 @@ export default function ExportModal({
     }
 
     const params = new URLSearchParams();
+
+    Object.entries(extraParams).forEach(([name, value]) => {
+      if (value !== undefined && value !== null && String(value).trim()) {
+        params.set(name, String(value));
+      }
+    });
 
     if (mode === "filtered") {
       for (const field of filterFields) {

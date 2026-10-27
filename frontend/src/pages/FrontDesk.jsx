@@ -5,7 +5,7 @@ import TableRowActions from "../components/TableRowActions";
 import AddModal from "../components/modals/AddModal";
 import BookingModal from "../components/modals/BookingModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
-FlexibleButton
+import ExportModal from "../components/modals/ExportModal";
 import {
   addFormSchemas,
   buildRow,
@@ -134,6 +134,7 @@ export default function FrontDesk() {
   const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
   const today = selectedDate;
@@ -142,6 +143,11 @@ export default function FrontDesk() {
     () => selectedDateFormatter.format(new Date(`${selectedDate}T00:00:00`)),
     [selectedDate],
   );
+  const exportFilename = useMemo(() => {
+    const date = new Date(`${selectedDate}T00:00:00`);
+    const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(date).toLowerCase();
+    return `${segment.replaceAll("_", "-")}-${date.getDate()}-${month}-${date.getFullYear()}.xlsx`;
+  }, [segment, selectedDate]);
 
   const handleDateChange = (value) => {
     if (!value) return;
@@ -526,7 +532,9 @@ aria-label={
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
-
+          <button type="button" className="btn btn-neutral" onClick={() => setIsExportModalOpen(true)}>
+            <i className="bi bi-download" aria-hidden="true" /> Export Excel
+          </button>
         
         </div>
 
@@ -955,6 +963,16 @@ aria-label={
 
       {actionError && !extendingRow && (
         <div className="error-message" role="alert">{actionError}</div>
+      )}
+      {isExportModalOpen && (
+        <ExportModal
+          title={`Export ${activeSegment?.label || "Bookings"}`}
+          endpoint="/api/booking/export"
+          filename={exportFilename}
+          entityLabel="bookings"
+          extraParams={{ frontdeskTab: segment, date: selectedDate }}
+          onClose={() => setIsExportModalOpen(false)}
+        />
       )}
     </MainLayout>
   );
