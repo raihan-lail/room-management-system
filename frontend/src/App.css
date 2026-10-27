@@ -1423,6 +1423,18 @@ textarea,
   border: 1px solid #e2e8f0;
 }
 
+.booking-status--home_leave {
+  background-color: var(--status-archived-bg);
+  color: var(--status-archived-fg);
+  border: 1px solid var(--status-archived-border);
+}
+
+.booking-status--archived {
+  background-color: var(--status-archived-bg);
+  color: var(--status-archived-fg);
+  border: 1px solid var(--status-archived-border);
+}
+
 .table-actions {
   display: flex;
   gap: 6px;
@@ -4743,6 +4755,10 @@ textarea,
   border-radius: 8px;
   padding: 10px 12px;
   white-space: normal;
+  width: 100%;
+}
+.location-floors-container {
+  width: 100%;
 }
 
 .location-floors-panel__title {
@@ -4783,7 +4799,9 @@ textarea,
 .location-floors-toggle:hover {
   background-color: var(--brand-soft);
 }
-
+.location-floors-row {
+  width: 100%;
+}
 .location-floors-toggle i {
   font-size: 11px;
   line-height: 1;

@@ -107,6 +107,17 @@ export async function listBeds(req: AuthRequest, res: Response) {
       prisma.bed.findMany({
         where,
         include: {
+          bookings: {
+            where: { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] } },
+            orderBy: { startedAt: "desc" },
+            take: 1,
+            include: {
+              resident: { include: { user: { select: { email: true } } } },
+              homeLeaves: { orderBy: { startedAt: "desc" } },
+              complaints: { orderBy: { createdAt: "desc" } },
+              events: { orderBy: { createdAt: "desc" } },
+            },
+          },
           room: {
             include: {
               floor: {

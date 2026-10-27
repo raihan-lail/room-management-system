@@ -125,6 +125,10 @@ export default function RoomManagement() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [expandedRooms, setExpandedRooms] = useState([]);
+  const [selectedBed, setSelectedBed] = useState(null);
+  const [bedBooking, setBedBooking] = useState(null);
+  const [bedBookingLoading, setBedBookingLoading] = useState(false);
+  const [bedBookingError, setBedBookingError] = useState("");
 
   const loadLocations = useCallback(async () => {
     try {
@@ -452,6 +456,53 @@ export default function RoomManagement() {
     [sortedBeds]
   );
 
+  const openBedBooking = useCallback(async (bed) => {
+    setSelectedBed(bed);
+    setBedBooking(null);
+    setBedBookingError("");
+    setBedBookingLoading(true);
+
+    try {
+      const params = new URLSearchParams({
+        bedId: bed.id,
+        limit: "20",
+      });
+
+      const listResponse = await apiRequest(
+        `/api/booking?${params.toString()}`
+      );
+      const bookings = Array.isArray(listResponse?.data)
+        ? listResponse.data
+        : [];
+
+      const activeBooking =
+        bookings.find((booking) =>
+          ["BOOKED", "OCCUPIED", "HOME_LEAVE"].includes(booking.status)
+        ) ?? bookings.at(-1);
+
+      if (!activeBooking?.id) return;
+
+      const detailResponse = await apiRequest(
+        `/api/booking/${activeBooking.id}`
+      );
+
+      setBedBooking(detailResponse?.data ?? null);
+    } catch (err) {
+      setBedBookingError(
+        err.message || "Failed to load the booking for this bed."
+      );
+    } finally {
+      setBedBookingLoading(false);
+    }
+  }, []);
+
+  const closeBedBooking = () => {
+    setSelectedBed(null);
+    setBedBooking(null);
+    setBedBookingError("");
+    setBedBookingLoading(false);
+  };
+
   const activePage = viewMode === "bed" ? bedPage : currentPage;
   const activePagination =
     viewMode === "bed" ? bedPagination : pagination;
@@ -467,6 +518,17 @@ export default function RoomManagement() {
     activePagination.page * activePagination.pageSize,
     activePagination.total
   );
+
+  const selectedBooking = bedBooking;
+  const formatBookingValue = (value) => {
+    if (value === null || value === undefined || value === "") return "-";
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "object") return JSON.stringify(value, null, 2);
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}T/.test(value)) {
+      return new Date(value).toLocaleString();
+    }
+    return String(value);
+  };
 
   return (
     <MainLayout>
@@ -604,13 +666,13 @@ export default function RoomManagement() {
               <tbody>
                 {loading ? (
                   <tr>
-                    <td colSpan={8} className="muted">
+                    <td colSpan={9} className="muted">
                       Loading rooms...
                     </td>
                   </tr>
                 ) : sortedRooms.length === 0 ? (
                   <tr>
-                    <td colSpan={8} className="muted">
+                    <td colSpan={9} className="muted">
                       No rooms found.
                     </td>
                   </tr>
@@ -677,7 +739,7 @@ export default function RoomManagement() {
 
                         {isExpanded && bedCount > 0 && (
                           <tr className="location-floors-row">
-                            <td colSpan={8}>
+                            <td colSpan={9} className="location-floors-container">
                               <div className="location-floors-panel">
                                 <p className="location-floors-panel__title">
                                   Beds — Room {room.name}
@@ -757,13 +819,13 @@ export default function RoomManagement() {
                 <tbody>
                   {loading ? (
                     <tr>
-                      <td colSpan={8} className="muted">
+                      <td colSpan={10} className="muted">
                         Loading beds...
                       </td>
                     </tr>
                   ) : bedViewRows.length === 0 ? (
                     <tr>
-                      <td colSpan={8} className="muted">
+                      <td colSpan={10} className="muted">
                         No beds found.
                       </td>
                     </tr>
@@ -786,9 +848,7 @@ export default function RoomManagement() {
                             <TableRowActions
                               label="room"
                               rowLabel={room.name}
-                              onView={() =>
-                                navigate(`/rooms/${room.id}/booking-details`)
-                              }
+                              onView={["BOOKED", "OCCUPIED", "HOME_LEAVE"].includes(bed.status) ? () => openBedBooking(bed) : undefined}
                               onEdit={() => setEditingRow(mapRoomToForm(room))}
                               onDelete={() => setDeletingRow(room)}
                             />
@@ -803,6 +863,79 @@ export default function RoomManagement() {
               </table>
             )}
           </div>
+
+          {selectedBed && (
+            <div className="modal-overlay" role="presentation" onMouseDown={(event) => {
+              if (event.target === event.currentTarget) closeBedBooking();
+            }}>
+              <section className="modal modal--wide" role="dialog" aria-modal="true" aria-labelledby="bed-occupant-title">
+                <div className="modal__header">
+                  <h2 className="modal__title" id="bed-occupant-title">Bed booking details</h2>
+                  <button type="button" className="modal__close" aria-label="Close" onClick={closeBedBooking}>
+                    <i className="bi bi-x-lg" aria-hidden="true" />
+                  </button>
+                </div>
+                {bedBookingLoading ? (
+                  <p className="muted">Loading booking details...</p>
+                ) : bedBookingError ? (
+                  <p className="error-text">{bedBookingError}</p>
+                ) : selectedBooking ? (
+                  <>
+                    <h3 className="detail-card__title">Booking</h3>
+                    <div className="detail-grid">
+                      {Object.entries({
+                        "Booking ID": selectedBooking.id,
+                        "Resident ID": selectedBooking.residentId,
+                        "Bed ID": selectedBooking.bedId,
+                        Status: selectedBooking.status,
+                        "Bed status": selectedBed.status,
+                        "Room / Bed": `${selectedBed.room?.name || "-"} / ${selectedBed.name || "-"}`,
+                        "Start date": selectedBooking.startedAt,
+                        "End date": selectedBooking.endedAt,
+                        "Checked in": selectedBooking.checkedInAt,
+                        "Checked out": selectedBooking.checkedOutAt,
+                        "Cancelled at": selectedBooking.cancelledAt,
+                        "Archived at": selectedBooking.archivedAt,
+                        "No-show at": selectedBooking.noShowAt,
+                        "Cancellation reason": selectedBooking.cancellationReason,
+                        Notes: selectedBooking.notes,
+                        "Created at": selectedBooking.createdAt,
+                        "Updated at": selectedBooking.updatedAt,
+                      }).map(([label, value]) => (
+                        <div key={label}>
+                          <p className="detail-grid__label">{label}</p>
+                          <p className="detail-grid__value">{formatBookingValue(value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <h3 className="detail-card__title">Resident</h3>
+                    <div className="detail-grid">
+                      {Object.entries({
+                        Name: selectedBooking.resident?.fullName,
+                        Email: selectedBooking.resident?.user?.email,
+                        Phone: selectedBooking.resident?.phone,
+                        Gender: selectedBooking.resident?.gender,
+                        Nationality: selectedBooking.resident?.nationality,
+                        "Meal type": selectedBooking.resident?.mealType,
+                        Company: selectedBooking.resident?.company,
+                        Department: selectedBooking.resident?.department,
+                        Title: selectedBooking.resident?.title,
+                        "Resident status": selectedBooking.resident?.status,
+                      }).map(([label, value]) => (
+                        <div key={label}>
+                          <p className="detail-grid__label">{label}</p>
+                          <p className="detail-grid__value">{formatBookingValue(value)}</p>
+                        </div>
+                      ))}
+                    </div>
+                    
+                  </>
+                ) : (
+                  <p className="detail-grid__value">No booking record is available for this bed.</p>
+                )}
+              </section>
+            </div>
+          )}
 
           <div className="office-pagination">
             <span className="office-page-info">

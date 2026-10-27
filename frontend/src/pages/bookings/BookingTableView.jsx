@@ -1,135 +1,177 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
-import BookingModal from "../../components/modals/BookingModal";
-import ConfirmModal from "../../components/modals/ConfirmModal";
-
-import {
-  addFormSchemas,
-  buildRow,
-} from "../../components/modals/addFormSchemas";
-import bookingsData from "../../data/bookings";
+import BookingCreateModal from "../../components/modals/BookingCreateModal";
+import BookingDetailsModal from "../../components/modals/BookingDetailsModal";
 import FlexibleButton from "../../components/FlexibleButtons";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
-const bookingSchema = addFormSchemas.booking;
+const STATUS_OPTIONS = [
+  "CONFIRMED",
+  "IN_HOUSE",
+  "HOME_LEAVE",
+  "CHECKED_OUT",
+  "CANCELLED",
+  "ARCHIVED",
+];
 
-const initialBookings = Array.isArray(bookingsData)
-  ? bookingsData
-  : [];
+const GENDER_LABELS = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+};
+
+const MEAL_TYPE_LABELS = {
+  REGULAR: "Regular",
+  VEGETARIAN: "Vegetarian",
+  HALAL: "Halal",
+  OTHER: "Other",
+};
+
+const SORT_GETTERS = {
+  booking_id: (booking) => booking.id,
+  room: (booking) => booking.bed?.room?.name,
+  bed: (booking) => booking.bed?.name,
+  guest: (booking) => booking.resident?.fullName,
+  gender: (booking) => booking.resident?.gender,
+  country: (booking) => booking.resident?.nationality,
+  department: (booking) => booking.resident?.department,
+  meal_type: (booking) => booking.resident?.mealType,
+  booked_at: (booking) => booking.createdAt,
+  started_at: (booking) => booking.startedAt,
+  ended_at: (booking) => booking.endedAt,
+  status: (booking) => booking.status,
+  notes: (booking) => booking.notes,
+};
+
+function formatDate(value) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  return date.toISOString().slice(0, 10);
+}
+
+function formatStatus(status) {
+  if (!status) return "-";
+
+  return status
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+}
+
+function getBookings(response) {
+  return Array.isArray(response?.data) ? response.data : [];
+}
+
+function getPagination(response, currentPage) {
+  const pagination = response?.pagination ?? {};
+  const total = Number(pagination.total ?? 0);
+
+  return {
+    page: Number(pagination.page ?? currentPage),
+    limit: Number(pagination.limit ?? PAGE_SIZE),
+    total,
+    totalPages: Math.max(
+      1,
+      Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+    ),
+  };
+}
 
 export default function BookingTableView() {
+  const [bookings, setBookings] = useState([]);
+  const [pagination, setPagination] = useState({
+    page: 1,
+    limit: PAGE_SIZE,
+    total: 0,
+    totalPages: 1,
+  });
+
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [startedAtFrom, setStartedAtFrom] = useState("");
+  const [startedAtTo, setStartedAtTo] = useState("");
+
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
-  const [bookings, setBookings] =
-    useState(initialBookings);
-  const [isAddModalOpen, setIsAddModalOpen] =
-    useState(false);
-  const [editingRow, setEditingRow] = useState(null);
-  const [deletingRow, setDeletingRow] = useState(null);
 
-  const handleSort = (key) => {
-    setSortConfig((prev) => ({
-      key,
-      direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
-    }));
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState("");
 
-    setCurrentPage(1);
-  };
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [viewingBookingId, setViewingBookingId] = useState(null);
 
-  const filteredBookings = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const loadBookings = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
 
-    if (!query) return bookings;
+    try {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+      });
 
-    return bookings.filter((booking) =>
-      [
-        booking.booking_id,
-        booking.room,
-        booking.guest?.name,
-        booking.guest?.gender,
-        booking.guest?.country,
-        booking.guest?.dept,
-        booking.guest?.meal_type,
-        booking.status,
-        booking.notes,
-      ].some((value) => (value || "").toString().toLowerCase().includes(query)),
-    );
-  }, [bookings, search]);
+      if (search.trim()) params.set("search", search.trim());
+      if (statusFilter) params.set("status", statusFilter);
 
-  const sortedBookings = useMemo(() => {
-    if (!sortConfig.key) return filteredBookings;
-
-    return [...filteredBookings].sort((a, b) => {
-      let aValue;
-      let bValue;
-
-      switch (sortConfig.key) {
-        case "booking_id":
-          aValue = a.booking_id;
-          bValue = b.booking_id;
-          break;
-        case "room":
-          aValue = a.room;
-          bValue = b.room;
-          break;
-
-        case "guest":
-          aValue = a.guest?.name;
-          bValue = b.guest?.name;
-          break;
-
-        case "gender":
-          aValue = a.guest?.gender;
-          bValue = b.guest?.gender;
-          break;
-
-        case "country":
-          aValue = a.guest?.country;
-          bValue = b.guest?.country;
-          break;
-
-        case "dept":
-          aValue = a.guest?.dept;
-          bValue = b.guest?.dept;
-          break;
-
-        case "meal_type":
-          aValue = a.guest?.meal_type;
-          bValue = b.guest?.meal_type;
-          break;
-
-        case "started_at":
-          aValue = a.started_at;
-          bValue = b.started_at;
-          break;
-
-        case "ended_at":
-          aValue = a.ended_at;
-          bValue = b.ended_at;
-          break;
-
-        case "status":
-          aValue = a.status;
-          bValue = b.status;
-          break;
-
-        case "notes":
-          aValue = a.notes;
-          bValue = b.notes;
-          break;
-
-        default:
-          return 0;
+      if (startedAtFrom) {
+        params.set(
+          "startedAtFrom",
+          new Date(`${startedAtFrom}T00:00:00.000Z`).toISOString(),
+        );
       }
 
-      aValue = (aValue ?? "").toString().toLowerCase();
-      bValue = (bValue ?? "").toString().toLowerCase();
+      if (startedAtTo) {
+        params.set(
+          "startedAtTo",
+          new Date(`${startedAtTo}T23:59:59.999Z`).toISOString(),
+        );
+      }
+
+      const response = await apiRequest(`/api/booking?${params.toString()}`);
+      const pageInfo = getPagination(response, currentPage);
+
+      setBookings(getBookings(response));
+      setPagination(pageInfo);
+
+      // Protect against a stale page after filtering.
+      if (pageInfo.totalPages > 0 && currentPage > pageInfo.totalPages) {
+        setCurrentPage(pageInfo.totalPages);
+      }
+    } catch (err) {
+      setError(err.message || "Failed to load bookings.");
+      setBookings([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, search, statusFilter, startedAtFrom, startedAtTo]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadBookings();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadBookings]);
+
+  const sortedBookings = useMemo(() => {
+    const getValue = SORT_GETTERS[sortConfig.key];
+
+    if (!getValue) return bookings;
+
+    return [...bookings].sort((a, b) => {
+      const aValue = (getValue(a) ?? "").toString().toLowerCase();
+      const bValue = (getValue(b) ?? "").toString().toLowerCase();
 
       if (aValue < bValue) {
         return sortConfig.direction === "asc" ? -1 : 1;
@@ -141,43 +183,53 @@ export default function BookingTableView() {
 
       return 0;
     });
-  }, [filteredBookings, sortConfig]);
-
-  const totalPages = Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE));
-  const safePage = Math.min(currentPage, totalPages);
-
-  const pagedBookings = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-
-    return sortedBookings.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedBookings, safePage]);
+  }, [bookings, sortConfig]);
 
   const startRow =
-    filteredBookings.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredBookings.length);
+    pagination.total === 0
+      ? 0
+      : (pagination.page - 1) * pagination.limit + 1;
+  const endRow = Math.min(
+    pagination.page * pagination.limit,
+    pagination.total,
+  );
+
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction:
+        prev.key === key && prev.direction === "asc" ? "desc" : "asc",
+    }));
+  };
 
   const handleSearchChange = (value) => {
     setSearch(value);
     setCurrentPage(1);
   };
 
-  const handleCreateBooking = (values) => {
-    setBookings((prev) => [...prev, buildRow(bookingSchema, values)]);
-
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
     setCurrentPage(1);
   };
 
-  const handleEditBooking = (values) => {
-    setBookings((prev) =>
-      prev.map((row) =>
-        row === editingRow ? buildRow(bookingSchema, values, row) : row,
-      ),
-    );
+  const handleStartedAtFromChange = (value) => {
+    setStartedAtFrom(value);
+    setCurrentPage(1);
   };
 
-  const handleDeleteBooking = () => {
-    setBookings((prev) => prev.filter((row) => row !== deletingRow));
+  const handleStartedAtToChange = (value) => {
+    setStartedAtTo(value);
+    setCurrentPage(1);
   };
+
+  const handleBookingCreated = useCallback(async () => {
+    if (currentPage === 1) {
+      await loadBookings();
+      return;
+    }
+
+    setCurrentPage(1);
+  }, [currentPage, loadBookings]);
 
   return (
     <MainLayout>
@@ -200,13 +252,55 @@ export default function BookingTableView() {
             <input
               type="search"
               aria-label="Search bookings"
-              placeholder="Search by room, guest, country, status..."
+              placeholder="Search by resident, room, bed, email..."
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
 
           <div className="bookings-toolbar__actions">
+            <label className="calendar-date-filter">
+              <span>Status</span>
+              <select
+                aria-label="Filter bookings by status"
+                value={statusFilter}
+                onChange={(event) =>
+                  handleStatusFilterChange(event.target.value)
+                }
+              >
+                <option value="">All</option>
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {formatStatus(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="calendar-date-filter">
+              <span>Start From</span>
+              <input
+                type="date"
+                aria-label="Filter bookings starting from"
+                value={startedAtFrom}
+                onChange={(event) =>
+                  handleStartedAtFromChange(event.target.value)
+                }
+              />
+            </label>
+
+            <label className="calendar-date-filter">
+              <span>Start To</span>
+              <input
+                type="date"
+                aria-label="Filter bookings starting until"
+                value={startedAtTo}
+                onChange={(event) =>
+                  handleStartedAtToChange(event.target.value)
+                }
+              />
+            </label>
+
             <FlexibleButton
               permission="bookings.create"
               className="btn btn-primary"
@@ -215,25 +309,10 @@ export default function BookingTableView() {
               <i className="bi bi-plus-lg" aria-hidden="true" />
               Create New Booking
             </FlexibleButton>
-
-            <button
-              type="button"
-              className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
-            >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Bulk Import
-            </button>
-              <button
-              type="button"
-              className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
-            >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Export Excel
-            </button>
           </div>
         </div>
+
+        {error && <p className="error-text">{error}</p>}
 
         {/* TABLE CARD */}
         <section className="table-card content">
@@ -248,9 +327,7 @@ export default function BookingTableView() {
                       onClick={() => handleSort("booking_id")}
                     >
                       Booking ID
-                      <i className="bi bi-sort-alpha-down" column="booking_id">
-                        {" "}
-                      </i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
                   <th>
@@ -260,15 +337,10 @@ export default function BookingTableView() {
                       onClick={() => handleSort("room")}
                     >
                       Room
-                      <i className="bi bi-sort-alpha-down" column="room">
-                        {" "}
-                      </i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-                  <th>
-                    Bed
-                  </th>
-
+                  <th>Bed</th>
                   <th>
                     <button
                       type="button"
@@ -276,12 +348,9 @@ export default function BookingTableView() {
                       onClick={() => handleSort("guest")}
                     >
                       Guest
-                      <i className="bi bi-sort-alpha-down" column="guest">
-                        {" "}
-                      </i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-
                   <th>
                     <button
                       type="button"
@@ -289,7 +358,7 @@ export default function BookingTableView() {
                       onClick={() => handleSort("gender")}
                     >
                       Gender
-                      <i className="bi bi-sort-alpha-down" column="gender"></i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
                   <th>
@@ -299,7 +368,7 @@ export default function BookingTableView() {
                       onClick={() => handleSort("country")}
                     >
                       Country
-                      <i className="bi bi-sort-alpha-down" column="country"></i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
                   <th>
@@ -309,10 +378,7 @@ export default function BookingTableView() {
                       onClick={() => handleSort("department")}
                     >
                       Department
-                      <i
-                        className="bi bi-sort-alpha-down"
-                        column="department"
-                      ></i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
                   <th>
@@ -322,15 +388,39 @@ export default function BookingTableView() {
                       onClick={() => handleSort("meal_type")}
                     >
                       Meal Type
-                      <i
-                        className="bi bi-sort-alpha-down"
-                        column="meal_type"
-                      ></i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-                  <th>Booked At</th>
-                  <th>Started At</th>
-                  <th>Ended At</th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("booked_at")}
+                    >
+                      Booked At
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("started_at")}
+                    >
+                      Started At
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("ended_at")}
+                    >
+                      Ended At
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
                   <th>
                     <button
                       type="button"
@@ -338,7 +428,7 @@ export default function BookingTableView() {
                       onClick={() => handleSort("status")}
                     >
                       Status
-                      <i className="bi bi-sort-alpha-down" column="status"></i>
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
                   <th>Notes</th>
@@ -347,46 +437,60 @@ export default function BookingTableView() {
               </thead>
 
               <tbody>
-                {pagedBookings.length === 0 ? (
+                {isLoading ? (
                   <tr>
-                    <td colSpan="12" className="muted">
+                    <td colSpan={14} className="muted">
+                      Loading bookings...
+                    </td>
+                  </tr>
+                ) : sortedBookings.length === 0 ? (
+                  <tr>
+                    <td colSpan={14} className="muted">
                       No bookings found.
                     </td>
                   </tr>
                 ) : (
-                  pagedBookings.map((booking, index) => (
-                    <tr key={`${booking.room}-${booking.started_at}-${index}`}>
+                  sortedBookings.map((booking) => (
+                    <tr key={booking.id}>
                       <td>
-                        <strong>{booking.booking_id || "-"}</strong>
+                        <strong>{booking.id || "-"}</strong>
                       </td>
 
                       <td>
-                        <strong>{booking.room || "-"}</strong>
-                      </td>
-                       <td>
-                        <strong>{booking.bed || "-"}</strong>
+                        <strong>{booking.bed?.room?.name || "-"}</strong>
                       </td>
 
-                      <td>{booking.guest?.name || "-"}</td>
+                      <td>{booking.bed?.name || "-"}</td>
 
-                      <td>{booking.guest?.gender || "-"}</td>
+                      <td>{booking.resident?.fullName || "-"}</td>
 
-                      <td>{booking.guest?.country || "-"}</td>
+                      <td>
+                        {GENDER_LABELS[booking.resident?.gender] ??
+                          booking.resident?.gender ??
+                          "-"}
+                      </td>
 
-                      <td>{booking.guest?.dept || "-"}</td>
+                      <td>{booking.resident?.nationality || "-"}</td>
 
-                      <td>{booking.guest?.meal_type || "-"}</td>
-                        <td>{booking.booked_at || "-"}</td>
+                      <td>{booking.resident?.department || "-"}</td>
 
-                      <td>{booking.started_at || "-"}</td>
+                      <td>
+                        {MEAL_TYPE_LABELS[booking.resident?.mealType] ??
+                          booking.resident?.mealType ??
+                          "-"}
+                      </td>
 
-                      <td>{booking.ended_at || "-"}</td>
+                      <td>{formatDate(booking.createdAt)}</td>
+
+                      <td>{formatDate(booking.startedAt)}</td>
+
+                      <td>{formatDate(booking.endedAt)}</td>
 
                       <td>
                         <span
                           className={`booking-status booking-status--${booking.status?.toLowerCase()}`}
                         >
-                          {booking.status || "-"}
+                          {formatStatus(booking.status)}
                         </span>
                       </td>
 
@@ -395,12 +499,8 @@ export default function BookingTableView() {
                       <td>
                         <TableRowActions
                           label="booking"
-                          rowLabel={booking.guest?.name}
-                          onView={() =>
-                            console.log("View booking:", booking)
-                          }
-                          onEdit={() => setEditingRow(booking)}
-                          onDelete={() => setDeletingRow(booking)}
+                          rowLabel={booking.resident?.fullName}
+                          onView={() => setViewingBookingId(booking.id)}
                         />
                       </td>
                     </tr>
@@ -413,30 +513,34 @@ export default function BookingTableView() {
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredBookings.length} bookings
+              Showing {startRow}–{endRow} of {pagination.total} bookings
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
-                onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
+                disabled={isLoading || pagination.page <= 1}
+                onClick={() =>
+                  setCurrentPage((prev) => Math.max(1, prev - 1))
+                }
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
                 Prev
               </button>
 
               <span className="office-page-info">
-                Page {safePage} of {totalPages}
+                Page {pagination.page} of {pagination.totalPages}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={isLoading || pagination.page >= pagination.totalPages}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((prev) =>
+                    Math.min(pagination.totalPages, prev + 1),
+                  )
                 }
               >
                 Next
@@ -448,29 +552,16 @@ export default function BookingTableView() {
       </div>
 
       {isAddModalOpen && (
-        <BookingModal
+        <BookingCreateModal
           onClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleCreateBooking}
+          onCreated={handleBookingCreated}
         />
       )}
 
-      {editingRow && (
-        <BookingModal
-          mode="edit"
-          initialValues={editingRow}
-          onClose={() => setEditingRow(null)}
-          onSubmit={handleEditBooking}
-        />
-      )}
-
-      {deletingRow && (
-        <ConfirmModal
-          title="Delete Booking"
-          message={`Delete the booking for ${deletingRow.guest?.name || "this guest"}? This cannot be undone.`}
-          confirmLabel="Delete"
-          danger
-          onClose={() => setDeletingRow(null)}
-          onConfirm={handleDeleteBooking}
+      {viewingBookingId && (
+        <BookingDetailsModal
+          bookingId={viewingBookingId}
+          onClose={() => setViewingBookingId(null)}
         />
       )}
     </MainLayout>

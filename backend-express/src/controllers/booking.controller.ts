@@ -268,6 +268,7 @@ export async function listBookings(
               phone: true,
               gender: true,
               nationality: true,
+              mealType: true,
               company: true,
               department: true,
               title: true,
@@ -338,6 +339,12 @@ export async function getBookingById(
               select: {
                 email: true,
                 isActive: true,
+              },
+            },
+            site: {
+              select: {
+                id: true,
+                name: true,
               },
             },
           },
