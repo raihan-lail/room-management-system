@@ -153,8 +153,8 @@ export async function listBeds(req: AuthRequest, res: Response) {
         : {}),
     };
 
-    const [beds, total] = await prisma.$transaction([
-      prisma.bed.findMany({
+    const [beds, total] = await prisma.$transaction(async (tx) => {
+      const beds = await tx.bed.findMany({
         where,
         include: {
           bookings: {
@@ -189,9 +189,10 @@ export async function listBeds(req: AuthRequest, res: Response) {
         ],
         skip: (page - 1) * pageSize,
         take: pageSize,
-      }),
-      prisma.bed.count({ where }),
-    ]);
+      });
+      const total = await tx.bed.count({ where });
+      return [beds, total] as const;
+    });
 
     const responseBeds = dateStart ? beds.map((bed) => {
       const activeBooking = bed.bookings[0];

@@ -731,32 +731,30 @@ export async function createBooking(
     }
 
     const result = await prisma.$transaction(async (tx) => {
-      const [resident, bed] = await Promise.all([
-        tx.resident.findFirst({
-          where: {
-            id: residentId,
-            ...getSiteResidentFilter(actor),
-            user: { isActive: true },
-          },
-        }),
-        tx.bed.findFirst({
-          where: {
-            id: bedId,
-            isActive: true,
-            ...getSiteBedFilter(actor),
-            room: {
-              isBookable: true,
-              floor: {
-                location: {
-                  siteId: isGlobalSuperadmin(actor)
-                    ? undefined
-                    : actor.siteId ?? NO_MATCHING_ID,
-                },
+      const resident = await tx.resident.findFirst({
+        where: {
+          id: residentId,
+          ...getSiteResidentFilter(actor),
+          user: { isActive: true },
+        },
+      });
+      const bed = await tx.bed.findFirst({
+        where: {
+          id: bedId,
+          isActive: true,
+          ...getSiteBedFilter(actor),
+          room: {
+            isBookable: true,
+            floor: {
+              location: {
+                siteId: isGlobalSuperadmin(actor)
+                  ? undefined
+                  : actor.siteId ?? NO_MATCHING_ID,
               },
             },
           },
-        }),
-      ]);
+        },
+      });
 
       if (!resident) {
         throw Object.assign(new Error("Resident not found or not accessible."), {
