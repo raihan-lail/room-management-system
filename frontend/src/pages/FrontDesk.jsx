@@ -533,7 +533,7 @@ aria-label={
             />
           </label>
           <button type="button" className="btn btn-neutral" onClick={() => setIsExportModalOpen(true)}>
-            <i className="bi bi-download" aria-hidden="true" /> Export Excel
+             <i className="bi bi-file-earmark-excel" aria-hidden="true" /> Export Excel
           </button>
         
         </div>

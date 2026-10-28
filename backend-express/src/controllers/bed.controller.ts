@@ -91,6 +91,12 @@ export async function listBeds(req: AuthRequest, res: Response) {
         : {}
       : { siteId: actor.siteId ?? NO_MATCHING_ID };
 
+    const dateStatusBookingStatuses: Record<Exclude<BedStatus, "VACANT">, Array<"CONFIRMED" | "IN_HOUSE" | "HOME_LEAVE">> = {
+      BOOKED: ["CONFIRMED"],
+      OCCUPIED: ["IN_HOUSE"],
+      HOME_LEAVE: ["HOME_LEAVE"],
+    };
+
     const where: Prisma.BedWhereInput = {
       ...(!dateStart && statusParam
         ? { status: statusParam as BedStatus }
@@ -99,7 +105,15 @@ export async function listBeds(req: AuthRequest, res: Response) {
         ? { bookings: { none: { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] }, startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } } }
         : {}),
       ...(dateStart && statusParam && statusParam !== "VACANT"
-        ? { bookings: { some: { status: statusParam === "BOOKED" ? "CONFIRMED" : statusParam, startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } } }
+        ? {
+            bookings: {
+              some: {
+                status: { in: dateStatusBookingStatuses[statusParam as Exclude<BedStatus, "VACANT">] },
+                startedAt: { lt: dateEnd! },
+                endedAt: { gt: dateStart },
+              },
+            },
+          }
         : {}),
       ...(roomId ? { roomId } : {}),
       room: {

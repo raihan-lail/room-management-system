@@ -9,16 +9,8 @@ import {
 } from "react";
 
 import useAuth from "../contexts/useAuth";
-import bookingsData from "../data/bookings";
-import { rooms as roomsData } from "../data/room";
-import BookingModal from "./modals/BookingModal";
-
-const initialBookings = Array.isArray(bookingsData)
-    ? bookingsData
-    : [];
-const rooms = Array.isArray(roomsData)
-    ? roomsData
-    : [];
+import apiRequest from "../api/client";
+import BookingCreateModal from "./modals/BookingCreateModal";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -36,9 +28,14 @@ const TOOLTIP_MARGIN = 8;
 
 const BLOCKED_FLASH_MS = 400;
 
+const today = new Date();
+const todayString = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
+const defaultEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 90);
+const defaultEndString = [defaultEndDate.getFullYear(), String(defaultEndDate.getMonth() + 1).padStart(2, "0"), String(defaultEndDate.getDate()).padStart(2, "0")].join("-");
+
 const DEFAULT_SETTINGS = {
-  calendarStart: "2026-09-01",
-  calendarEnd: "2026-10-28",
+  calendarStart: todayString,
+  calendarEnd: defaultEndString,
   viewMode: "CUSTOM",
 };
 
@@ -56,6 +53,8 @@ const STATUS_META = {
   checked_out: { label: "Checked out" },
   no_show: { label: "No show" },
   archived: { label: "Archived" },
+  home_leave: { label: "Home leave" },
+  cancelled: { label: "Cancelled" },
   unknown: { label: "Unknown" },
 };
 
@@ -65,6 +64,7 @@ const STATUS_ORDER = [
   "in_request",
   "checked_out",
   "no_show",
+  "home_leave",
   "archived",
 ];
 
@@ -194,10 +194,50 @@ function bookingOverlaps(
     return false;
   }
 
-  return (
-    start <= calendarEnd &&
-    end >= calendarStart
-  );
+  const calendarExclusiveEnd = new Date(calendarEnd);
+  calendarExclusiveEnd.setUTCDate(calendarExclusiveEnd.getUTCDate() + 1);
+  return start < calendarExclusiveEnd && end > calendarStart;
+}
+
+function toCalendarBooking(booking) {
+  const bed = booking?.bed;
+  const resident = booking?.resident;
+  return {
+    ...booking,
+    bedId: booking?.bedId ?? bed?.id,
+    bed,
+    room: bed?.room?.name ?? "",
+    guest: {
+      name: resident?.fullName ?? "Unknown resident",
+      gender: resident?.gender ?? "",
+      country: resident?.nationality ?? "",
+      site: bed?.room?.floor?.location?.site?.name ?? "",
+      dept: resident?.department ?? "",
+      meal_type: resident?.mealType ?? "",
+      email: resident?.user?.email ?? "",
+      phone: resident?.phone ?? "",
+    },
+    booked_at: booking?.createdAt ? String(booking.createdAt).slice(0, 10) : "",
+    started_at: String(booking?.startedAt ?? "").slice(0, 10),
+    ended_at: String(booking?.endedAt ?? "").slice(0, 10),
+  };
+}
+
+async function loadAllPages(path, pageParam, pageSizeParam, baseParams = {}) {
+  const firstParams = new URLSearchParams(baseParams);
+  firstParams.set(pageParam, "1");
+  firstParams.set(pageSizeParam, "100");
+  const first = await apiRequest(`${path}?${firstParams.toString()}`);
+  const records = Array.isArray(first?.beds) ? first.beds : Array.isArray(first?.data) ? first.data : [];
+  const totalPages = Number(first?.pagination?.totalPages ?? 1);
+  if (totalPages <= 1) return records;
+  const pages = await Promise.all(Array.from({ length: totalPages - 1 }, (_, index) => {
+    const params = new URLSearchParams(baseParams);
+    params.set(pageParam, String(index + 2));
+    params.set(pageSizeParam, "100");
+    return apiRequest(`${path}?${params.toString()}`);
+  }));
+  return records.concat(...pages.map((page) => Array.isArray(page?.beds) ? page.beds : Array.isArray(page?.data) ? page.data : []));
 }
 
 export default function CalendarView() {
@@ -212,10 +252,7 @@ export default function CalendarView() {
   const [tooltipPosition, setTooltipPosition] =
     useState(null);
 
-  const [roomFilter, setRoomFilter] =
-    useState("");
-
-  const [guestFilter, setGuestFilter] =
+  const [search, setSearch] =
     useState("");
 
   const [startDate, setStartDate] =
@@ -241,8 +278,11 @@ export default function CalendarView() {
   const [visibleEnd, setVisibleEnd] =
     useState(null);
 
-  const [bookings, setBookings] =
-    useState(initialBookings);
+  const [bookings, setBookings] = useState([]);
+  const [beds, setBeds] = useState([]);
+  const [isLoadingCalendar, setIsLoadingCalendar] = useState(true);
+  const [calendarError, setCalendarError] = useState("");
+  const [reloadKey, setReloadKey] = useState(0);
 
   const [dragRange, setDragRange] =
     useState(null);
@@ -337,6 +377,52 @@ export default function CalendarView() {
     );
   }, [windowStart, windowEnd]);
 
+  useEffect(() => {
+    let isCurrentRequest = true;
+    const fetchCalendarData = async () => {
+      setIsLoadingCalendar(true);
+      setCalendarError("");
+      try {
+        const searchParams = search.trim() ? { search: search.trim() } : {};
+        const bookingParams = {
+          ...searchParams,
+          overlapStart: `${windowStart}T00:00:00.000Z`,
+          overlapEnd: `${addDays(windowEnd, 1)}T00:00:00.000Z`,
+        };
+        const bedParams = { ...searchParams };
+        const [bedRecords, bookingRecords] = await Promise.all([
+          loadAllPages("/api/bed", "page", "pageSize", bedParams),
+          loadAllPages("/api/booking", "page", "limit", bookingParams),
+        ]);
+        if (!isCurrentRequest) return;
+
+        const normalizedBookings = bookingRecords.map(toCalendarBooking);
+        const bedMap = new Map(bedRecords.map((bed) => [bed.id, bed]));
+        normalizedBookings.forEach((booking) => {
+          if (booking.bed?.id && !bedMap.has(booking.bed.id)) {
+            bedMap.set(booking.bed.id, booking.bed);
+          }
+        });
+        setBeds([...bedMap.values()].filter(
+          (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
+        ));
+        setBookings(normalizedBookings);
+      } catch (error) {
+        if (isCurrentRequest) {
+          setCalendarError(error.message || "Failed to load calendar bookings.");
+          setBeds([]);
+          setBookings([]);
+        }
+      } finally {
+        if (isCurrentRequest) setIsLoadingCalendar(false);
+      }
+    };
+    fetchCalendarData();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [search, windowStart, windowEnd, reloadKey]);
+
   /*
    * Booked days per room (all bookings, not the
    * filtered ones, so text filters can never
@@ -352,10 +438,11 @@ export default function CalendarView() {
     const lastIndex = dates.length - 1;
 
     bookings.forEach((booking) => {
-      const roomName = booking?.room;
+      const roomName = booking?.bedId;
 
       if (
         !roomName ||
+        !["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"].includes(String(booking.status).toUpperCase()) ||
         !bookingOverlaps(
           windowStart,
           windowEnd,
@@ -377,7 +464,7 @@ export default function CalendarView() {
 
       const to = Math.min(
         lastIndex,
-        dayCount(windowStart, end)
+        dayCount(windowStart, end) - 1
       );
 
       if (to < from) return;
@@ -642,102 +729,15 @@ export default function CalendarView() {
    * Filter bookings
    */
   const filteredBookings = useMemo(() => {
-    const roomQuery =
-      roomFilter.trim().toLowerCase();
-
-    const guestQuery =
-      guestFilter.trim().toLowerCase();
-
-    return bookings.filter((booking) => {
-      const roomName = String(
-        booking?.room || ""
-      ).toLowerCase();
-
-      const guestName = String(
-        booking?.guest?.name || ""
-      ).toLowerCase();
-
-      const matchesRoom =
-        !roomQuery ||
-        roomName.includes(roomQuery);
-
-      const matchesGuest =
-        !guestQuery ||
-        guestName.includes(guestQuery);
-
-      const overlaps = bookingOverlaps(
+    return bookings.filter((booking) => bookingOverlaps(
         windowStart,
         windowEnd,
         booking
-      );
+      ));
+  }, [windowStart, windowEnd, bookings]);
 
-      return (
-        matchesRoom &&
-        matchesGuest &&
-        overlaps
-      );
-    });
-  }, [
-    roomFilter,
-    guestFilter,
-    windowStart,
-    windowEnd,
-    bookings,
-  ]);
-
-  /*
-   * Filter rooms
-   */
-  const activeRooms = useMemo(() => {
-    const roomQuery =
-      roomFilter.trim().toLowerCase();
-
-    const guestQuery =
-      guestFilter.trim().toLowerCase();
-
-    /*
-     * No filters:
-     * show every room
-     */
-    if (!roomQuery && !guestQuery) {
-      return rooms;
-    }
-
-    /*
-     * Guest search:
-     * only show rooms containing
-     * matching bookings
-     */
-    const roomsWithBookings = new Set(
-      filteredBookings.map(
-        (booking) => booking.room
-      )
-    );
-
-    return rooms.filter((room) => {
-      const roomName = String(
-        room?.name || ""
-      );
-
-      const matchesRoom =
-        !roomQuery ||
-        roomName
-          .toLowerCase()
-          .includes(roomQuery);
-
-      const hasBookings =
-        roomsWithBookings.has(room.name);
-
-      return (
-        matchesRoom &&
-        (!guestQuery || hasBookings)
-      );
-    });
-  }, [
-    roomFilter,
-    guestFilter,
-    filteredBookings,
-  ]);
+  /* Calendar rows follow beds because bookings reserve beds. */
+  const activeBeds = useMemo(() => beds, [beds]);
 
   /*
    * Calculate booking position
@@ -752,14 +752,14 @@ export default function CalendarView() {
     const calendarStart =
       parseDate(windowStart);
 
-    const calendarEnd =
-      parseDate(windowEnd);
+    const calendarExclusiveEnd =
+      parseDate(addDays(windowEnd, 1));
 
     if (
       !bookingStart ||
       !bookingEnd ||
       !calendarStart ||
-      !calendarEnd
+      !calendarExclusiveEnd
     ) {
       return {
         left: 0,
@@ -776,8 +776,8 @@ export default function CalendarView() {
         : bookingStart;
 
     const effectiveEnd =
-      bookingEnd > calendarEnd
-        ? calendarEnd
+      bookingEnd > calendarExclusiveEnd
+        ? calendarExclusiveEnd
         : bookingEnd;
 
     const left =
@@ -801,8 +801,7 @@ export default function CalendarView() {
   };
 
   const hasActiveFilters = Boolean(
-    roomFilter.trim() ||
-      guestFilter.trim() ||
+    search.trim() ||
       startDate ||
       endDate ||
       calendarStart !== DEFAULT_SETTINGS.calendarStart ||
@@ -811,15 +810,14 @@ export default function CalendarView() {
   );
 
   const clearFilters = () => {
-    setRoomFilter("");
-    setGuestFilter("");
+    setSearch("");
     setStartDate("");
     setEndDate("");
     setCalendarStart(
-      DEFAULT_SETTINGS.calendarStart
+      todayString
     );
     setCalendarEnd(
-      DEFAULT_SETTINGS.calendarEnd
+      defaultEndString
     );
     setViewMode(DEFAULT_SETTINGS.viewMode);
   };
@@ -1037,13 +1035,14 @@ export default function CalendarView() {
     }
 
     setBookingDraft({
-      room: range.start.room,
+      bedId: range.start.room,
+      bed: activeBeds.find((bed) => bed.id === range.start.room),
       started_at:
         startedAt.toISOString().slice(0, 10),
       ended_at:
-        endedAt.toISOString().slice(0, 10),
+        addDays(endedAt.toISOString().slice(0, 10), 1),
     });
-  }, [dates, hasBookedDay]);
+  }, [dates, hasBookedDay, activeBeds]);
 
   useEffect(() => {
     window.addEventListener(
@@ -1107,54 +1106,9 @@ export default function CalendarView() {
     };
   }, [dragScrollDirection, updateDragEndIndex]);
 
-  const handleCreateBooking = (draft) => {
-    setBookings((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        room: draft.room,
-        guest: {
-          name: draft.guest_name || "New Guest",
-          gender: draft.gender ?? "",
-          country: draft.country ?? "",
-          site: draft.site ?? "",
-          dept: draft.dept ?? "",
-          meal_type: draft.meal_type ?? "",
-          email: draft.email ?? "",
-          phone: draft.phone ?? "",
-        },
-        started_at: draft.started_at,
-        ended_at: draft.ended_at,
-        status: draft.status || "IN_REQUEST",
-        notes: draft.notes ?? "",
-      },
-    ]);
-  };
-
-  /*
-   * Draft guard: reject a booking that would
-   * overlap an existing one in the same room
-   */
-  const isDraftBookable = (draft) => {
-    if (!draft?.room) return false;
-
-    const from = dayCount(
-      windowStart,
-      draft.started_at
-    );
-
-    const to = dayCount(
-      windowStart,
-      draft.ended_at
-    );
-
-    if (from < 0 || to < from) return false;
-
-    return !hasBookedDay(
-      draft.room,
-      from,
-      to
-    );
+  const handleCreateBooking = () => {
+    setBookingDraft(null);
+    setReloadKey((value) => value + 1);
   };
 
   return (
@@ -1183,25 +1137,11 @@ export default function CalendarView() {
 
             <input
               type="search"
-              aria-label="Search rooms"
-              placeholder="Search room..."
-              value={roomFilter}
+              aria-label="Search rooms, beds, bookings, and residents"
+              placeholder="Search room, bed, booking, resident..."
+              value={search}
               onChange={(e) =>
-                setRoomFilter(e.target.value)
-              }
-            />
-          </label>
-
-          <label className="history-search">
-           
-
-            <input
-              type="search"
-              aria-label="Search guests"
-              placeholder="Search guest name..."
-              value={guestFilter}
-              onChange={(e) =>
-                setGuestFilter(e.target.value)
+                setSearch(e.target.value)
               }
             />
           </label>
@@ -1375,7 +1315,7 @@ export default function CalendarView() {
         <div className="calendar-header">
 
           <div className="calendar-room-header">
-            Room
+          Room / Bed
           </div>
 
           <div
@@ -1425,35 +1365,36 @@ export default function CalendarView() {
             <div className="calendar-empty">
               Invalid calendar date range.
             </div>
-          ) : activeRooms.length === 0 ? (
+          ) : isLoadingCalendar ? (
+            <div className="calendar-empty">Loading beds and bookings...</div>
+          ) : calendarError ? (
+            <div className="calendar-empty">{calendarError}</div>
+          ) : activeBeds.length === 0 ? (
             <div className="calendar-empty">
-              No rooms match the current filters.
+              No beds match the current search.
             </div>
           ) : (
 
-            activeRooms.map((room) => {
+            activeBeds.map((bed) => {
 
               const roomBookings =
                 filteredBookings.filter(
                   (booking) =>
-                    booking.room ===
-                    room.name
+                    booking.bedId === bed.id
                 );
 
               return (
                 <div
                   className="calendar-row"
                   key={
-                    room.id ||
-                    room.name
+                    bed.id
                   }
                 >
 
                   <div className="calendar-room">
 
-                    <strong>
-                      {room.name}
-                    </strong>
+                    <strong>{bed.room?.name ?? "Room"}</strong>
+                    <small>{bed.name}</small>
 
                  
 
@@ -1470,7 +1411,7 @@ export default function CalendarView() {
 
                     {dates.map((date, index) => {
                       const booked = isDayBooked(
-                        room.name,
+                        bed.id,
                         index
                       );
 
@@ -1489,14 +1430,14 @@ export default function CalendarView() {
                               : ""
                           } ${
                             isCellSelected(
-                              room.name,
+                              bed.id,
                               index
                             )
                               ? "is-selected"
                               : ""
                           } ${
                             blockedCell?.room ===
-                              room.name &&
+                              bed.id &&
                             blockedCell?.index ===
                               index
                               ? "is-blocked"
@@ -1507,7 +1448,7 @@ export default function CalendarView() {
                           }}
                           onMouseDown={(event) =>
                             handleCellMouseDown(
-                              room.name,
+                              bed.id,
                               index,
                               event
                             )
@@ -1535,7 +1476,7 @@ export default function CalendarView() {
                           <div
                             key={
                               booking.id ||
-                              `${room.name}-${booking.started_at}-${index}`
+                              `${bed.id}-${booking.started_at}-${index}`
                             }
                             className={`booking-block booking-${statusClass}`}
                             style={{
@@ -1594,19 +1535,15 @@ export default function CalendarView() {
       />
 
       {bookingDraft && (
-        <BookingModal
-          room={bookingDraft.room}
-          startedAt={bookingDraft.started_at}
-          endedAt={bookingDraft.ended_at}
-          onClose={() => setBookingDraft(null)}
-          onSubmit={(draft) => {
-            if (!isDraftBookable(draft)) {
-              setBookingDraft(null);
-              return;
-            }
-
-            handleCreateBooking(draft);
+        <BookingCreateModal
+          initialValues={{
+            bedId: bookingDraft.bedId,
+            startedAt: bookingDraft.started_at,
+            endedAt: bookingDraft.ended_at,
           }}
+          lockedBed={bookingDraft.bed}
+          onClose={() => setBookingDraft(null)}
+          onCreated={handleCreateBooking}
         />
       )}
     </div>
@@ -1669,10 +1606,14 @@ const BookingTooltip = forwardRef(
         </div>
 
         <div className="booking-tooltip__divider" />
+        <div className="booking-tooltip__row">
+          <span>Booking ID</span>
+          <strong>{booking?.bookingNumber} </strong>
+        </div>
 
         <div className="booking-tooltip__row">
           <span>Room</span>
-          <strong>{booking?.room}</strong>
+          <strong>{booking?.room} / {booking?.bed?.name}</strong>
         </div>
 
         <div className="booking-tooltip__row">

@@ -34,14 +34,14 @@ const EMPTY_NEW_RESIDENT = {
 
 
 
-export default function BookingCreateModal({ onClose, onCreated }) {
+export default function BookingCreateModal({ onClose, onCreated, initialValues, lockedBed }) {
   const { user, hasPermission } = useAuth();
   const canManageResidents = hasPermission("resident.manage");
 
   const [residents, setResidents] = useState([]);
   const [beds, setBeds] = useState([]);
   const [sites, setSites] = useState([]);
-  const [values, setValues] = useState(EMPTY_VALUES);
+  const [values, setValues] = useState(() => ({ ...EMPTY_VALUES, ...initialValues }));
   const [residentMode, setResidentMode] = useState("existing");
   const [newResident, setNewResident] = useState(EMPTY_NEW_RESIDENT);
 
@@ -91,47 +91,53 @@ export default function BookingCreateModal({ onClose, onCreated }) {
   const hasValidStayDates = Boolean(
     values.startedAt && values.endedAt && values.startedAt < values.endedAt,
   );
+  const lockedBedAvailable = beds.some((bed) => bed.id === lockedBed?.id);
 
   useEffect(() => {
-    if (!hasValidStayDates) {
+  if (!hasValidStayDates) {
+    // Defer the state updates to satisfy the linter
+    queueMicrotask(() => {
       setBeds([]);
-      setValues((prev) => ({ ...prev, bedId: "" }));
-      setIsLoadingBeds(false);
-      return undefined;
-    }
-
-    let isCurrentRequest = true;
-    const loadAvailableBeds = async () => {
-      setIsLoadingBeds(true);
-      setError("");
-      try {
-        const params = new URLSearchParams({
-          status: "VACANT",
-          pageSize: "100",
-          startDate: values.startedAt,
-          endDate: values.endedAt,
-        });
-        const response = await apiRequest(`/api/bed?${params.toString()}`);
-        if (!isCurrentRequest) return;
-        const availableBeds = Array.isArray(response?.beds) ? response.beds : [];
-        setBeds(availableBeds.filter(
-          (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
-        ));
-      } catch (err) {
-        if (isCurrentRequest) {
-          setBeds([]);
-          setError(err.message || "Failed to load available beds.");
-        }
-      } finally {
-        if (isCurrentRequest) setIsLoadingBeds(false);
+      if (!lockedBed) {
+        setValues((prev) => ({ ...prev, bedId: "" }));
       }
-    };
+      setIsLoadingBeds(false);
+    });
+    return undefined;
+  }
 
-    loadAvailableBeds();
-    return () => {
-      isCurrentRequest = false;
-    };
-  }, [hasValidStayDates, values.startedAt, values.endedAt]);
+  let isCurrentRequest = true;
+  const loadAvailableBeds = async () => {
+    setIsLoadingBeds(true);
+    setError("");
+    try {
+      const params = new URLSearchParams({
+        status: "VACANT",
+        pageSize: "100",
+        startDate: values.startedAt,
+        endDate: values.endedAt,
+      });
+      const response = await apiRequest(`/api/bed?${params.toString()}`);
+      if (!isCurrentRequest) return;
+      const availableBeds = Array.isArray(response?.beds) ? response.beds : [];
+      setBeds(availableBeds.filter(
+        (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
+      ));
+    } catch (err) {
+      if (isCurrentRequest) {
+        setBeds([]);
+        setError(err.message || "Failed to load available beds.");
+      }
+    } finally {
+      if (isCurrentRequest) setIsLoadingBeds(false);
+    }
+  };
+
+  loadAvailableBeds();
+  return () => {
+    isCurrentRequest = false;
+  };
+}, [hasValidStayDates, values.startedAt, values.endedAt, lockedBed]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -187,7 +193,9 @@ export default function BookingCreateModal({ onClose, onCreated }) {
     setValues((prev) => ({
       ...prev,
       [name]: value,
-      ...(name === "startedAt" || name === "endedAt" ? { bedId: "" } : {}),
+      ...(name === "startedAt" || name === "endedAt"
+        ? { bedId: lockedBed ? prev.bedId : "" }
+        : {}),
     }));
   };
 
@@ -227,6 +235,11 @@ export default function BookingCreateModal({ onClose, onCreated }) {
 
     if (!values.bedId) {
       setError("Select a vacant bed.");
+      return;
+    }
+
+    if (lockedBed && !lockedBedAvailable) {
+      setError("This bed is no longer available for the selected dates.");
       return;
     }
 
@@ -546,6 +559,18 @@ export default function BookingCreateModal({ onClose, onCreated }) {
             <h3 className="modal__section-title">2. Booking Data</h3>
 
             <div className="modal__grid">
+              {lockedBed ? (
+                <>
+                  <label className="form-field">
+                    <span>Room</span>
+                    <input type="text" value={lockedBed.room?.name ?? "Room"} readOnly />
+                  </label>
+                  <label className="form-field">
+                    <span>Bed</span>
+                    <input type="text" value={lockedBed.name} readOnly />
+                  </label>
+                </>
+              ) : null}
               <ModalField
                 field={{
                   name: "startedAt",
@@ -568,25 +593,27 @@ export default function BookingCreateModal({ onClose, onCreated }) {
                 onChange={handleChange}
               />
 
-              <ModalField
-                field={{
-                  name: "bedId",
-                  label: "Vacant Bed",
-                  type: "select",
-                  options: bedOptions,
-                  placeholderOption: !hasValidStayDates
-                    ? "Select stay dates first"
-                    : isLoadingBeds
-                      ? "Loading available beds..."
-                      : "Select a vacant bed",
-                  searchPlaceholder: "Search by room or bed...",
-                  searchable: true,
-                  required: true,
-                }}
-                value={values.bedId}
-                values={values}
-                onChange={handleChange}
-              />
+              {!lockedBed && (
+                <ModalField
+                  field={{
+                    name: "bedId",
+                    label: "Vacant Bed",
+                    type: "select",
+                    options: bedOptions,
+                    placeholderOption: !hasValidStayDates
+                      ? "Select stay dates first"
+                      : isLoadingBeds
+                        ? "Loading available beds..."
+                        : "Select a vacant bed",
+                    searchPlaceholder: "Search by room or bed...",
+                    searchable: true,
+                    required: true,
+                  }}
+                  value={values.bedId}
+                  values={values}
+                  onChange={handleChange}
+                />
+              )}
             </div>
 
             {hasValidStayDates && !isLoadingBeds && beds.length === 0 && (

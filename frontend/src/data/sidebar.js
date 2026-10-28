@@ -42,7 +42,7 @@ export const sidebarMenu = [
     path: "/guests/management",
     icon: "bi-people",
      items: [
-      { label: 'Residents Management', path: '/guests/management', icon: 'bi-door-open', permission: "resident.view" },
+      { label: 'Residents Management', path: '/guests/management', icon: 'bi-person', permission: "resident.view" },
       { label: 'Meal Type', path: '/guests/meal-type', icon: 'bi-fork-knife', permission: "meal-type.read" },
       
        

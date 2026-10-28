@@ -2797,6 +2797,7 @@ textarea,
   z-index: 10;
 
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
 
@@ -2820,6 +2821,16 @@ textarea,
   text-overflow: ellipsis;
 
   max-width: 100%;
+}
+
+.calendar-room small {
+  max-width: 100%;
+  overflow: hidden;
+  color: var(--status-archived-fg);
+  font-size: 10px;
+  line-height: 13px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 
@@ -2981,6 +2992,16 @@ textarea,
   background: var(--status-in_house-border);
 }
 
+.booking-home_leave {
+  background: var(--status-in_house-bg);
+  color: var(--status-in_house-fg);
+  border-color: var(--status-in_house-border);
+}
+
+.booking-home_leave::before {
+  background: var(--status-in_house-border);
+}
+
 .booking-confirmed {
   background: var(--status-confirmed-bg);
   color: var(--status-confirmed-fg);
@@ -3035,6 +3056,17 @@ textarea,
 }
 
 .booking-archived::before {
+  background: var(--status-archived-border);
+}
+
+.booking-cancelled {
+  background: var(--status-archived-bg);
+  color: var(--status-archived-fg);
+  border-color: var(--status-archived-border);
+  border-style: dashed;
+}
+
+.booking-cancelled::before {
   background: var(--status-archived-border);
 }
 

@@ -181,6 +181,17 @@ export async function listBookings(
       };
     }
 
+    if (req.query.overlapStart !== undefined || req.query.overlapEnd !== undefined) {
+      const overlapStart = parseDate(req.query.overlapStart);
+      const overlapEnd = parseDate(req.query.overlapEnd);
+      if (!overlapStart || !overlapEnd || overlapStart >= overlapEnd) {
+        sendError(res, 400, "Valid overlapStart and overlapEnd dates are required.");
+        return;
+      }
+      where.startedAt = { lt: overlapEnd };
+      where.endedAt = { gt: overlapStart };
+    }
+
     if (req.query.residentId) {
       if (typeof req.query.residentId !== "string") {
         sendError(res, 400, "Invalid residentId.");
@@ -204,6 +215,12 @@ export async function listBookings(
         getSiteBookingFilter(actor),
         {
           OR: [
+            {
+              bookingNumber: {
+                contains: search,
+                mode: "insensitive",
+              },
+            },
             {
               resident: {
                 fullName: {
@@ -1557,7 +1574,7 @@ export async function extendBooking(
 
     await notifyActor(req, {
       title:"Booking Extended",
-      message: `Booking ${result.id} for resident ${result.resident.fullName} successfully extended`
+      message: `Booking ${result.bookingNumber} for resident ${result.resident.fullName} successfully extended`
     })
 
     res.status(200).json({
