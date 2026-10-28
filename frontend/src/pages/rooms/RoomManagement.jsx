@@ -12,6 +12,11 @@ import FlexibleButton from "../../components/FlexibleButtons";
 
 
 const PAGE_SIZE = 10;
+const getTodayDate = () => {
+  const today = new Date();
+  const offset = today.getTimezoneOffset();
+  return new Date(today.getTime() - offset * 60_000).toISOString().slice(0, 10);
+};
 
 const VIEW_MODES = [
   { id: "room", label: "Rooms", icon: "bi-door-closed" },
@@ -109,6 +114,7 @@ export default function RoomManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [bedPage, setBedPage] = useState(1);
   const [bedStatus, setBedStatus] = useState("");
+  const [bedDate, setBedDate] = useState(getTodayDate);
   const [viewMode, setViewMode] = useState("room");
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
@@ -181,6 +187,7 @@ export default function RoomManagement() {
         page: String(bedPage),
         pageSize: String(PAGE_SIZE),
         search: search.trim(),
+        date: bedDate,
       });
 
       if (bedStatus) {
@@ -205,7 +212,7 @@ export default function RoomManagement() {
     } finally {
       setLoading(false);
     }
-  }, [bedPage, search, bedStatus]);
+  }, [bedPage, search, bedStatus, bedDate]);
 
   useEffect(() => {
     if (viewMode !== "room") return undefined;
@@ -359,6 +366,11 @@ export default function RoomManagement() {
 
   const handleBedStatusChange = (value) => {
     setBedStatus(value);
+    setBedPage(1);
+  };
+
+  const handleBedDateChange = (value) => {
+    setBedDate(value || getTodayDate());
     setBedPage(1);
   };
 
@@ -559,23 +571,34 @@ export default function RoomManagement() {
           </label>
 
           {viewMode === "bed" && (
-            <label className="calendar-date-filter">
-              <span>Bed Status</span>
-              <select
-                aria-label="Filter beds by status"
-                value={bedStatus}
-                onChange={(event) =>
-                  handleBedStatusChange(event.target.value)
-                }
-              >
-                <option value="">All</option>
-                {BED_STATUSES.map((status) => (
-                  <option key={status.value} value={status.value}>
-                    {status.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <>
+              <label className="calendar-date-filter">
+                <span>Date</span>
+                <input
+                  type="date"
+                  aria-label="View bed status for date"
+                  value={bedDate}
+                  onChange={(event) => handleBedDateChange(event.target.value)}
+                />
+              </label>
+              <label className="calendar-date-filter">
+                <span>Status</span>
+                <select
+                  aria-label="Filter beds by status"
+                  value={bedStatus}
+                  onChange={(event) =>
+                    handleBedStatusChange(event.target.value)
+                  }
+                >
+                  <option value="">All</option>
+                  {BED_STATUSES.map((status) => (
+                    <option key={status.value} value={status.value}>
+                      {status.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </>
           )}
 
           <div className="bookings-toolbar__actions">

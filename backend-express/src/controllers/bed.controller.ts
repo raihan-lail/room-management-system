@@ -43,6 +43,9 @@ export async function listBeds(req: AuthRequest, res: Response) {
     const locationId = singleParam(req.query.locationId);
     const requestedSiteId = singleParam(req.query.siteId);
     const statusParam = singleParam(req.query.status)?.toUpperCase();
+    const dateParam = singleParam(req.query.date);
+    const startDateParam = singleParam(req.query.startDate);
+    const endDateParam = singleParam(req.query.endDate);
 
     if (
       statusParam &&
@@ -54,6 +57,33 @@ export async function listBeds(req: AuthRequest, res: Response) {
       });
     }
 
+    let dateStart: Date | undefined;
+    let dateEnd: Date | undefined;
+    const parseDay = (value: string) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
+      const parsed = new Date(`${value}T00:00:00.000Z`);
+      return !Number.isNaN(parsed.getTime()) && parsed.toISOString().slice(0, 10) === value
+        ? parsed
+        : undefined;
+    };
+    if (Boolean(startDateParam) !== Boolean(endDateParam) || (dateParam && startDateParam)) {
+      return res.status(400).json({ message: "Provide date or both startDate and endDate." });
+    }
+    if (startDateParam && endDateParam) {
+      dateStart = parseDay(startDateParam);
+      const requestedEnd = parseDay(endDateParam);
+      if (!dateStart || !requestedEnd || requestedEnd <= dateStart) {
+        return res.status(400).json({ message: "Invalid date range. endDate must be after startDate." });
+      }
+      dateEnd = requestedEnd;
+    } else if (dateParam) {
+      dateStart = parseDay(dateParam);
+      if (!dateStart) {
+        return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." });
+      }
+      dateEnd = new Date(dateStart.getTime() + 24 * 60 * 60 * 1000);
+    }
+
     // Non-global employees are always scoped to their own site.
     const siteFilter = isGlobalSuperadmin(actor)
       ? requestedSiteId
@@ -62,8 +92,14 @@ export async function listBeds(req: AuthRequest, res: Response) {
       : { siteId: actor.siteId ?? NO_MATCHING_ID };
 
     const where: Prisma.BedWhereInput = {
-      ...(statusParam
+      ...(!dateStart && statusParam
         ? { status: statusParam as BedStatus }
+        : {}),
+      ...(dateStart && statusParam === "VACANT"
+        ? { bookings: { none: { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] }, startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } } }
+        : {}),
+      ...(dateStart && statusParam && statusParam !== "VACANT"
+        ? { bookings: { some: { status: statusParam === "BOOKED" ? "CONFIRMED" : statusParam, startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } } }
         : {}),
       ...(roomId ? { roomId } : {}),
       room: {
@@ -108,7 +144,10 @@ export async function listBeds(req: AuthRequest, res: Response) {
         where,
         include: {
           bookings: {
-            where: { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] } },
+            where: {
+              status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
+              ...(dateStart ? { startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } : {}),
+            },
             orderBy: { startedAt: "desc" },
             take: 1,
             include: {
@@ -140,8 +179,20 @@ export async function listBeds(req: AuthRequest, res: Response) {
       prisma.bed.count({ where }),
     ]);
 
+    const responseBeds = dateStart ? beds.map((bed) => {
+      const activeBooking = bed.bookings[0];
+      const status: BedStatus = !activeBooking
+        ? "VACANT"
+        : activeBooking.status === "IN_HOUSE"
+          ? "OCCUPIED"
+          : activeBooking.status === "HOME_LEAVE"
+            ? "HOME_LEAVE"
+            : "BOOKED";
+      return { ...bed, status };
+    }) : beds;
+
     return res.json({
-      beds,
+      beds: responseBeds,
       pagination: {
         page,
         pageSize,
