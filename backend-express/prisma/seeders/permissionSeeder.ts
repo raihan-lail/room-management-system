@@ -15,7 +15,11 @@ const permissions = [
   // Sites
   {
     name: "site.read",
-    description: "view sites",
+    description: "fetch sites data",
+  },
+  {
+    name: "site.view",
+    description: "view sites page"
   },
   {
     name: "site.manage",
@@ -24,7 +28,11 @@ const permissions = [
   // Locations & floors
   {
     name: "location.read",
-    description: "view locations and floors",
+    description: "fetch location data",
+  },
+  {
+    name: "location.view",
+    description: "view locations and floors page",
   },
   {
     name: "location.manage",
@@ -33,7 +41,11 @@ const permissions = [
   // Roles
   {
     name: "roles.read",
-    description: "view roles",
+    description: "fetch roles data",
+  },
+  {
+    name: "roles.view",
+    description: "view roles page",
   },
   {
     name: "roles.manage",
@@ -42,7 +54,11 @@ const permissions = [
   // Permissions assignment
   {
     name: "permissions.read",
-    description: "view permission assignments",
+    description: "read permissions page",
+  },
+  {
+    name: "permissions.view",
+    description: "view permission assignments page",
   },
   {
     name: "permissions.manage",
@@ -51,7 +67,11 @@ const permissions = [
   // Employees
   {
     name: "employees.read",
-    description: "view employees",
+    description: "fetch employees data",
+  },
+  {
+    name: "employees.view",
+    description: "view employees page",
   },
   {
     name: "employees.create",
@@ -84,7 +104,7 @@ const permissions = [
   },
   {
     name: "bookings.read",
-    description: "View bookings",
+    description: "fetch bookings data bookings",
   },
   {
     name: "bookings.create",
@@ -108,6 +128,10 @@ const permissions = [
   },
   {
     name: "rooms.read",
+    description: "read rooms data",
+  },
+   {
+    name: "rooms.view",
     description: "View rooms",
   },
   {
@@ -124,7 +148,11 @@ const permissions = [
   },
   {
     name: "resident.view",
-    description: "view residents",
+    description: "view residents page",
+  },
+  {
+    name: "resident.read",
+    description: "fetch residents data",
   },
   {
     name: "resident.manage",
