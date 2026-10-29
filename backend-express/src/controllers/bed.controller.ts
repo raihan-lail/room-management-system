@@ -59,6 +59,7 @@ export async function listBeds(req: AuthRequest, res: Response) {
 
     let dateStart: Date | undefined;
     let dateEnd: Date | undefined;
+    const isSingleDateStatusQuery = Boolean(dateParam);
     const parseDay = (value: string) => {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return undefined;
       const parsed = new Date(`${value}T00:00:00.000Z`);
@@ -96,21 +97,49 @@ export async function listBeds(req: AuthRequest, res: Response) {
       OCCUPIED: ["IN_HOUSE"],
       HOME_LEAVE: ["HOME_LEAVE"],
     };
+    const occupiedOnDate: Prisma.BookingWhereInput = {
+      status: { in: ["IN_HOUSE", "HOME_LEAVE"] },
+      startedAt: { lt: dateEnd! },
+      endedAt: { gt: dateStart! },
+    };
+    // A confirmed bed is BOOKED from its booking date through its start date.
+    const bookedBeforeArrival: Prisma.BookingWhereInput = {
+      status: "CONFIRMED",
+      createdAt: { lt: dateEnd! },
+      startedAt: { gte: dateStart! },
+    };
+    const singleDateBookingFilter: Prisma.BookingWhereInput = {
+      OR: [occupiedOnDate, bookedBeforeArrival],
+    };
 
     const where: Prisma.BedWhereInput = {
       ...(!dateStart && statusParam
         ? { status: statusParam as BedStatus }
         : {}),
       ...(dateStart && statusParam === "VACANT"
-        ? { bookings: { none: { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] }, startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } } }
+        ? {
+            bookings: {
+              none: isSingleDateStatusQuery
+                ? singleDateBookingFilter
+                : {
+                    status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
+                    startedAt: { lt: dateEnd! },
+                    endedAt: { gt: dateStart },
+                  },
+            },
+          }
         : {}),
       ...(dateStart && statusParam && statusParam !== "VACANT"
         ? {
             bookings: {
               some: {
-                status: { in: dateStatusBookingStatuses[statusParam as Exclude<BedStatus, "VACANT">] },
-                startedAt: { lt: dateEnd! },
-                endedAt: { gt: dateStart },
+                ...(isSingleDateStatusQuery && statusParam === "BOOKED"
+                  ? bookedBeforeArrival
+                  : {
+                      status: { in: dateStatusBookingStatuses[statusParam as Exclude<BedStatus, "VACANT">] },
+                      startedAt: { lt: dateEnd! },
+                      endedAt: { gt: dateStart },
+                    }),
               },
             },
           }
@@ -153,16 +182,19 @@ export async function listBeds(req: AuthRequest, res: Response) {
         : {}),
     };
 
-    const [beds, total] = await prisma.$transaction(async (tx) => {
-      const beds = await tx.bed.findMany({
+    const beds = await prisma.bed.findMany({
         where,
         include: {
           bookings: {
             where: {
-              status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
-              ...(dateStart ? { startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } : {}),
+              ...(isSingleDateStatusQuery
+                ? singleDateBookingFilter
+                : {
+                    status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
+                    ...(dateStart ? { startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } : {}),
+                  }),
             },
-            orderBy: { startedAt: "desc" },
+            orderBy: { startedAt: isSingleDateStatusQuery ? "asc" : "desc" },
             take: 1,
             include: {
               resident: { include: { user: { select: { email: true } } } },
@@ -189,20 +221,21 @@ export async function listBeds(req: AuthRequest, res: Response) {
         ],
         skip: (page - 1) * pageSize,
         take: pageSize,
-      });
-      const total = await tx.bed.count({ where });
-      return [beds, total] as const;
     });
+    const total = await prisma.bed.count({ where });
 
     const responseBeds = dateStart ? beds.map((bed) => {
-      const activeBooking = bed.bookings[0];
-      const status: BedStatus = !activeBooking
-        ? "VACANT"
-        : activeBooking.status === "IN_HOUSE"
-          ? "OCCUPIED"
-          : activeBooking.status === "HOME_LEAVE"
-            ? "HOME_LEAVE"
-            : "BOOKED";
+      const activeStay = bed.bookings.find((booking) =>
+        booking.status === "IN_HOUSE" || booking.status === "HOME_LEAVE",
+      );
+      const confirmedUpcoming = bed.bookings.find((booking) => booking.status === "CONFIRMED");
+      const status: BedStatus = activeStay?.status === "IN_HOUSE"
+        ? "OCCUPIED"
+        : activeStay?.status === "HOME_LEAVE"
+          ? "HOME_LEAVE"
+          : confirmedUpcoming
+            ? "BOOKED"
+            : "VACANT";
       return { ...bed, status };
     }) : beds;
 

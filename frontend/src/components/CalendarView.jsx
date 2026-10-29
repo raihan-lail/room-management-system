@@ -729,11 +729,15 @@ export default function CalendarView() {
    * Filter bookings
    */
   const filteredBookings = useMemo(() => {
-    return bookings.filter((booking) => bookingOverlaps(
-        windowStart,
-        windowEnd,
-        booking
-      ));
+    return bookings.filter(
+      (booking) =>
+        String(booking.status).toUpperCase() !== "CANCELLED" &&
+        bookingOverlaps(
+          windowStart,
+          windowEnd,
+          booking
+        )
+    );
   }, [windowStart, windowEnd, bookings]);
 
   /* Calendar rows follow beds because bookings reserve beds. */

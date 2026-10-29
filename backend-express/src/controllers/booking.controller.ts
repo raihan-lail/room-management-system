@@ -91,7 +91,7 @@ export async function listBookings(
       switch (tab as BookingTab) {
         case "arrival":
           where.status = BookingStatus.CONFIRMED;
-          where.startedAt = { gte: start, lt: end };
+          where.startedAt = { lt: end };
           break;
 
         case "in-house":
@@ -445,7 +445,7 @@ export async function exportBookingsToExcel(
       const { start, end } = frontdeskRange;
       switch (frontdeskTab) {
         case "arrival":
-          tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { gte: start, lt: end } });
+          tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { lt: end } });
           break;
         case "in-house":
           tabFilters.push({ status: { in: IN_HOUSE_STATUSES } });
@@ -588,7 +588,7 @@ export async function exportBookingsToExcel(
       Company: booking.resident.company ?? "",
       Department: booking.resident.department,
       Title: booking.resident.title ?? "",
-      "Started At": booking.startedAt.toISOString(),
+      "Started At": booking.startedAt,
       "Ended At": booking.endedAt.toISOString(),
     }));
 

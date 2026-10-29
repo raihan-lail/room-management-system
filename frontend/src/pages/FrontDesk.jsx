@@ -134,6 +134,7 @@ export default function FrontDesk() {
   const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
+  const [cancellingBooking, setCancellingBooking] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
@@ -826,7 +827,10 @@ aria-label={
 
                           <td>
                             {segment === "arrival" ? (
-                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-in")}>Check In</FlexibleButton>
+                              <div className="table-actions">
+                                <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-in")}>Check In</FlexibleButton>
+                                <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => setCancellingBooking(booking)}>Cancel Booking</FlexibleButton>
+                              </div>
                             ) : segment === "near-end" ? (
                               <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setExtendingRow(booking); setExtensionDate(""); }}>Extend</FlexibleButton>
                             ) : segment === "departure" ? (
@@ -911,6 +915,20 @@ aria-label={
           danger
           onClose={() => setDeletingRow(null)}
           onConfirm={handleDeleteRow}
+        />
+      )}
+
+      {cancellingBooking && (
+        <ConfirmModal
+          title="Cancel booking"
+          message={`Cancel the booking for ${cancellingBooking.guest?.name || "this resident"}?`}
+          confirmLabel="Cancel Booking"
+          danger
+          onClose={() => setCancellingBooking(null)}
+          onConfirm={() => {
+            performBookingAction(cancellingBooking, "cancel");
+            setCancellingBooking(null);
+          }}
         />
       )}
 
