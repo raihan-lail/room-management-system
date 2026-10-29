@@ -1669,6 +1669,13 @@ const BookingTooltip = forwardRef(
           </strong>
         </div>
 
+        <div className="booking-tooltip__row">
+          <span>Duration</span>
+          <strong>
+            {dayCount(booking?.started_at, booking?.ended_at)} days
+          </strong>
+        </div>
+
         {booking?.notes && (
           <>
             <div className="booking-tooltip__divider" />

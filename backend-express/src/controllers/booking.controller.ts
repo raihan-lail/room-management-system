@@ -1264,7 +1264,7 @@ export async function startHomeLeave(
 
     await notifyActor(req, {
       title:" Resident started home leave",
-      message: `Resident with booking id ${result.bookingId} started home leave`
+      message: `Resident with booking id ${result.homeLeave.bookingId} started home leave`
     })
 
     res.status(201).json({
@@ -1393,7 +1393,7 @@ export async function returnFromHomeLeave(
 
     await notifyActor(req, {
       title:"Resident returned from home leave",
-      message:`Resident ${result.resident.fullName} with booking id ${result.id} returned from home leave`,
+      message:`Resident ${result.resident.fullName} with booking id ${result.bookingNumber} returned from home leave`,
     })
 
     res.status(200).json({

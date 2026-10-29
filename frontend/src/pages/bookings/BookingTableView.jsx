@@ -44,6 +44,7 @@ const SORT_GETTERS = {
   booked_at: (booking) => booking.createdAt,
   started_at: (booking) => booking.startedAt,
   ended_at: (booking) => booking.endedAt,
+  duration: (booking) => bookingDuration(booking.startedAt, booking.endedAt),
   status: (booking) => booking.status,
   notes: (booking) => booking.notes,
 };
@@ -56,6 +57,19 @@ function formatDate(value) {
   if (Number.isNaN(date.getTime())) return String(value);
 
   return date.toISOString().slice(0, 10);
+}
+
+function bookingDuration(startedAt, endedAt) {
+  const start = startedAt ? Date.parse(`${String(startedAt).slice(0, 10)}T00:00:00Z`) : NaN;
+  const end = endedAt ? Date.parse(`${String(endedAt).slice(0, 10)}T00:00:00Z`) : NaN;
+
+  if (!Number.isFinite(start) || !Number.isFinite(end) || end < start) return null;
+  return Math.round((end - start) / 86400000);
+}
+
+function formatDuration(startedAt, endedAt) {
+  const duration = bookingDuration(startedAt, endedAt);
+  return duration === null ? "-" : `${duration} days`;
 }
 
 function formatStatus(status) {
@@ -192,6 +206,12 @@ export default function BookingTableView() {
     if (!getValue) return bookings;
 
     return [...bookings].sort((a, b) => {
+      if (sortConfig.key === "duration") {
+        const aDuration = getValue(a) ?? -1;
+        const bDuration = getValue(b) ?? -1;
+        return (aDuration - bDuration) * (sortConfig.direction === "asc" ? 1 : -1);
+      }
+
       const aValue = (getValue(a) ?? "").toString().toLowerCase();
       const bValue = (getValue(b) ?? "").toString().toLowerCase();
 
@@ -455,6 +475,16 @@ export default function BookingTableView() {
                     <button
                       type="button"
                       className="table-sort"
+                      onClick={() => handleSort("duration")}
+                    >
+                      Duration
+                      <i className="bi bi-sort-numeric-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
                       onClick={() => handleSort("status")}
                     >
                       Status
@@ -469,13 +499,13 @@ export default function BookingTableView() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={14} className="muted">
+                    <td colSpan={15} className="muted">
                       Loading bookings...
                     </td>
                   </tr>
                 ) : sortedBookings.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="muted">
+                    <td colSpan={15} className="muted">
                       No bookings found.
                     </td>
                   </tr>
@@ -515,6 +545,8 @@ export default function BookingTableView() {
                       <td>{formatDate(booking.startedAt)}</td>
 
                       <td>{formatDate(booking.endedAt)}</td>
+
+                      <td>{formatDuration(booking.startedAt, booking.endedAt)}</td>
 
                       <td>
                         <span
