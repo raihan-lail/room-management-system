@@ -683,8 +683,8 @@ export async function exportBookingsToExcel(
       Company: booking.resident.company ?? "",
       Department: booking.resident.department,
       Title: booking.resident.title ?? "",
-      "Started At": booking.startedAt,
-      "Ended At": booking.endedAt.toISOString(),
+      "Started At": booking.startedAt.toDateString(),
+      "Ended At": booking.endedAt.toDateString(),
     }));
 
     const workbook = XLSX.utils.book_new();
