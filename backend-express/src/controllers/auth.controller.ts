@@ -6,6 +6,8 @@ import { generateAccessToken } from "../lib/jwt.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildAuthUser } from "../helpers/auth.helper.js";
+import { authenticate } from "../middleware/auth.middleware.js";
+
 
 
 export async function login(
@@ -288,6 +290,98 @@ export async function me(
   } catch {
     res.status(401).json({
       message: "Invalid or expired token",
+    });
+  }
+}
+
+export async function changePassword(
+  req: Request,
+  res: Response
+): Promise<void> {
+  if (!req.userId) {
+    res.status(401).json({
+      message: "Authentication required.",
+    });
+    return;
+  }
+
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+
+  if (
+    typeof currentPassword !== "string" ||
+    typeof newPassword !== "string" ||
+    typeof confirmPassword !== "string"
+  ) {
+    res.status(400).json({
+      message: "All password fields are required.",
+    });
+    return;
+  }
+
+  if (newPassword !== confirmPassword) {
+    res.status(400).json({
+      message: "New password confirmation does not match.",
+    });
+    return;
+  }
+
+  if (newPassword.length < 12 || Buffer.byteLength(newPassword, "utf8") > 1024) {
+    res.status(400).json({
+      message: "Password must be at least 8 characters and within the allowed length.",
+    });
+    return;
+  }
+
+  if (currentPassword === newPassword) {
+    res.status(400).json({
+      message: "New password must differ from the current password.",
+    });
+    return;
+  }
+
+  try {
+    const user = await prisma.user.findUnique({
+      where: { id: req.userId },
+      select: {
+        id: true,
+        password: true,
+        isActive: true,
+      },
+    });
+
+    if (!user || !user.isActive) {
+      res.status(403).json({
+        message: "Active account required.",
+      });
+      return;
+    }
+
+    const isCurrentPasswordValid = await argon2.verify(
+      user.password,
+      currentPassword
+    );
+
+    if (!isCurrentPasswordValid) {
+      res.status(400).json({
+        message: "Current password is incorrect.",
+      });
+      return;
+    }
+
+    const hashedPassword = await argon2.hash(newPassword);
+
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { password: hashedPassword },
+    });
+
+    res.status(200).json({
+      message: "Password changed successfully.",
+    });
+  } catch (error) {
+    console.error("Change password error:", error);
+    res.status(500).json({
+      message: "Failed to change password.",
     });
   }
 }

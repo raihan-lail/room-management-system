@@ -1,11 +1,12 @@
 import { useState } from "react";
 import MainLayout from "../components/MainLayout";
+import apiRequest from "../api/client";
 
 const PASSWORD_RULES = [
   {
     id: "length",
-    label: "At least 8 characters",
-    test: (value) => value.length >= 8,
+    label: "At least 12 characters",
+    test: (value) => value.length >= 12,
   },
   {
     id: "uppercase",
@@ -39,6 +40,7 @@ export default function ChangePassword() {
 
   const [errors, setErrors] = useState({});
   const [isDone, setIsDone] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const ruleResults = PASSWORD_RULES.map((rule) => ({
     ...rule,
@@ -64,8 +66,10 @@ export default function ChangePassword() {
     setErrors({});
   };
 
-  const handleSubmit = (event) => {
+  const handleSubmit = async (event) => {
     event.preventDefault();
+
+    if (isSubmitting) return;
 
     const nextErrors = {};
 
@@ -89,9 +93,27 @@ export default function ChangePassword() {
 
     setErrors(nextErrors);
 
-    if (Object.keys(nextErrors).length === 0) {
-      // Add your auth/API logic here if needed
+    if (Object.keys(nextErrors).length > 0) return;
+
+    setIsSubmitting(true);
+
+    try {
+      await apiRequest("/api/auth/change-password", {
+        method: "POST",
+        body: JSON.stringify({
+          currentPassword: values.current,
+          newPassword: values.new,
+          confirmPassword: values.confirm,
+        }),
+      });
+
+      setValues({ current: "", new: "", confirm: "" });
+      setVisible({ current: false, new: false, confirm: false });
       setIsDone(true);
+    } catch (error) {
+      setErrors({ form: error.message || "Failed to change password." });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -239,10 +261,15 @@ export default function ChangePassword() {
                 <button
                   type="submit"
                   className="btn btn-primary"
-                  disabled={!values.current || !isNewValid || !values.confirm}
+                  disabled={
+                    isSubmitting ||
+                    !values.current ||
+                    !isNewValid ||
+                    !values.confirm
+                  }
                 >
                   <i className="bi bi-check-lg" aria-hidden="true" />
-                  Update Password
+                  {isSubmitting ? "Updating..." : "Update Password"}
                 </button>
               </div>
             </form>
