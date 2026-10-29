@@ -1438,10 +1438,29 @@ export async function listHomeLeaves(
         ? req.query.search.trim()
         : "";
     const status = req.query.status;
+    const startedAtFrom = typeof req.query.startedAtFrom === "string" ? req.query.startedAtFrom : "";
+    const startedAtTo = typeof req.query.startedAtTo === "string" ? req.query.startedAtTo : "";
 
     const where: Prisma.HomeLeaveWhereInput = {
       booking: getSiteBookingFilter(actor),
     };
+
+    const fromRange = startedAtFrom ? getSiteDateRange(startedAtFrom) : null;
+    const toRange = startedAtTo ? getSiteDateRange(startedAtTo) : null;
+    if ((startedAtFrom && !fromRange) || (startedAtTo && !toRange)) {
+      sendError(res, 400, "Invalid home leave date filter. Use YYYY-MM-DD.");
+      return;
+    }
+    if (fromRange && toRange && fromRange.start > toRange.start) {
+      sendError(res, 400, "Start date must be on or before end date.");
+      return;
+    }
+    if (fromRange || toRange) {
+      where.startedAt = toRange ? { lt: toRange.end } : undefined;
+      where.AND = [
+        ...(fromRange ? [{ OR: [{ returnedAt: null }, { returnedAt: { gte: fromRange.start } }] } as Prisma.HomeLeaveWhereInput] : []),
+      ];
+    }
 
     if (status !== undefined) {
       if (
@@ -1524,6 +1543,101 @@ export async function listHomeLeaves(
   } catch (error) {
     console.error("List home leaves error:", error);
     sendError(res, 500, "Failed to retrieve home leaves.");
+  }
+}
+
+export async function exportHomeLeavesToExcel(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const getParam = (name: string) => typeof req.query[name] === "string" ? (req.query[name] as string).trim() : "";
+    const startedAtFrom = getParam("startedAtFrom");
+    const startedAtTo = getParam("startedAtTo");
+    const fromRange = startedAtFrom ? getSiteDateRange(startedAtFrom) : null;
+    const toRange = startedAtTo ? getSiteDateRange(startedAtTo) : null;
+    if ((startedAtFrom && !fromRange) || (startedAtTo && !toRange)) {
+      sendError(res, 400, "Invalid home leave date filter. Use YYYY-MM-DD.");
+      return;
+    }
+    if (fromRange && toRange && fromRange.start > toRange.start) {
+      sendError(res, 400, "Start date must be on or before end date.");
+      return;
+    }
+
+    const status = getParam("status");
+    if (status && !Object.values(HomeLeaveStatus).includes(status as HomeLeaveStatus)) {
+      sendError(res, 400, "Invalid home leave status.");
+      return;
+    }
+    const search = getParam("search");
+    const where: Prisma.HomeLeaveWhereInput = {
+      booking: getSiteBookingFilter(actor),
+      ...(status ? { status: status as HomeLeaveStatus } : {}),
+      ...(toRange ? { startedAt: { lt: toRange.end } } : {}),
+      ...(fromRange ? { OR: [{ returnedAt: null }, { returnedAt: { gte: fromRange.start } }] } : {}),
+      ...(search ? { OR: [
+        { reason: { contains: search, mode: "insensitive" } },
+        { booking: { bookingNumber: { contains: search, mode: "insensitive" } } },
+        { booking: { resident: { fullName: { contains: search, mode: "insensitive" } } } },
+        { booking: { bed: { room: { name: { contains: search, mode: "insensitive" } } } } },
+      ] } : {}),
+    };
+
+    // Keep date overlap and text search as separate AND conditions when both are supplied.
+    if (fromRange && search) {
+      where.AND = [
+        { OR: [{ returnedAt: null }, { returnedAt: { gte: fromRange.start } }] },
+        { OR: [
+          { reason: { contains: search, mode: "insensitive" } },
+          { booking: { bookingNumber: { contains: search, mode: "insensitive" } } },
+          { booking: { resident: { fullName: { contains: search, mode: "insensitive" } } } },
+          { booking: { bed: { room: { name: { contains: search, mode: "insensitive" } } } } },
+        ] },
+      ];
+      delete where.OR;
+    }
+
+    const homeLeaves = await prisma.homeLeave.findMany({
+      where,
+      orderBy: { startedAt: "desc" },
+      include: { booking: { include: { resident: true, bed: { include: { room: true } } } } },
+    });
+    if (homeLeaves.length === 0) {
+      sendError(res, 400, "No home leaves match the selected filters. Nothing to export.");
+      return;
+    }
+
+    const rows = homeLeaves.map(({ booking, ...leave }) => ({
+      "Booking ID": booking.bookingNumber,
+      "Resident Name": booking.resident.fullName,
+      Room: booking.bed.room.name,
+      Bed: booking.bed.name,
+      "Leave Started": leave.startedAt.toDateString(),
+      "Expected Return": leave.expectedReturnAt.toDateString(),
+      "Returned At": leave.returnedAt?.toDateString() ?? "",
+      Reason: leave.reason ?? "",
+      Status: leave.status,
+    }));
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [20, 28, 20, 18, 20, 20, 20, 32, 16].map((wch) => ({ wch }));
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Home Leaves");
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const filename = `home-leaves-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    await notifyActor(req, { title: "Home leave data export successfully", message: `${homeLeaves.length} home leaves exported successfully`, type: "SUCCESS" });
+    await auditActor(req, actor, { action: "Export", resource: "home_leave", description: `Exported ${homeLeaves.length} home leaves to an Excel file.` });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Export home leaves error:", error);
+    if (!res.headersSent) sendError(res, 500, "Failed to export home leaves.");
   }
 }
 

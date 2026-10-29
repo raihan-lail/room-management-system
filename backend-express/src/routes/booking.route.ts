@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
-import { archiveBooking, cancelBooking, checkInBooking, checkOutBooking, createBooking, extendBooking, exportBookingsToExcel, getBookingById, listBookings, listHomeLeaves, returnFromHomeLeave, startHomeLeave, updateBooking } from "../controllers/booking.controller";
+import { archiveBooking, cancelBooking, checkInBooking, checkOutBooking, createBooking, extendBooking, exportBookingsToExcel, exportHomeLeavesToExcel, getBookingById, listBookings, listHomeLeaves, returnFromHomeLeave, startHomeLeave, updateBooking } from "../controllers/booking.controller";
 
 const bookingRouter = Router();
 
@@ -9,6 +9,7 @@ bookingRouter.use(authenticate)
 
 bookingRouter.get("/", requirePermission("bookings.read"), listBookings);
 bookingRouter.get("/export", requirePermission("bookings.export"), exportBookingsToExcel);
+bookingRouter.get("/home-leaves/export", requirePermission("home.leaves"), exportHomeLeavesToExcel);
 bookingRouter.get("/home-leaves", requirePermission("home.leaves"), listHomeLeaves);
 bookingRouter.get("/:id", requirePermission("bookings.read"), getBookingById );
 bookingRouter.patch("/:id", requirePermission("bookings.create"), updateBooking);

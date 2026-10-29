@@ -1,6 +1,8 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import apiRequest from "../../api/client";
+import ExportModal from "../../components/modals/ExportModal";
+import FlexibleButton from "../../components/FlexibleButtons";
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +29,9 @@ export default function HomeLeave() {
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [startedAtFrom, setStartedAtFrom] = useState("");
+  const [startedAtTo, setStartedAtTo] = useState("");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -45,6 +50,8 @@ export default function HomeLeave() {
 
       if (search.trim()) params.set("search", search.trim());
       if (statusFilter) params.set("status", statusFilter);
+      if (startedAtFrom) params.set("startedAtFrom", startedAtFrom);
+      if (startedAtTo) params.set("startedAtTo", startedAtTo);
 
       const response = await apiRequest(`/api/booking/home-leaves?${params.toString()}`);
       const total = Number(response?.pagination?.total ?? 0);
@@ -64,7 +71,7 @@ export default function HomeLeave() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search, statusFilter]);
+  }, [currentPage, search, statusFilter, startedAtFrom, startedAtTo]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -90,6 +97,11 @@ export default function HomeLeave() {
 
   const handleStatusChange = (value) => {
     setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handleDateChange = (setter, value) => {
+    setter(value);
     setCurrentPage(1);
   };
 
@@ -196,6 +208,24 @@ export default function HomeLeave() {
 
           <div className="bookings-toolbar__actions">
             <label className="calendar-date-filter">
+              <span>Leave From</span>
+              <input
+                type="date"
+                aria-label="Filter home leaves from date"
+                value={startedAtFrom}
+                onChange={(event) => handleDateChange(setStartedAtFrom, event.target.value)}
+              />
+            </label>
+            <label className="calendar-date-filter">
+              <span>Leave To</span>
+              <input
+                type="date"
+                aria-label="Filter home leaves through date"
+                value={startedAtTo}
+                onChange={(event) => handleDateChange(setStartedAtTo, event.target.value)}
+              />
+            </label>
+            <label className="calendar-date-filter">
               <span>Status</span>
               <select
                 aria-label="Filter home leaves by status"
@@ -209,6 +239,14 @@ export default function HomeLeave() {
                 ))}
               </select>
             </label>
+            <FlexibleButton
+              permission="home.leaves"
+              className="btn btn-neutral"
+              onClick={() => setIsExportModalOpen(true)}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export
+            </FlexibleButton>
           </div>
         </div>
 
@@ -398,6 +436,22 @@ export default function HomeLeave() {
           </div>
         </section>
       </div>
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Home Leaves"
+          endpoint="/api/booking/home-leaves/export"
+          filename="home-leaves.xlsx"
+          entityLabel="home leaves"
+          filterFields={[
+            { name: "search", label: "Search", placeholder: "Booking ID, name, room, reason..." },
+            { name: "startedAtFrom", label: "Leave From", type: "date" },
+            { name: "startedAtTo", label: "Leave To", type: "date" },
+            { name: "status", label: "Status", type: "select", placeholderOption: "All statuses", options: STATUS_OPTIONS.filter((option) => option.value) },
+          ]}
+          initialFilters={{ search, startedAtFrom, startedAtTo, status: statusFilter }}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 }

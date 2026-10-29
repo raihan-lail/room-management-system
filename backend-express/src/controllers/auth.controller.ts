@@ -6,7 +6,7 @@ import { generateAccessToken } from "../lib/jwt.js";
 import { verifyAccessToken } from "../lib/jwt.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildAuthUser } from "../helpers/auth.helper.js";
-import { authenticate } from "../middleware/auth.middleware.js";
+import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 
 
@@ -295,7 +295,7 @@ export async function me(
 }
 
 export async function changePassword(
-  req: Request,
+  req: AuthRequest,
   res: Response
 ): Promise<void> {
   if (!req.userId) {
