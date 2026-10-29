@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../components/MainLayout";
 import apiRequest from "../api/client";
 import TableRowActions from "../components/TableRowActions";
-import AddModal from "../components/modals/AddModal";
 import BookingModal from "../components/modals/BookingModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ExportModal from "../components/modals/ExportModal";
@@ -10,12 +9,11 @@ import {
   addFormSchemas,
   buildRow,
 } from "../components/modals/addFormSchemas";
-import { homeLeaveData } from "../data/homeLeaves";
 import FlexibleButton from "../components/FlexibleButtons";
 
 
 const PAGE_SIZE = 10;
-const BOOKING_TABS = ["arrival", "in-house", "near-end", "departure"];
+const BOOKING_TABS = ["arrival", "in-house", "home_leave", "near-end", "departure"];
 
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
@@ -39,10 +37,17 @@ const getTodayKey = () => {
   return `${now.getFullYear()}-${month}-${day}`;
 };
 
-const normalizeStatus = (status) =>
-  (status || "").toLowerCase().replace(/[\s-]+/g, "_");
+const getTomorrowKey = () => {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
 
-const isSameDay = (value, today) => Boolean(value) && value === today;
+  const month = `${tomorrow.getMonth() + 1}`.padStart(2, "0");
+  const day = `${tomorrow.getDate()}`.padStart(2, "0");
+
+  return `${tomorrow.getFullYear()}-${month}-${day}`;
+};
+
+const toApiTab = (tab) => (tab === "home_leave" ? "home-leave" : tab);
 
 const parseDay = (dateStr) => {
   const [year, month, day] = (dateStr || "").split("-").map(Number);
@@ -77,32 +82,21 @@ const formatDaysLeft = (endedAt, today) => {
   return `${days} ${days === 1 ? "day" : "days"} left`;
 };
 
-const isWithinStay = (startedAt, endedAt, today) =>
-  Boolean(startedAt) &&
-  Boolean(endedAt) &&
-  startedAt <= today &&
-  today <= endedAt;
+const toHomeLeaveRow = (booking) => {
+  const leaves = Array.isArray(booking.homeLeaves) ? booking.homeLeaves : [];
+  const leave =
+    leaves.find((item) => item.status === "ACTIVE") ?? leaves[0] ?? null;
 
-const matchesSegment = (booking, segment, today) => {
-  const startedAt = booking.started_at;
-  const endedAt = booking.ended_at;
-
-  if (segment === "arrival") {
-    return isSameDay(startedAt, today);
-  }
-
-  if (segment === "departure") {
-    return isSameDay(endedAt, today);
-  }
-
-  if (segment === "home_leave") {
-    return isWithinStay(startedAt, endedAt, today);
-  }
-
-  return (
-    normalizeStatus(booking.status) === "in_house" ||
-    isWithinStay(startedAt, endedAt, today)
-  );
+  return {
+    id: booking.id,
+    booking_id: booking.bookingNumber ?? "",
+    name: booking.resident?.fullName ?? "",
+    room: booking.bed?.room?.name ?? "",
+    started_at: leave?.startedAt?.slice(0, 10) ?? "",
+    expected_return_at: leave?.expectedReturnAt?.slice(0, 10) ?? "",
+    reason: leave?.reason ?? "",
+    status: leave?.status ?? "",
+  };
 };
 
 /*
@@ -131,7 +125,14 @@ export default function FrontDesk() {
   const [actionError, setActionError] = useState("");
   const [extendingRow, setExtendingRow] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
-  const [homeLeaveList, setHomeLeaveList] = useState(homeLeaveData);
+  const [homeLeaveList, setHomeLeaveList] = useState([]);
+  const [homeLeaveRow, setHomeLeaveRow] = useState(null);
+  const [isHomeLeaveModalOpen, setIsHomeLeaveModalOpen] = useState(false);
+  const [homeLeaveBookings, setHomeLeaveBookings] = useState([]);
+  const [homeLeaveBookingId, setHomeLeaveBookingId] = useState("");
+  const [isLoadingHomeLeaveBookings, setIsLoadingHomeLeaveBookings] = useState(false);
+  const [homeLeaveExpectedReturn, setHomeLeaveExpectedReturn] = useState("");
+  const [homeLeaveReason, setHomeLeaveReason] = useState("");
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [cancellingBooking, setCancellingBooking] = useState(null);
@@ -168,37 +169,31 @@ export default function FrontDesk() {
   const activeSegment = SEGMENTS.find((item) => item.id === segment);
 
   const loadBookings = useCallback(async () => {
-    if (segment === "home_leave") return;
-
     setIsLoading(true);
     setError("");
     try {
-      const params = new URLSearchParams({
-        tab: segment,
-        page: String(currentPage),
-        limit: String(PAGE_SIZE),
-        date: selectedDate,
-        ...(isCurrentDate ? {} : { history: "true" }),
-      });
-      if (search.trim()) params.set("search", search.trim());
+      const buildParams = (tab) => {
+        const params = new URLSearchParams({
+          tab: toApiTab(tab),
+          page: tab === segment ? String(currentPage) : "1",
+          limit: tab === segment ? String(PAGE_SIZE) : "1",
+          date: selectedDate,
+          ...(isCurrentDate ? {} : { history: "true" }),
+        });
+        if (tab === "in-house" && isCurrentDate) params.set("status", "IN_HOUSE");
+        if (search.trim()) params.set("search", search.trim());
+        return params;
+      };
 
       const countRequests = BOOKING_TABS
         .filter((tab) => tab !== segment)
         .map(async (tab) => {
-          const countParams = new URLSearchParams({
-            tab,
-            page: "1",
-            limit: "1",
-            date: selectedDate,
-            ...(isCurrentDate ? {} : { history: "true" }),
-          });
-          if (search.trim()) countParams.set("search", search.trim());
-          const countResponse = await apiRequest(`/api/booking?${countParams.toString()}`);
+          const countResponse = await apiRequest(`/api/booking?${buildParams(tab).toString()}`);
           return [tab, Number(countResponse?.pagination?.total ?? 0)];
         });
 
       const [response, ...otherCounts] = await Promise.all([
-        apiRequest(`/api/booking?${params.toString()}`),
+        apiRequest(`/api/booking?${buildParams(segment).toString()}`),
         ...countRequests,
       ]);
       const pagination = response?.pagination ?? {};
@@ -207,26 +202,32 @@ export default function FrontDesk() {
         ...Object.fromEntries(otherCounts),
         [segment]: total,
       });
-      setBookingList((Array.isArray(response?.data) ? response.data : []).map((booking) => ({
-        ...booking,
-        room: booking.bed?.room?.name ?? "",
-        guest: {
-          name: booking.resident?.fullName ?? "",
-          gender: booking.resident?.gender ?? "",
-          country: booking.resident?.nationality ?? "",
-          dept: booking.resident?.department ?? "",
-          meal_type: booking.resident?.mealType ?? "",
-        },
-        booked_at: booking.createdAt?.slice(0, 10) ?? "",
-        started_at: booking.startedAt?.slice(0, 10) ?? "",
-        ended_at: booking.endedAt?.slice(0, 10) ?? "",
-      })));
+      const records = Array.isArray(response?.data) ? response.data : [];
+      if (segment === "home_leave") {
+        setHomeLeaveList(records.map(toHomeLeaveRow));
+      } else {
+        setBookingList(records.map((booking) => ({
+          ...booking,
+          room: booking.bed?.room?.name ?? "",
+          guest: {
+            name: booking.resident?.fullName ?? "",
+            gender: booking.resident?.gender ?? "",
+            country: booking.resident?.nationality ?? "",
+            dept: booking.resident?.department ?? "",
+            meal_type: booking.resident?.mealType ?? "",
+          },
+          booked_at: booking.createdAt?.slice(0, 10) ?? "",
+          started_at: booking.startedAt?.slice(0, 10) ?? "",
+          ended_at: booking.endedAt?.slice(0, 10) ?? "",
+        })));
+      }
       const totalPages = Math.max(1, Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)));
       setBookingPagination({ total, totalPages });
       if (currentPage > totalPages) setCurrentPage(totalPages);
     } catch (err) {
       setError(err.message || "Failed to load bookings.");
       setBookingList([]);
+      setHomeLeaveList([]);
       setBookingPagination({ total: 0, totalPages: 1 });
     } finally {
       setIsLoading(false);
@@ -241,28 +242,17 @@ export default function FrontDesk() {
   return () => window.clearTimeout(timer);
 }, [loadBookings]);
 
-  const segmentCounts = useMemo(() => ({
-    ...bookingCounts,
-    home_leave: homeLeaveList.filter((booking) => matchesSegment(booking, "home_leave", today)).length,
-  }), [bookingCounts, homeLeaveList, today]);
-
-  const segmentBookings = useMemo(() => isHomeLeave
-    ? homeLeaveList.filter((booking) => matchesSegment(booking, segment, today))
-    : bookingList, [bookingList, homeLeaveList, isHomeLeave, segment, today]);
+  const segmentCounts = bookingCounts;
+  const segmentBookings = isHomeLeave ? homeLeaveList : bookingList;
 
   /*
-   * Both segments are edited and deleted through the
-   * same modals, so only the schema and the list that
-   * owns the row change between them.
+   * Booking rows share the edit and delete modals. Home leave rows are
+   * managed through the start and return actions instead.
    */
-  const activeSchema = isHomeLeave
-    ? addFormSchemas.homeLeave
-    : addFormSchemas.booking;
-
-  const setActiveList = isHomeLeave ? setHomeLeaveList : setBookingList;
+  const activeSchema = addFormSchemas.booking;
 
   const handleEditRow = (values) => {
-    setActiveList((prev) =>
+    setBookingList((prev) =>
       prev.map((row) =>
         row === editingRow ? buildRow(activeSchema, values, row) : row,
       ),
@@ -270,7 +260,7 @@ export default function FrontDesk() {
   };
 
   const handleDeleteRow = () => {
-    setActiveList((prev) => prev.filter((row) => row !== deletingRow));
+    setBookingList((prev) => prev.filter((row) => row !== deletingRow));
   };
 
   const performBookingAction = async (booking, action, body) => {
@@ -282,8 +272,10 @@ export default function FrontDesk() {
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       await loadBookings();
+      return true;
     } catch (err) {
       setActionError(err.message || "Booking action failed.");
+      return false;
     } finally {
       setIsSavingAction(false);
       setExtendingRow(null);
@@ -301,6 +293,98 @@ export default function FrontDesk() {
     });
   };
 
+  const openHomeLeaveModal = (booking) => {
+    setActionError("");
+    setHomeLeaveRow(booking);
+    setHomeLeaveBookingId(booking.id);
+    setIsHomeLeaveModalOpen(true);
+    setHomeLeaveExpectedReturn("");
+    setHomeLeaveReason("");
+  };
+
+  const openCreateHomeLeave = async () => {
+    setActionError("");
+    setHomeLeaveRow(null);
+    setHomeLeaveBookings([]);
+    setHomeLeaveBookingId("");
+    setIsHomeLeaveModalOpen(true);
+    setHomeLeaveExpectedReturn("");
+    setHomeLeaveReason("");
+    setIsLoadingHomeLeaveBookings(true);
+
+    try {
+      const params = new URLSearchParams({
+        tab: "in-house",
+        status: "IN_HOUSE",
+        page: "1",
+        limit: "100",
+        date: getTodayKey(),
+      });
+      const response = await apiRequest(`/api/booking?${params.toString()}`);
+      const records = Array.isArray(response?.data) ? response.data : [];
+
+      setHomeLeaveBookings(records.map((booking) => ({
+        id: booking.id,
+        bookingNumber: booking.bookingNumber ?? "",
+        name: booking.resident?.fullName ?? "",
+        room: booking.bed?.room?.name ?? "",
+        ended_at: booking.endedAt?.slice(0, 10) ?? "",
+      })));
+    } catch (err) {
+      setActionError(err.message || "Failed to load in-house bookings.");
+    } finally {
+      setIsLoadingHomeLeaveBookings(false);
+    }
+  };
+
+  const closeHomeLeaveModal = () => {
+    if (isSavingAction) return;
+
+    setIsHomeLeaveModalOpen(false);
+    setHomeLeaveRow(null);
+    setHomeLeaveBookingId("");
+    setActionError("");
+  };
+
+  const selectedHomeLeaveBooking = homeLeaveRow
+    ?? homeLeaveBookings.find((booking) => booking.id === homeLeaveBookingId)
+    ?? null;
+
+  const submitHomeLeave = async (event) => {
+    event.preventDefault();
+
+    if (!selectedHomeLeaveBooking) {
+      setActionError("Select an in-house booking.");
+      return;
+    }
+
+    if (!homeLeaveExpectedReturn) {
+      setActionError("Choose an expected return date.");
+      return;
+    }
+
+    if (
+      selectedHomeLeaveBooking.ended_at &&
+      homeLeaveExpectedReturn > selectedHomeLeaveBooking.ended_at
+    ) {
+      setActionError("Expected return cannot be later than the booking end date.");
+      return;
+    }
+
+    const succeeded = await performBookingAction(selectedHomeLeaveBooking, "home-leaves", {
+      expectedReturnAt: new Date(`${homeLeaveExpectedReturn}T00:00:00.000Z`).toISOString(),
+      reason: homeLeaveReason.trim(),
+    });
+
+    if (succeeded) {
+      setIsHomeLeaveModalOpen(false);
+      setHomeLeaveRow(null);
+      setHomeLeaveBookingId("");
+      setHomeLeaveExpectedReturn("");
+      setHomeLeaveReason("");
+    }
+  };
+
   const handleSort = (key) => {
     setSortConfig((prev) => ({
       key,
@@ -310,39 +394,22 @@ export default function FrontDesk() {
     setCurrentPage(1);
   };
 
-  const filteredBookings = useMemo(() => {
-      if (!isHomeLeave) return segmentBookings;
-      const query = search.trim().toLowerCase();
-
-    if (!query) return segmentBookings;
-
-    return segmentBookings.filter((booking) =>
-      [
-        isHomeLeave ? booking.booking_id : booking.room,
-        isHomeLeave ? booking.name : booking.guest?.name,
-        isHomeLeave ? booking.reason : booking.guest?.gender,
-        isHomeLeave ? booking.approved_by : booking.guest?.country,
-        isHomeLeave ? null : booking.guest?.dept,
-        isHomeLeave ? null : booking.guest?.meal_type,
-        isHomeLeave ? null : booking.status,
-        isHomeLeave ? null : booking.notes,
-        booking.started_at,
-        booking.ended_at,
-      ].some((value) => (value || "").toString().toLowerCase().includes(query)),
-    );
-  }, [search, isHomeLeave, segmentBookings]);
-
   const sortedBookings = useMemo(() => {
-    if (!sortConfig.key) return filteredBookings;
+    if (!sortConfig.key) return segmentBookings;
 
-    return [...filteredBookings].sort((a, b) => {
+    return [...segmentBookings].sort((a, b) => {
       let aValue;
       let bValue;
 
       switch (sortConfig.key) {
+        case "booking_id":
+          aValue = a.booking_id;
+          bValue = b.booking_id;
+          break;
+
         case "room":
-          aValue = isHomeLeave ? a.booking_id : a.room;
-          bValue = isHomeLeave ? b.booking_id : b.room;
+          aValue = a.room;
+          bValue = b.room;
           break;
 
         case "guest":
@@ -388,18 +455,12 @@ export default function FrontDesk() {
           bValue = b.ended_at;
           break;
 
-        case "days_left": {
-          const aDays =
-            getDaysLeft(a.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
-          const bDays =
-            getDaysLeft(b.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
-
-          return sortConfig.direction === "asc" ? aDays - bDays : bDays - aDays;
-        }
+        case "expected_return":
+          aValue = a.expected_return_at;
+          bValue = b.expected_return_at;
+          break;
 
         case "status":
-          if (isHomeLeave) return 0;
-
           aValue = a.status;
           bValue = b.status;
           break;
@@ -416,13 +477,6 @@ export default function FrontDesk() {
 
           aValue = a.reason;
           bValue = b.reason;
-          break;
-
-        case "approved_by":
-          if (!isHomeLeave) return 0;
-
-          aValue = a.approved_by;
-          bValue = b.approved_by;
           break;
 
         default:
@@ -442,22 +496,16 @@ export default function FrontDesk() {
 
       return 0;
     });
-  }, [filteredBookings, isHomeLeave, sortConfig, today]);
+  }, [segmentBookings, isHomeLeave, sortConfig]);
 
-  const totalPages = isHomeLeave
-    ? Math.max(1, Math.ceil(sortedBookings.length / PAGE_SIZE))
-    : bookingPagination.totalPages;
+  const totalPages = bookingPagination.totalPages;
   const safePage = Math.min(currentPage, totalPages);
 
-  const pagedBookings = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-
-    return isHomeLeave ? sortedBookings.slice(startIndex, startIndex + PAGE_SIZE) : sortedBookings;
-  }, [isHomeLeave, sortedBookings, safePage]);
+  const pagedBookings = sortedBookings;
 
   const startRow =
-    (isHomeLeave ? filteredBookings.length : bookingPagination.total) === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, isHomeLeave ? filteredBookings.length : bookingPagination.total);
+    bookingPagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+  const endRow = Math.min(safePage * PAGE_SIZE, bookingPagination.total);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -528,7 +576,7 @@ aria-label={
                 }
                 placeholder={
                 isHomeLeave
-                  ? "Search by booking ID, name, reason, approver..."
+                  ? "Search by booking ID or name..."
                   : "Search by room, guest, country, status..."
               }
               value={search}
@@ -538,6 +586,16 @@ aria-label={
           <button type="button" className="btn btn-neutral" onClick={() => setIsExportModalOpen(true)}>
              <i className="bi bi-file-earmark-excel" aria-hidden="true" /> Export Excel
           </button>
+          {isHomeLeave && (
+            <FlexibleButton
+              type="button"
+              permission="home.leaves"
+              className="btn btn-primary"
+              onClick={openCreateHomeLeave}
+            >
+              <i className="bi bi-plus-lg" aria-hidden="true" /> Create Home Leave
+            </FlexibleButton>
+          )}
         
         </div>
 
@@ -555,7 +613,7 @@ aria-label={
                         <button
                           type="button"
                           className="table-sort"
-                          onClick={() => handleSort("room")}
+                          onClick={() => handleSort("booking_id")}
                         >
                           Booking ID
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
@@ -577,9 +635,20 @@ aria-label={
                         <button
                           type="button"
                           className="table-sort"
+                          onClick={() => handleSort("room")}
+                        >
+                          Room
+                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                        </button>
+                      </th>
+
+                      <th>
+                        <button
+                          type="button"
+                          className="table-sort"
                           onClick={() => handleSort("started_at")}
                         >
-                          Started At
+                          Leave Started
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
@@ -588,18 +657,7 @@ aria-label={
                         <button
                           type="button"
                           className="table-sort"
-                          onClick={() => handleSort("ended_at")}
-                        >
-                          Ended At
-                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                        </button>
-                      </th>
-
-                      <th>
-                        <button
-                          type="button"
-                          className="table-sort"
-                          onClick={() => handleSort("days_left")}
+                          onClick={() => handleSort("expected_return")}
                         >
                           Expected Return
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
@@ -621,9 +679,9 @@ aria-label={
                         <button
                           type="button"
                           className="table-sort"
-                          onClick={() => handleSort("approved_by")}
+                          onClick={() => handleSort("status")}
                         >
-                          Approved By
+                          Status
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
@@ -773,26 +831,31 @@ aria-label={
 
                           <td>{booking.name || "-"}</td>
 
+                          <td>{booking.room || "-"}</td>
+
                           <td>{booking.started_at || "-"}</td>
 
-                          <td>{booking.ended_at || "-"}</td>
-
-                          <td>{formatDaysLeft(booking.ended_at, today)}</td>
+                          <td>
+                            {booking.expected_return_at
+                              ? `${booking.expected_return_at} (${formatDaysLeft(booking.expected_return_at, today)})`
+                              : "-"}
+                          </td>
 
                           <td>{booking.reason || "-"}</td>
 
-                          <td>{booking.approved_by || "-"}</td>
+                          <td>{booking.status || "-"}</td>
 
                           <td>
-                            {isCurrentDate ? <TableRowActions
-                              label="home leave"
-                              rowLabel={booking.name}
-                              onView={() =>
-                                console.log("View home leave:", booking)
-                              }
-                              onEdit={() => setEditingRow(booking)}
-                              onDelete={() => setDeletingRow(booking)}
-                            /> : "-"}
+                            {isCurrentDate && booking.status === "ACTIVE" ? (
+                              <FlexibleButton
+                                permission="home.leaves"
+                                className="btn btn-primary"
+                                disabled={isSavingAction}
+                                onClick={() => performBookingAction(booking, "return-from-leave")}
+                              >
+                                Return
+                              </FlexibleButton>
+                            ) : "-"}
                           </td>
                         </>
                       ) : (
@@ -838,7 +901,14 @@ aria-label={
                             ) : segment === "departure" ? (
                               <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-out")}>Check Out</FlexibleButton>
                             ) : segment === "in-house" ? (
-                              "-"
+                              <FlexibleButton
+                                permission="home.leaves"
+                                className="btn btn-primary"
+                                disabled={isSavingAction}
+                                onClick={() => openHomeLeaveModal(booking)}
+                              >
+                                Home Leave
+                              </FlexibleButton>
                             ) : (
                               <TableRowActions label="booking" rowLabel={booking.guest?.name} onView={() => console.log("View booking:", booking)} onEdit={() => setEditingRow(booking)} onDelete={() => setDeletingRow(booking)} />
                             )}
@@ -855,7 +925,7 @@ aria-label={
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {isHomeLeave ? filteredBookings.length : bookingPagination.total}{" "}
+              Showing {startRow}–{endRow} of {bookingPagination.total}{" "}
               {activeSegment.label.toLowerCase()}
             </span>
 
@@ -892,16 +962,6 @@ aria-label={
 
       {editingRow && !isHomeLeave && (
         <BookingModal
-          mode="edit"
-          initialValues={editingRow}
-          onClose={() => setEditingRow(null)}
-          onSubmit={handleEditRow}
-        />
-      )}
-
-      {editingRow && isHomeLeave && (
-        <AddModal
-          schema={activeSchema}
           mode="edit"
           initialValues={editingRow}
           onClose={() => setEditingRow(null)}
@@ -981,7 +1041,103 @@ aria-label={
         </div>
       )}
 
-      {actionError && !extendingRow && (
+      {isHomeLeaveModalOpen && (
+        <div
+          className="modal-overlay"
+          onMouseDown={closeHomeLeaveModal}
+        >
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="home-leave-title"
+            onSubmit={submitHomeLeave}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal__header">
+              <h2 className="modal__title" id="home-leave-title">
+                {homeLeaveRow ? "Start Home Leave" : "Create Home Leave"}
+              </h2>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={closeHomeLeaveModal}
+                aria-label="Close"
+                disabled={isSavingAction}
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="modal__message">
+              {homeLeaveRow
+                ? `Record home leave for ${homeLeaveRow.guest?.name || "this resident"}.`
+                : "Choose an in-house booking to start home leave."}
+            </p>
+            <div className="form-stack">
+              {!homeLeaveRow && (
+                <label className="form-field">
+                  <span>In-house booking</span>
+                  <select
+                    required
+                    value={homeLeaveBookingId}
+                    onChange={(event) => {
+                      setHomeLeaveBookingId(event.target.value);
+                      setActionError("");
+                    }}
+                    disabled={isLoadingHomeLeaveBookings || isSavingAction}
+                  >
+                    <option value="">
+                      {isLoadingHomeLeaveBookings
+                        ? "Loading in-house bookings..."
+                        : homeLeaveBookings.length === 0
+                          ? "No in-house bookings available"
+                          : "Select a booking"}
+                    </option>
+                    {homeLeaveBookings.map((booking) => (
+                      <option key={booking.id} value={booking.id}>
+                        {booking.bookingNumber} - {booking.name} ({booking.room})
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              )}
+              <label className="form-field">
+                <span>Expected return date</span>
+                <input
+                  type="date"
+                  required
+                  min={getTomorrowKey()}
+                  max={selectedHomeLeaveBooking?.ended_at || undefined}
+                  value={homeLeaveExpectedReturn}
+                  onChange={(event) => setHomeLeaveExpectedReturn(event.target.value)}
+                />
+              </label>
+              <label className="form-field">
+                <span>Reason</span>
+                <input
+                  type="text"
+                  placeholder="Optional reason"
+                  value={homeLeaveReason}
+                  onChange={(event) => setHomeLeaveReason(event.target.value)}
+                />
+              </label>
+            </div>
+            {actionError && <p role="alert">{actionError}</p>}
+            <div className="modal__actions">
+              <button type="button" className="btn btn-neutral" onClick={closeHomeLeaveModal} disabled={isSavingAction}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={isSavingAction}>
+                {isSavingAction
+                  ? "Saving..."
+                  : homeLeaveRow
+                    ? "Start Home Leave"
+                    : "Create Home Leave"}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {actionError && !extendingRow && !isHomeLeaveModalOpen && (
         <div className="error-message" role="alert">{actionError}</div>
       )}
       {isExportModalOpen && (

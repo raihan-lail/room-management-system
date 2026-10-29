@@ -34,6 +34,8 @@
   --status-unknown-bg: #f1f5f9;
   --status-unknown-fg: #64748b;
   --status-unknown-border: #94a3b8;
+
+  --status-home_leave-border: #FFFF00;
 }
 
 /* =========================
@@ -2635,6 +2637,11 @@ textarea,
   border-style: dashed;
 }
 
+.calendar-legend__dot--home_leave {
+  background-color: var(--status-in_house-bg);
+  border-color: var(--status-home_leave-border);
+}
+
 .calendar-view {
   position: relative;
 }
@@ -2993,13 +3000,13 @@ textarea,
 }
 
 .booking-home_leave {
-  background: var(--status-in_house-bg);
-  color: var(--status-in_house-fg);
-  border-color: var(--status-in_house-border);
+  background: var(--status-checked_out-bg);
+  color: var(--status-checked_out-fg);
+  border-color: var(--status-home_leave-border);
 }
 
 .booking-home_leave::before {
-  background: var(--status-in_house-border);
+  background: var(--status-home_leave-border);
 }
 
 .booking-confirmed {
