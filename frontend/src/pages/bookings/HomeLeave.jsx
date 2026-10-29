@@ -1,90 +1,78 @@
-import { useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
-import TableRowActions from "../../components/TableRowActions";
-import AddModal from "../../components/modals/AddModal";
-import ConfirmModal from "../../components/modals/ConfirmModal";
-import {
-  addFormSchemas,
-  buildRow,
-} from "../../components/modals/addFormSchemas";
-import { homeLeaveData as initialHomeLeaves } from "../../data/homeLeaves";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
-const homeLeaveSchema = addFormSchemas.homeLeave;
+const STATUS_OPTIONS = [
+  { value: "", label: "All" },
+  { value: "ACTIVE", label: "Active" },
+  { value: "RETURNED", label: "Returned" },
+];
 
-const getTodayKey = () => {
-  const now = new Date();
-  const month = `${now.getMonth() + 1}`.padStart(2, "0");
-  const day = `${now.getDate()}`.padStart(2, "0");
+const formatDate = (value) =>
+  value ? String(value).slice(0, 10) : "-";
 
-  return `${now.getFullYear()}-${month}-${day}`;
-};
+const formatStatus = (status) =>
+  status === "ACTIVE" ? "Active" : status === "RETURNED" ? "Returned" : "-";
 
-const parseDay = (dateStr) => {
-  const [year, month, day] = (dateStr || "").split("-").map(Number);
-
-  if (!year || !month || !day) return null;
-
-  return Date.UTC(year, month - 1, day);
-};
-
-const getDaysLeft = (endedAt, today) => {
-  const end = parseDay(endedAt);
-  const current = parseDay(today);
-
-  if (end === null || current === null) return null;
-
-  return Math.round((end - current) / 86400000);
-};
-
-const formatDaysLeft = (endedAt, today) => {
-  const days = getDaysLeft(endedAt, today);
-
-  if (days === null) return "-";
-
-  if (days === 0) return "Returns today";
-
-  if (days < 0) {
-    const overdue = Math.abs(days);
-
-    return `Overdue ${overdue} ${overdue === 1 ? "day" : "days"}`;
-  }
-
-  return `${days} ${days === 1 ? "day" : "days"} left`;
-};
+const statusClass = (status) =>
+  status === "ACTIVE" ? "in_house" : "checked_out";
 
 export default function HomeLeave() {
-  const [homeLeaveList, setHomeLeaveList] = useState(initialHomeLeaves);
-  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [editingRow, setEditingRow] = useState(null);
-  const [deletingRow, setDeletingRow] = useState(null);
+  const [homeLeaves, setHomeLeaves] = useState([]);
+  const [pagination, setPagination] = useState({ total: 0, totalPages: 1 });
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
     direction: "asc",
   });
 
-  const today = useMemo(() => getTodayKey(), []);
+  const loadHomeLeaves = useCallback(async () => {
+    setIsLoading(true);
+    setError("");
 
-  const handleAddHomeLeave = (values) => {
-    setHomeLeaveList((prev) => [...prev, buildRow(homeLeaveSchema, values)]);
-    setCurrentPage(1);
-  };
+    try {
+      const params = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+      });
 
-  const handleEditHomeLeave = (values) => {
-    setHomeLeaveList((prev) =>
-      prev.map((row) =>
-        row === editingRow ? buildRow(homeLeaveSchema, values, row) : row,
-      ),
-    );
-  };
+      if (search.trim()) params.set("search", search.trim());
+      if (statusFilter) params.set("status", statusFilter);
 
-  const handleDeleteHomeLeave = () => {
-    setHomeLeaveList((prev) => prev.filter((row) => row !== deletingRow));
-  };
+      const response = await apiRequest(`/api/booking/home-leaves?${params.toString()}`);
+      const total = Number(response?.pagination?.total ?? 0);
+      const totalPages = Math.max(
+        1,
+        Number(response?.pagination?.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+      );
+
+      setHomeLeaves(Array.isArray(response?.data) ? response.data : []);
+      setPagination({ total, totalPages });
+
+      if (currentPage > totalPages) setCurrentPage(totalPages);
+    } catch (err) {
+      setError(err.message || "Failed to load home leaves.");
+      setHomeLeaves([]);
+      setPagination({ total: 0, totalPages: 1 });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [currentPage, search, statusFilter]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      loadHomeLeaves();
+    }, 0);
+
+    return () => window.clearTimeout(timer);
+  }, [loadHomeLeaves]);
 
   const handleSort = (key) => {
     setSortConfig((prev) => ({
@@ -95,76 +83,62 @@ export default function HomeLeave() {
     setCurrentPage(1);
   };
 
-  /*
-   * SEARCH
-   */
-  const filteredHomeLeaves = useMemo(() => {
-    const query = search.trim().toLowerCase();
+  const handleSearchChange = (value) => {
+    setSearch(value);
+    setCurrentPage(1);
+  };
 
-    if (!query) return homeLeaveList;
+  const handleStatusChange = (value) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
 
-    return homeLeaveList.filter((homeLeave) =>
-      [
-        homeLeave.booking_id,
-        homeLeave.name,
-        homeLeave.started_at,
-        homeLeave.ended_at,
-        homeLeave.reason,
-        homeLeave.approved_by,
-      ].some((value) =>
-        (value || "").toString().toLowerCase().includes(query),
-      ),
-    );
-  }, [homeLeaveList, search]);
-
-  /*
-   * SORT
-   */
   const sortedHomeLeaves = useMemo(() => {
-    if (!sortConfig.key) return filteredHomeLeaves;
+    if (!sortConfig.key) return homeLeaves;
 
-    return [...filteredHomeLeaves].sort((a, b) => {
+    return [...homeLeaves].sort((a, b) => {
       let aValue;
       let bValue;
 
       switch (sortConfig.key) {
         case "booking_id":
-          aValue = a.booking_id;
-          bValue = b.booking_id;
+          aValue = a.booking?.bookingNumber;
+          bValue = b.booking?.bookingNumber;
           break;
 
         case "name":
-          aValue = a.name;
-          bValue = b.name;
+          aValue = a.booking?.resident?.fullName;
+          bValue = b.booking?.resident?.fullName;
+          break;
+
+        case "room":
+          aValue = a.booking?.bed?.room?.name;
+          bValue = b.booking?.bed?.room?.name;
           break;
 
         case "started_at":
-          aValue = a.started_at;
-          bValue = b.started_at;
+          aValue = a.startedAt;
+          bValue = b.startedAt;
           break;
 
-        case "ended_at":
-          aValue = a.ended_at;
-          bValue = b.ended_at;
+        case "expected_return":
+          aValue = a.expectedReturnAt;
+          bValue = b.expectedReturnAt;
           break;
 
-        case "days_left": {
-          const aDays =
-            getDaysLeft(a.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
-          const bDays =
-            getDaysLeft(b.ended_at, today) ?? Number.MAX_SAFE_INTEGER;
-
-          return sortConfig.direction === "asc" ? aDays - bDays : bDays - aDays;
-        }
+        case "returned_at":
+          aValue = a.returnedAt;
+          bValue = b.returnedAt;
+          break;
 
         case "reason":
           aValue = a.reason;
           bValue = b.reason;
           break;
 
-        case "approved_by":
-          aValue = a.approved_by;
-          bValue = b.approved_by;
+        case "status":
+          aValue = a.status;
+          bValue = b.status;
           break;
 
         default:
@@ -184,38 +158,14 @@ export default function HomeLeave() {
 
       return 0;
     });
-  }, [filteredHomeLeaves, sortConfig, today]);
+  }, [homeLeaves, sortConfig]);
 
-  /*
-   * PAGINATION
-   */
-  const totalPages = Math.max(
-    1,
-    Math.ceil(sortedHomeLeaves.length / PAGE_SIZE),
-  );
-
-  const safePage = Math.min(currentPage, totalPages);
-
-  const pagedHomeLeaves = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-
-    return sortedHomeLeaves.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedHomeLeaves, safePage]);
+  const safePage = Math.min(currentPage, pagination.totalPages);
 
   const startRow =
-    filteredHomeLeaves.length === 0
-      ? 0
-      : (safePage - 1) * PAGE_SIZE + 1;
+    pagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
 
-  const endRow = Math.min(
-    safePage * PAGE_SIZE,
-    filteredHomeLeaves.length,
-  );
-
-  const handleSearchChange = (value) => {
-    setSearch(value);
-    setCurrentPage(1);
-  };
+  const endRow = Math.min(safePage * PAGE_SIZE, pagination.total);
 
   return (
     <MainLayout>
@@ -226,7 +176,7 @@ export default function HomeLeave() {
             <h1 className="dashboard-header__title">Home Leaves</h1>
 
             <p className="dashboard-header__subtitle">
-              View and manage home leave
+              Current and past home leaves
             </p>
           </div>
         </div>
@@ -238,29 +188,27 @@ export default function HomeLeave() {
             <input
               type="search"
               aria-label="Search home leaves"
-              placeholder="Search by booking ID, name, reason, approver..."
+              placeholder="Search by booking ID, name, room, reason..."
               value={search}
               onChange={(event) => handleSearchChange(event.target.value)}
             />
           </label>
-          <div className="bookings-toolbar__actions">
-            <button
-              type="button"
-              className="btn btn-primary"
-              onClick={() => setIsAddModalOpen(true)}
-            >
-              <i className="bi bi-plus-lg" aria-hidden="true" />
-              Create New Home Leave
-            </button>
 
-            <button
-              type="button"
-              className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
-            >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Export Excel
-            </button>
+          <div className="bookings-toolbar__actions">
+            <label className="calendar-date-filter">
+              <span>Status</span>
+              <select
+                aria-label="Filter home leaves by status"
+                value={statusFilter}
+                onChange={(event) => handleStatusChange(event.target.value)}
+              >
+                {STATUS_OPTIONS.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
@@ -295,9 +243,19 @@ export default function HomeLeave() {
                     <button
                       type="button"
                       className="table-sort"
+                      onClick={() => handleSort("room")}
+                    >
+                      Room
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
                       onClick={() => handleSort("started_at")}
                     >
-                      Started At
+                      Leave Started
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
@@ -305,19 +263,19 @@ export default function HomeLeave() {
                     <button
                       type="button"
                       className="table-sort"
-                      onClick={() => handleSort("ended_at")}
-                    >
-                      Ended At
-                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("days_left")}
+                      onClick={() => handleSort("expected_return")}
                     >
                       Expected Return
+                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
+                    </button>
+                  </th>
+                  <th>
+                    <button
+                      type="button"
+                      className="table-sort"
+                      onClick={() => handleSort("returned_at")}
+                    >
+                      Returned At
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
@@ -335,56 +293,65 @@ export default function HomeLeave() {
                     <button
                       type="button"
                       className="table-sort"
-                      onClick={() => handleSort("approved_by")}
+                      onClick={() => handleSort("status")}
                     >
-                      Approved By
+                      Status
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-                  <th>Action</th>
                 </tr>
               </thead>
 
               <tbody>
-                {pagedHomeLeaves.length === 0 ? (
+                {error ? (
+                  <tr>
+                    <td colSpan="9" className="muted">
+                      {error}
+                    </td>
+                  </tr>
+                ) : isLoading ? (
+                  <tr>
+                    <td colSpan="9" className="muted">
+                      Loading home leaves...
+                    </td>
+                  </tr>
+                ) : sortedHomeLeaves.length === 0 ? (
                   <tr>
                     <td colSpan="9" className="muted">
                       No home leaves found.
                     </td>
                   </tr>
                 ) : (
-                  pagedHomeLeaves.map((homeLeave, index) => (
-                    <tr key={homeLeave.booking_id}>
+                  sortedHomeLeaves.map((homeLeave, index) => (
+                    <tr key={homeLeave.id}>
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}
                       </td>
 
                       <td>
-                        <strong>{homeLeave.booking_id || "-"}</strong>
+                        <strong>
+                          {homeLeave.booking?.bookingNumber || "-"}
+                        </strong>
                       </td>
 
-                      <td>{homeLeave.name || "-"}</td>
+                      <td>{homeLeave.booking?.resident?.fullName || "-"}</td>
 
-                      <td>{homeLeave.started_at || "-"}</td>
+                      <td>{homeLeave.booking?.bed?.room?.name || "-"}</td>
 
-                      <td>{homeLeave.ended_at || "-"}</td>
+                      <td>{formatDate(homeLeave.startedAt)}</td>
 
-                      <td>{formatDaysLeft(homeLeave.ended_at, today)}</td>
+                      <td>{formatDate(homeLeave.expectedReturnAt)}</td>
+
+                      <td>{formatDate(homeLeave.returnedAt)}</td>
 
                       <td>{homeLeave.reason || "-"}</td>
 
-                      <td>{homeLeave.approved_by || "-"}</td>
-
                       <td>
-                        <TableRowActions
-                          label="home leave"
-                          rowLabel={homeLeave.name}
-                          onView={() =>
-                            console.log("View home leave:", homeLeave)
-                          }
-                          onEdit={() => setEditingRow(homeLeave)}
-                          onDelete={() => setDeletingRow(homeLeave)}
-                        />
+                        <span
+                          className={`booking-status booking-status--${statusClass(homeLeave.status)}`}
+                        >
+                          {formatStatus(homeLeave.status)}
+                        </span>
                       </td>
                     </tr>
                   ))
@@ -396,15 +363,14 @@ export default function HomeLeave() {
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredHomeLeaves.length} home
-              leaves
+              Showing {startRow}–{endRow} of {pagination.total} home leaves
             </span>
 
             <div className="office-page-nav">
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage <= 1}
+                disabled={isLoading || safePage <= 1}
                 onClick={() => setCurrentPage((prev) => Math.max(1, prev - 1))}
               >
                 <i className="bi bi-chevron-left" aria-hidden="true" />
@@ -412,15 +378,17 @@ export default function HomeLeave() {
               </button>
 
               <span className="office-page-info">
-                Page {safePage} of {totalPages}
+                Page {safePage} of {pagination.totalPages}
               </span>
 
               <button
                 type="button"
                 className="btn btn-neutral"
-                disabled={safePage >= totalPages}
+                disabled={isLoading || safePage >= pagination.totalPages}
                 onClick={() =>
-                  setCurrentPage((prev) => Math.min(totalPages, prev + 1))
+                  setCurrentPage((prev) =>
+                    Math.min(pagination.totalPages, prev + 1),
+                  )
                 }
               >
                 Next
@@ -430,35 +398,6 @@ export default function HomeLeave() {
           </div>
         </section>
       </div>
-
-      {isAddModalOpen && (
-        <AddModal
-          schema={homeLeaveSchema}
-          onClose={() => setIsAddModalOpen(false)}
-          onSubmit={handleAddHomeLeave}
-        />
-      )}
-
-      {editingRow && (
-        <AddModal
-          schema={homeLeaveSchema}
-          mode="edit"
-          initialValues={editingRow}
-          onClose={() => setEditingRow(null)}
-          onSubmit={handleEditHomeLeave}
-        />
-      )}
-
-      {deletingRow && (
-        <ConfirmModal
-          title="Delete Home Leave"
-          message={`Delete the home leave for ${deletingRow.name || "this resident"}? This cannot be undone.`}
-          confirmLabel="Delete"
-          danger
-          onClose={() => setDeletingRow(null)}
-          onConfirm={handleDeleteHomeLeave}
-        />
-      )}
     </MainLayout>
   );
 }

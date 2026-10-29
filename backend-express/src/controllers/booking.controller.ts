@@ -1419,6 +1419,114 @@ export async function returnFromHomeLeave(
   }
 }
 
+export async function listHomeLeaves(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const page = parsePositiveInteger(req.query.page, 1);
+    const limit = parsePositiveInteger(
+      req.query.limit,
+      DEFAULT_PAGE_SIZE,
+      MAX_PAGE_SIZE
+    );
+    const search =
+      typeof req.query.search === "string"
+        ? req.query.search.trim()
+        : "";
+    const status = req.query.status;
+
+    const where: Prisma.HomeLeaveWhereInput = {
+      booking: getSiteBookingFilter(actor),
+    };
+
+    if (status !== undefined) {
+      if (
+        typeof status !== "string" ||
+        !Object.values(HomeLeaveStatus).includes(status as HomeLeaveStatus)
+      ) {
+        sendError(res, 400, "Invalid home leave status.");
+        return;
+      }
+
+      where.status = status as HomeLeaveStatus;
+    }
+
+    if (search) {
+      where.OR = [
+        { reason: { contains: search, mode: "insensitive" } },
+        {
+          booking: {
+            bookingNumber: { contains: search, mode: "insensitive" },
+          },
+        },
+        {
+          booking: {
+            resident: {
+              fullName: { contains: search, mode: "insensitive" },
+            },
+          },
+        },
+        {
+          booking: {
+            bed: {
+              room: {
+                name: { contains: search, mode: "insensitive" },
+              },
+            },
+          },
+        },
+      ];
+    }
+
+    const [total, homeLeaves] = await prisma.$transaction([
+      prisma.homeLeave.count({ where }),
+      prisma.homeLeave.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { startedAt: "desc" },
+        include: {
+          booking: {
+            select: {
+              id: true,
+              bookingNumber: true,
+              status: true,
+              resident: {
+                select: { fullName: true },
+              },
+              bed: {
+                select: {
+                  name: true,
+                  room: {
+                    select: { name: true },
+                  },
+                },
+              },
+            },
+          },
+        },
+      }),
+    ]);
+
+    res.status(200).json({
+      data: homeLeaves,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages: Math.ceil(total / limit),
+      },
+    });
+  } catch (error) {
+    console.error("List home leaves error:", error);
+    sendError(res, 500, "Failed to retrieve home leaves.");
+  }
+}
+
 export async function updateBooking(
   req: AuthRequest,
   res: Response
