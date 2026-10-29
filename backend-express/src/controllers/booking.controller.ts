@@ -33,6 +33,58 @@ import { auditActor } from "../services/audit.service.js";
 
 
 
+function getHistoricalFrontDeskTabFilter(
+  tab: string,
+  start: Date,
+  end: Date,
+): Prisma.BookingWhereInput | null {
+  const stayedDuringDate: Prisma.BookingWhereInput = {
+    checkedInAt: { lt: end },
+    OR: [{ checkedOutAt: null }, { checkedOutAt: { gte: start } }],
+  };
+
+  switch (tab) {
+    case "arrival":
+      return {
+        OR: [
+          { status: BookingStatus.CONFIRMED, startedAt: { lt: end } },
+          { checkedInAt: { gte: start, lt: end } },
+        ],
+      };
+    case "in-house":
+      return stayedDuringDate;
+    case "near-end": {
+      const threeDaysLater = new Date(start);
+      threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
+      return {
+        AND: [stayedDuringDate, { endedAt: { gte: start, lt: threeDaysLater } }],
+      };
+    }
+    case "departure":
+      return {
+        OR: [
+          {
+            AND: [stayedDuringDate, { endedAt: { gte: start, lt: end } }],
+          },
+          { checkedOutAt: { gte: start, lt: end } },
+        ],
+      };
+    case "home-leave":
+    case "home_leave":
+      return {
+        homeLeaves: {
+          some: {
+            status: { in: [HomeLeaveStatus.ACTIVE, HomeLeaveStatus.RETURNED] },
+            startedAt: { lt: end },
+            OR: [{ returnedAt: null }, { returnedAt: { gte: start } }],
+          },
+        },
+      };
+    default:
+      return null;
+  }
+}
+
 export async function listBookings(
   req: AuthRequest,
   res: Response
@@ -90,12 +142,26 @@ export async function listBookings(
 
       switch (tab as BookingTab) {
         case "arrival":
-          where.status = BookingStatus.CONFIRMED;
-          where.startedAt = { lt: end };
+          if (req.query.history === "true") {
+            where.AND = [
+              getSiteBookingFilter(actor),
+              getHistoricalFrontDeskTabFilter("arrival", start, end)!,
+            ];
+          } else {
+            where.status = BookingStatus.CONFIRMED;
+            where.startedAt = { lt: end };
+          }
           break;
 
         case "in-house":
-          where.status = { in: IN_HOUSE_STATUSES };
+          if (req.query.history === "true") {
+            where.AND = [
+              getSiteBookingFilter(actor),
+              getHistoricalFrontDeskTabFilter("in-house", start, end)!,
+            ];
+          } else {
+            where.status = { in: IN_HOUSE_STATUSES };
+          }
           break;
 
         case "home-leave":
@@ -103,20 +169,31 @@ export async function listBookings(
           break;
 
         case "near-end": {
-          const twoDaysLater = new Date(start);
-          twoDaysLater.setUTCDate(twoDaysLater.getUTCDate() + 3);
+          if (req.query.history === "true") {
+            where.AND = [
+              getSiteBookingFilter(actor),
+              getHistoricalFrontDeskTabFilter("near-end", start, end)!,
+            ];
+          } else {
+            const twoDaysLater = new Date(start);
+            twoDaysLater.setUTCDate(twoDaysLater.getUTCDate() + 3);
 
-          where.status = { in: IN_HOUSE_STATUSES };
-          where.endedAt = {
-            gte: start,
-            lt: twoDaysLater,
-          };
+            where.status = { in: IN_HOUSE_STATUSES };
+            where.endedAt = { gte: start, lt: twoDaysLater };
+          }
           break;
         }
 
         case "departure":
-          where.status = { in: IN_HOUSE_STATUSES };
-          where.endedAt = { gte: start, lt: end };
+          if (req.query.history === "true") {
+            where.AND = [
+              getSiteBookingFilter(actor),
+              getHistoricalFrontDeskTabFilter("departure", start, end)!,
+            ];
+          } else {
+            where.status = { in: IN_HOUSE_STATUSES };
+            where.endedAt = { gte: start, lt: end };
+          }
           break;
       }
     }
@@ -445,26 +522,44 @@ export async function exportBookingsToExcel(
       const { start, end } = frontdeskRange;
       switch (frontdeskTab) {
         case "arrival":
-          tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { lt: end } });
+          if (req.query.frontdeskHistory === "true") {
+            tabFilters.push(getHistoricalFrontDeskTabFilter("arrival", start, end)!);
+          } else {
+            tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { lt: end } });
+          }
           break;
         case "in-house":
-          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } });
+          tabFilters.push(req.query.frontdeskHistory === "true"
+            ? getHistoricalFrontDeskTabFilter("in-house", start, end)!
+            : { status: { in: IN_HOUSE_STATUSES } });
           break;
         case "home_leave":
-          tabFilters.push(
-            { status: BookingStatus.HOME_LEAVE },
-            { startedAt: { lte: end } },
-            { endedAt: { gte: start } },
-          );
+          if (req.query.frontdeskHistory === "true") {
+            tabFilters.push(getHistoricalFrontDeskTabFilter("home_leave", start, end)!);
+          } else {
+            tabFilters.push(
+              { status: BookingStatus.HOME_LEAVE },
+              { startedAt: { lte: end } },
+              { endedAt: { gte: start } },
+            );
+          }
           break;
         case "near-end": {
-          const threeDaysLater = new Date(start);
-          threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
-          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: threeDaysLater } });
+          if (req.query.frontdeskHistory === "true") {
+            tabFilters.push(getHistoricalFrontDeskTabFilter("near-end", start, end)!);
+          } else {
+            const threeDaysLater = new Date(start);
+            threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
+            tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: threeDaysLater } });
+          }
           break;
         }
         case "departure":
-          tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: end } });
+          if (req.query.frontdeskHistory === "true") {
+            tabFilters.push(getHistoricalFrontDeskTabFilter("departure", start, end)!);
+          } else {
+            tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: end } });
+          }
           break;
       }
     }

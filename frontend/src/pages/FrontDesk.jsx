@@ -178,6 +178,7 @@ export default function FrontDesk() {
         page: String(currentPage),
         limit: String(PAGE_SIZE),
         date: selectedDate,
+        ...(isCurrentDate ? {} : { history: "true" }),
       });
       if (search.trim()) params.set("search", search.trim());
 
@@ -189,6 +190,7 @@ export default function FrontDesk() {
             page: "1",
             limit: "1",
             date: selectedDate,
+            ...(isCurrentDate ? {} : { history: "true" }),
           });
           if (search.trim()) countParams.set("search", search.trim());
           const countResponse = await apiRequest(`/api/booking?${countParams.toString()}`);
@@ -229,7 +231,7 @@ export default function FrontDesk() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search, segment, selectedDate]);
+  }, [currentPage, isCurrentDate, search, segment, selectedDate]);
 
   useEffect(() => {
   const timer = window.setTimeout(() => {
@@ -782,7 +784,7 @@ aria-label={
                           <td>{booking.approved_by || "-"}</td>
 
                           <td>
-                            <TableRowActions
+                            {isCurrentDate ? <TableRowActions
                               label="home leave"
                               rowLabel={booking.name}
                               onView={() =>
@@ -790,7 +792,7 @@ aria-label={
                               }
                               onEdit={() => setEditingRow(booking)}
                               onDelete={() => setDeletingRow(booking)}
-                            />
+                            /> : "-"}
                           </td>
                         </>
                       ) : (
@@ -826,7 +828,7 @@ aria-label={
                           <td>{booking.notes || "-"}</td>
 
                           <td>
-                            {segment === "arrival" ? (
+                            {!isCurrentDate ? "-" : segment === "arrival" ? (
                               <div className="table-actions">
                                 <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-in")}>Check In</FlexibleButton>
                                 <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => setCancellingBooking(booking)}>Cancel Booking</FlexibleButton>
@@ -988,7 +990,7 @@ aria-label={
           endpoint="/api/booking/export"
           filename={exportFilename}
           entityLabel="bookings"
-          extraParams={{ frontdeskTab: segment, date: selectedDate }}
+          extraParams={{ frontdeskTab: segment, date: selectedDate, frontdeskHistory: isCurrentDate ? "false" : "true" }}
           onClose={() => setIsExportModalOpen(false)}
         />
       )}
