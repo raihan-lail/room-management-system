@@ -42,6 +42,7 @@ import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
 import ForgotPassword from "./pages/auth/ForgotPassword";
+import EmailLog from "./pages/settings/EmailLogs";
 
 function DefaultRedirect() {
   const { status, user } = useAuth();
@@ -230,7 +231,16 @@ function App() {
                   </RequirePermission>
                 }
               />
+              <Route
+                path="/email-logs"
+                element={
+                  <RequirePermission permission="email.logs">
+                    <EmailLog />
+                  </RequirePermission>
+                }
+              />
               </Route>
+              
 
               <Route path="/change-password" element={<ChangePassword />} />
 

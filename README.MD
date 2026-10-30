@@ -7,6 +7,7 @@ complaints, ratings, employees, roles and permissions.
 - **Frontend:** Bun + React + Vite + JavaScript + Bootstrap Icons
 - **Realtime:** WebSocket notifications and live updates
 - **Auth:** JWT stored in an `httpOnly` cookie, with employee and resident accounts
+- **Mail Service:** Used GMAIL SMTP for development.
 
 Everything in this repository is run with **Bun**. Do not use `npm`, `yarn` or
 `pnpm`; the lockfiles are `bun.lock`.
@@ -25,6 +26,7 @@ room-management-system/
 │  │  ├─ helpers/             # helper functions
 │  │  ├─ routes/              # Express routers
 │  │  ├─ middleware/          # Authentication and permission guards
+│  │  ├─ scripts/             # Executable test scripts
 │  │  ├─ lib/                 # JWT, Prisma client, permissions
 │  │  ├─ services/            # Audit, notification services
 │  │  ├─ utils/               # Shared helpers
@@ -99,6 +101,20 @@ bun run dev
 
 The API is available at <http://localhost:5000> and returns
 `{"message":"API is running"}` from `GET /`.
+
+SETUP GMAIL SMTP (for development):
+```
+1. Access your gmail account settings
+2. Enable 2 factor authentication
+3. Access or search for App Password
+4. Enter the app name, and then generate the 16 character password
+5. copy the passowrd
+6. fill the .env SMTP credential with your credential (email and app password)
+7. access src/scripts/test-email.ts
+8. in line 9, change the email to your testing email
+9. run the test: bun run src/scripts/test-email.ts
+10. if the test succeded, the email will sent to your test email
+```
 
 ### 2. Frontend
 

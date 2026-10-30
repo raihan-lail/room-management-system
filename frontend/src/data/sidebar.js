@@ -58,6 +58,7 @@ export const sidebarMenu = [
        { label: 'Role Management', path: '/roles', icon: 'bi-universal-access', permission:"roles.view" },
        { label: 'Manage Permissions', path: '/manage-permissions', icon: 'bi-house', permission: "permissions.view" },
         { label: 'Audit Logs', path: '/audit-logs', icon: 'bi-clock-history', permission: "audit.logs" },
+         { label: 'Email Logs', path: '/email-logs', icon: 'bi-envelope', permission: "mail.logs" },
       { label: 'Change Password', path: '/change-password', icon: 'bi-pencil' },
     ],
   },
