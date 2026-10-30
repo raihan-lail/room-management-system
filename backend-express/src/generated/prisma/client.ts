@@ -130,6 +130,11 @@ export type BookingEvent = Prisma.BookingEventModel
  */
 export type Complaint = Prisma.ComplaintModel
 /**
+ * Model ComplaintMessage
+ * 
+ */
+export type ComplaintMessage = Prisma.ComplaintMessageModel
+/**
  * Model Notification
  * 
  */

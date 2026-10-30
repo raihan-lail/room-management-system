@@ -29,11 +29,75 @@ export async function getMyNotifications(
       },
     });
 
+    const unreadComplaintCount = await prisma.notification.count({
+      where: {
+        userId,
+        isRead: false,
+        OR: [
+          { link: { startsWith: "/resident/complaints" } },
+          { link: { startsWith: "/bookings/complains" } },
+        ],
+      },
+    });
+
+    const unreadComplaintNotifications = await prisma.notification.findMany({
+      where: {
+        userId,
+        isRead: false,
+        OR: [
+          { link: { startsWith: "/resident/complaints/" } },
+          { link: { startsWith: "/bookings/complains/" } },
+        ],
+      },
+      select: { link: true },
+    });
+    const unreadComplaintIds = [...new Set(unreadComplaintNotifications
+      .map(({ link }) => link?.split("/").at(-1))
+      .filter((id): id is string => Boolean(id)))];
+
     res.json({
       success: true,
       data: notifications,
       unreadCount,
+      unreadComplaintCount,
+      unreadComplaintIds,
     });
+  } catch (error) {
+    next(error);
+  }
+}
+
+export async function markComplaintNotificationsAsRead(
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+): Promise<void> {
+  try {
+    const userId = req.userId;
+    const complaintId = req.params.complaintId;
+
+    if (!userId) {
+      res.status(401).json({ success: false, message: "Authentication required" });
+      return;
+    }
+    if (!complaintId) {
+      res.status(400).json({ success: false, message: "Complaint id is required" });
+      return;
+    }
+
+    const result = await prisma.notification.updateMany({
+      where: {
+        userId,
+        isRead: false,
+        OR: [
+          { link: `/resident/complaints/${complaintId}` },
+          { link: `/bookings/complains/${complaintId}` },
+        ],
+      },
+      data: { isRead: true },
+    });
+
+    res.json({ success: true, updatedCount: result.count });
   } catch (error) {
     next(error);
   }

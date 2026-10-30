@@ -7,7 +7,7 @@ const bedRouter = Router();
 bedRouter.use(authenticate);
 
 bedRouter.get("/", requirePermission("rooms.read"), listBeds);
-bedRouter.patch("/id", requirePermission("rooms.manage"), updateBed);
+bedRouter.patch("/:id", requirePermission("rooms.manage"), updateBed);
 bedRouter.delete("/:id", requirePermission("rooms.manage"), deleteBed);
 
 export default bedRouter;

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../contexts/useAuth";
 import apiRequest from "../api/client";
+import { fetchNotifications } from "../api/notifications";
 
 
 function getItemPermission(item) {
@@ -57,10 +58,11 @@ export default function Sidebar({
 }) {
   const navigate = useNavigate();
   const location = useLocation();
-  const { hasPermission } = useAuth();
+  const { hasPermission, isResident } = useAuth();
 
   const [openMenus, setOpenMenus] = useState({});
   const [hasFrontdeskAlerts, setHasFrontdeskAlerts] = useState(false);
+  const [hasComplaintAlerts, setHasComplaintAlerts] = useState(false);
   const visibleMenuItems = useMemo(
   () => filterMenuItems(menuItems, hasPermission),
   [menuItems, hasPermission]
@@ -103,6 +105,32 @@ export default function Sidebar({
       window.clearInterval(timer);
     };
   }, [hasPermission]);
+
+  useEffect(() => {
+    if (!isResident && !hasPermission("complaints")) return undefined;
+
+    let isMounted = true;
+    const refreshComplaintAlerts = async () => {
+      try {
+        const response = await fetchNotifications();
+        if (isMounted) {
+          setHasComplaintAlerts(Number(response?.unreadComplaintCount ?? 0) > 0);
+        }
+      } catch {
+        if (isMounted) setHasComplaintAlerts(false);
+      }
+    };
+
+    const handleNotificationUpdate = () => { void refreshComplaintAlerts(); };
+    void refreshComplaintAlerts();
+    const timer = window.setInterval(refreshComplaintAlerts, 30000);
+    window.addEventListener("notifications:updated", handleNotificationUpdate);
+    return () => {
+      isMounted = false;
+      window.clearInterval(timer);
+      window.removeEventListener("notifications:updated", handleNotificationUpdate);
+    };
+  }, [hasPermission, isResident]);
 
   const toggleMenu = (path) => {
     // If sidebar is collapsed, open it first.
@@ -240,6 +268,7 @@ export default function Sidebar({
                   {item.items.map((child) => {
                     const isChildActive =
                       location.pathname === child.path;
+                    const isComplaintItem = child.path === "/bookings/complains" || child.path === "/resident/complaints";
 
                     return (
                       <button
@@ -263,6 +292,9 @@ export default function Sidebar({
                         <span>
                           {child.label}
                         </span>
+                        {isComplaintItem && hasComplaintAlerts && (
+                          <span className="side-nav-alert-dot" aria-label="Unread complaint activity" />
+                        )}
                       </button>
                     );
                   })}

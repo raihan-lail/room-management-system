@@ -119,6 +119,9 @@ export default function BookingHistory() {
               All your room bookings, from the earliest to the latest
             </p>
           </div>
+          <button type="button" className="btn btn-neutral" onClick={() => navigate("/resident/complaints")}>
+            <i className="bi bi-chat-dots" aria-hidden="true" /> My Complaints
+          </button>
         </div>
 
         {/* RESIDENT PROFILE */}
@@ -305,7 +308,7 @@ export default function BookingHistory() {
                       type="button"
                       className="btn btn-neutral"
                       onClick={() =>
-                        navigate(`/resident/complaints/${booking.id}`)
+                        navigate(`/resident/bookings/${booking.id}/complaints`)
                       }
                     >
                       <i

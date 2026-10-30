@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
-import { complainsData } from "../../data/complains";
+import { fetchComplaints } from "../../api/complaints";
+import { fetchNotifications } from "../../api/notifications";
 
 const PAGE_SIZE = 10;
 
@@ -10,6 +11,31 @@ export default function Complains() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [complaints, setComplaints] = useState([]);
+  const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    Promise.allSettled([
+      fetchComplaints({ page: "1", limit: "100" }),
+      fetchNotifications(),
+    ]).then(([complaintsResult, notificationsResult]) => {
+      if (!active) return;
+      if (complaintsResult.status === "fulfilled") {
+        setComplaints(complaintsResult.value?.data ?? []);
+      } else {
+        setError(complaintsResult.reason?.message || "Failed to load complaints.");
+      }
+      if (notificationsResult.status === "fulfilled") {
+        setUnreadComplaintIds(notificationsResult.value?.unreadComplaintIds ?? []);
+      }
+    }).finally(() => {
+      if (active) setLoading(false);
+    });
+    return () => { active = false; };
+  }, []);
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -34,21 +60,21 @@ export default function Complains() {
   const filteredComplains = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return complainsData;
+    if (!query) return complaints;
 
-    return complainsData.filter((complain) =>
+    return complaints.filter((complain) =>
       [
-        complain.complain_id,
-        complain.room,
-        complain.name,
-        complain.type,
-        complain.submitted_date,
+        complain.id,
+        complain.booking?.bed?.room?.name,
+        complain.booking?.resident?.fullName,
+        complain.category,
+        complain.createdAt,
         
       ].some((value) =>
         (value || "").toString().toLowerCase().includes(query)
       )
     );
-  }, [search]);
+  }, [complaints, search]);
 
   /*
    * SORT
@@ -62,33 +88,33 @@ export default function Complains() {
 
       switch (sortConfig.key) {
         case "complain_id":
-          aValue = a.complain_id;
-          bValue = b.complain_id;
+          aValue = a.id;
+          bValue = b.id;
           break;
 
         case "room":
-          aValue = a.room;
-          bValue = b.room;
+          aValue = a.booking?.bed?.room?.name;
+          bValue = b.booking?.bed?.room?.name;
           break;
 
         case "name":
-          aValue = a.name;
-          bValue = b.name;
+          aValue = a.booking?.resident?.fullName;
+          bValue = b.booking?.resident?.fullName;
           break;
 
         case "type":
-          aValue = a.type;
-          bValue = b.type;
+          aValue = a.category;
+          bValue = b.category;
           break;
 
         case "submitted_date":
-          aValue = a.submitted_date;
-          bValue = b.submitted_date;
+          aValue = a.createdAt;
+          bValue = b.createdAt;
           break;
 
         case "details":
-          aValue = a.details;
-          bValue = b.details;
+          aValue = a.description;
+          bValue = b.description;
           break;
 
         default:
@@ -151,6 +177,10 @@ export default function Complains() {
     navigate(`/bookings/complains/${complainId}`);
   };
 
+  const formatDate = (value) => value
+    ? new Date(value).toLocaleDateString("en-GB")
+    : "-";
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -193,10 +223,10 @@ export default function Complains() {
             <button
               type="button"
               className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
+              onClick={() => window.print()}
             >
-              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
-              Export Excel
+              <i className="bi bi-printer" aria-hidden="true" />
+              Print
             </button>
           </div>
         </div>
@@ -221,7 +251,7 @@ export default function Complains() {
                         handleSort("complain_id")
                       }
                     >
-                      Complaint ID
+                      Booking ID
 
                       <i
                         className="bi bi-sort-alpha-down"
@@ -283,6 +313,12 @@ export default function Complains() {
                       />
                     </button>
                   </th>
+                  <th>
+                    Status
+                  </th>
+                  <th>
+                    Priority
+                  </th>
 
                   {/* SUBMITTED DATE */}
                   <th>
@@ -311,7 +347,11 @@ export default function Complains() {
               </thead>
 
               <tbody>
-                {pagedComplains.length === 0 ? (
+                {loading ? (
+                  <tr><td colSpan="8" className="muted">Loading complaints...</td></tr>
+                ) : error ? (
+                  <tr><td colSpan="8" role="alert">{error}</td></tr>
+                ) : pagedComplains.length === 0 ? (
                   <tr>
                     <td
                       colSpan="8"
@@ -324,7 +364,7 @@ export default function Complains() {
                   pagedComplains.map(
                     (complain, index) => (
                       <tr
-                        key={complain.complain_id}
+                      key={complain.id}
                       >
                         {/* NO */}
                         <td className="table-col-no">
@@ -337,29 +377,34 @@ export default function Complains() {
                         {/* COMPLAINT ID */}
                         <td>
                           <strong>
-                            {complain.complain_id}
+                            {complain.booking?.bookingNumber || "-"}
                           </strong>
                         </td>
 
                         {/* ROOM */}
                         <td>
-                          {complain.room || "-"}
+                          {complain.booking?.bed?.room?.name || "-"}
                         </td>
 
                         {/* NAME */}
                         <td>
-                          {complain.name || "-"}
+                          {complain.booking?.resident?.fullName || "-"}
                         </td>
 
                         {/* TYPE */}
                         <td>
-                          {complain.type || "-"}
+                          {complain.category || "-"}
+                        </td>
+                        <td>
+                          {complain.status || "-"}
+                        </td>
+                        <td>
+                          {complain.priority || "-"}
                         </td>
 
                         {/* SUBMITTED DATE */}
                         <td>
-                          {complain.submitted_date ||
-                            "-"}
+                          {formatDate(complain.createdAt)}
                         </td>
 
                         {/* DETAILS */}
@@ -371,10 +416,10 @@ export default function Complains() {
                             <button
                               type="button"
                               className="btn btn-neutral"
-                              title={`View complaint ${complain.complain_id}`}
+                              title={`View complaint ${complain.id}`}
                               onClick={() =>
                                 handleViewComplaint(
-                                  complain.complain_id
+                                  complain.id
                                 )
                               }
                             >
@@ -382,6 +427,9 @@ export default function Complains() {
                                 className="bi bi-eye"
                                 aria-hidden="true"
                               />
+                              {unreadComplaintIds.includes(complain.id) && (
+                                <span className="side-nav-alert-dot" aria-label="Unread conversation activity" />
+                              )}
                             </button>
                           </div>
                         </td>

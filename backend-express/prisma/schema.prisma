@@ -25,6 +25,7 @@ model User {
   auditLogs AuditLog[] @relation("AuditLogActor")
 
   bookingEvents BookingEvent[] @relation("BookingEventActor")
+  complaintMessages ComplaintMessage[]
 
 }
 
@@ -341,17 +342,29 @@ enum ComplaintStatus {
   IN_PROGRESS
   RESOLVED
   CLOSED
+  REJECTED
+}
+
+enum ComplaintPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
 }
 
 model Complaint {
   id          String          @id @default(cuid())
   bookingId   String
   title       String
+  category    String
   description String
   status      ComplaintStatus @default(OPEN)
+  priority     ComplaintPriority @default(MEDIUM)
+
   assignedToId String?
   resolvedAt  DateTime?
   resolution  String?
+  closedAt     DateTime?
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -359,9 +372,28 @@ model Complaint {
   booking     Booking @relation(fields: [bookingId], references: [id])
   assignedTo  Employee? @relation("ComplaintAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
+  messages     ComplaintMessage[]
+
+
   @@index([status, createdAt])
   @@index([bookingId])
   @@index([assignedToId, status])
+ 
+
+}
+
+model ComplaintMessage {
+  id          String   @id @default(cuid())
+  complaintId String
+  userId      String
+  message     String
+  isInternal  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
+
+  @@index([complaintId, createdAt])
 }
 
 

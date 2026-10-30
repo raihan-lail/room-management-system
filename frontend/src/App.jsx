@@ -37,6 +37,7 @@ import Ratings from "./pages/bookings/Ratings";
 import BookingHistory from "./pages/resident-front-office/BookingHistory";
 import BookingRating from "./pages/resident-front-office/BookingRating";
 import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
+import ResidentComplaints from "./pages/resident-front-office/ResidentComplaints";
 import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
@@ -244,9 +245,11 @@ function App() {
                   element={<BookingRating />}
                 />
                 <Route
-                  path="/resident/complaints/:bookingId"
+                  path="/resident/bookings/:bookingId/complaints"
                   element={<BookingComplaints />}
                 />
+                <Route path="/resident/complaints" element={<ResidentComplaints />} />
+                <Route path="/resident/complaints/:complaintId" element={<ResidentComplaints />} />
               </Route>
 
               <Route

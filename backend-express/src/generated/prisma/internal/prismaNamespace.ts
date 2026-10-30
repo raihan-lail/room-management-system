@@ -415,6 +415,7 @@ export const ModelName = {
   HomeLeave: 'HomeLeave',
   BookingEvent: 'BookingEvent',
   Complaint: 'Complaint',
+  ComplaintMessage: 'ComplaintMessage',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -432,7 +433,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "notification" | "auditLog"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "notification" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1768,6 +1769,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    ComplaintMessage: {
+      payload: Prisma.$ComplaintMessagePayload<ExtArgs>
+      fields: Prisma.ComplaintMessageFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.ComplaintMessageFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.ComplaintMessageFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        findFirst: {
+          args: Prisma.ComplaintMessageFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.ComplaintMessageFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        findMany: {
+          args: Prisma.ComplaintMessageFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
+        }
+        create: {
+          args: Prisma.ComplaintMessageCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        createMany: {
+          args: Prisma.ComplaintMessageCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.ComplaintMessageCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
+        }
+        delete: {
+          args: Prisma.ComplaintMessageDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        update: {
+          args: Prisma.ComplaintMessageUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        deleteMany: {
+          args: Prisma.ComplaintMessageDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.ComplaintMessageUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.ComplaintMessageUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
+        }
+        upsert: {
+          args: Prisma.ComplaintMessageUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
+        }
+        aggregate: {
+          args: Prisma.ComplaintMessageAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateComplaintMessage>
+        }
+        groupBy: {
+          args: Prisma.ComplaintMessageGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ComplaintMessageGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.ComplaintMessageCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.ComplaintMessageCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -2183,16 +2258,31 @@ export const ComplaintScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
   title: 'title',
+  category: 'category',
   description: 'description',
   status: 'status',
+  priority: 'priority',
   assignedToId: 'assignedToId',
   resolvedAt: 'resolvedAt',
   resolution: 'resolution',
+  closedAt: 'closedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
 } as const
 
 export type ComplaintScalarFieldEnum = (typeof ComplaintScalarFieldEnum)[keyof typeof ComplaintScalarFieldEnum]
+
+
+export const ComplaintMessageScalarFieldEnum = {
+  id: 'id',
+  complaintId: 'complaintId',
+  userId: 'userId',
+  message: 'message',
+  isInternal: 'isInternal',
+  createdAt: 'createdAt'
+} as const
+
+export type ComplaintMessageScalarFieldEnum = (typeof ComplaintMessageScalarFieldEnum)[keyof typeof ComplaintMessageScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {
@@ -2408,6 +2498,20 @@ export type ListEnumComplaintStatusFieldRefInput<$PrismaModel> = FieldRefInputTy
 
 
 /**
+ * Reference to a field of type 'ComplaintPriority'
+ */
+export type EnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintPriority'>
+    
+
+
+/**
+ * Reference to a field of type 'ComplaintPriority[]'
+ */
+export type ListEnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintPriority[]'>
+    
+
+
+/**
  * Reference to a field of type 'Float'
  */
 export type FloatFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'Float'>
@@ -2589,6 +2693,7 @@ export type GlobalOmitConfig = {
   homeLeave?: Prisma.HomeLeaveOmit
   bookingEvent?: Prisma.BookingEventOmit
   complaint?: Prisma.ComplaintOmit
+  complaintMessage?: Prisma.ComplaintMessageOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
 }

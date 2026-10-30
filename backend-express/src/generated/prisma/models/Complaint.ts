@@ -28,11 +28,14 @@ export type ComplaintMinAggregateOutputType = {
   id: string | null
   bookingId: string | null
   title: string | null
+  category: string | null
   description: string | null
   status: $Enums.ComplaintStatus | null
+  priority: $Enums.ComplaintPriority | null
   assignedToId: string | null
   resolvedAt: Date | null
   resolution: string | null
+  closedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -41,11 +44,14 @@ export type ComplaintMaxAggregateOutputType = {
   id: string | null
   bookingId: string | null
   title: string | null
+  category: string | null
   description: string | null
   status: $Enums.ComplaintStatus | null
+  priority: $Enums.ComplaintPriority | null
   assignedToId: string | null
   resolvedAt: Date | null
   resolution: string | null
+  closedAt: Date | null
   createdAt: Date | null
   updatedAt: Date | null
 }
@@ -54,11 +60,14 @@ export type ComplaintCountAggregateOutputType = {
   id: number
   bookingId: number
   title: number
+  category: number
   description: number
   status: number
+  priority: number
   assignedToId: number
   resolvedAt: number
   resolution: number
+  closedAt: number
   createdAt: number
   updatedAt: number
   _all: number
@@ -69,11 +78,14 @@ export type ComplaintMinAggregateInputType = {
   id?: true
   bookingId?: true
   title?: true
+  category?: true
   description?: true
   status?: true
+  priority?: true
   assignedToId?: true
   resolvedAt?: true
   resolution?: true
+  closedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -82,11 +94,14 @@ export type ComplaintMaxAggregateInputType = {
   id?: true
   bookingId?: true
   title?: true
+  category?: true
   description?: true
   status?: true
+  priority?: true
   assignedToId?: true
   resolvedAt?: true
   resolution?: true
+  closedAt?: true
   createdAt?: true
   updatedAt?: true
 }
@@ -95,11 +110,14 @@ export type ComplaintCountAggregateInputType = {
   id?: true
   bookingId?: true
   title?: true
+  category?: true
   description?: true
   status?: true
+  priority?: true
   assignedToId?: true
   resolvedAt?: true
   resolution?: true
+  closedAt?: true
   createdAt?: true
   updatedAt?: true
   _all?: true
@@ -181,11 +199,14 @@ export type ComplaintGroupByOutputType = {
   id: string
   bookingId: string
   title: string
+  category: string
   description: string
   status: $Enums.ComplaintStatus
+  priority: $Enums.ComplaintPriority
   assignedToId: string | null
   resolvedAt: Date | null
   resolution: string | null
+  closedAt: Date | null
   createdAt: Date
   updatedAt: Date
   _count: ComplaintCountAggregateOutputType | null
@@ -215,30 +236,38 @@ export type ComplaintWhereInput = {
   id?: Prisma.StringFilter<"Complaint"> | string
   bookingId?: Prisma.StringFilter<"Complaint"> | string
   title?: Prisma.StringFilter<"Complaint"> | string
+  category?: Prisma.StringFilter<"Complaint"> | string
   description?: Prisma.StringFilter<"Complaint"> | string
   status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFilter<"Complaint"> | $Enums.ComplaintPriority
   assignedToId?: Prisma.StringNullableFilter<"Complaint"> | string | null
   resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null
+  closedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
   assignedTo?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.EmployeeWhereInput> | null
+  messages?: Prisma.ComplaintMessageListRelationFilter
 }
 
 export type ComplaintOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
   assignedToId?: Prisma.SortOrderInput | Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   resolution?: Prisma.SortOrderInput | Prisma.SortOrder
+  closedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   booking?: Prisma.BookingOrderByWithRelationInput
   assignedTo?: Prisma.EmployeeOrderByWithRelationInput
+  messages?: Prisma.ComplaintMessageOrderByRelationAggregateInput
 }
 
 export type ComplaintWhereUniqueInput = Prisma.AtLeast<{
@@ -248,26 +277,33 @@ export type ComplaintWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.ComplaintWhereInput | Prisma.ComplaintWhereInput[]
   bookingId?: Prisma.StringFilter<"Complaint"> | string
   title?: Prisma.StringFilter<"Complaint"> | string
+  category?: Prisma.StringFilter<"Complaint"> | string
   description?: Prisma.StringFilter<"Complaint"> | string
   status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFilter<"Complaint"> | $Enums.ComplaintPriority
   assignedToId?: Prisma.StringNullableFilter<"Complaint"> | string | null
   resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null
+  closedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
   assignedTo?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.EmployeeWhereInput> | null
+  messages?: Prisma.ComplaintMessageListRelationFilter
 }, "id">
 
 export type ComplaintOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
   assignedToId?: Prisma.SortOrderInput | Prisma.SortOrder
   resolvedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   resolution?: Prisma.SortOrderInput | Prisma.SortOrder
+  closedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
   _count?: Prisma.ComplaintCountOrderByAggregateInput
@@ -282,11 +318,14 @@ export type ComplaintScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"Complaint"> | string
   bookingId?: Prisma.StringWithAggregatesFilter<"Complaint"> | string
   title?: Prisma.StringWithAggregatesFilter<"Complaint"> | string
+  category?: Prisma.StringWithAggregatesFilter<"Complaint"> | string
   description?: Prisma.StringWithAggregatesFilter<"Complaint"> | string
   status?: Prisma.EnumComplaintStatusWithAggregatesFilter<"Complaint"> | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityWithAggregatesFilter<"Complaint"> | $Enums.ComplaintPriority
   assignedToId?: Prisma.StringNullableWithAggregatesFilter<"Complaint"> | string | null
   resolvedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Complaint"> | Date | string | null
   resolution?: Prisma.StringNullableWithAggregatesFilter<"Complaint"> | string | null
+  closedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"Complaint"> | Date | string | null
   createdAt?: Prisma.DateTimeWithAggregatesFilter<"Complaint"> | Date | string
   updatedAt?: Prisma.DateTimeWithAggregatesFilter<"Complaint"> | Date | string
 }
@@ -294,64 +333,83 @@ export type ComplaintScalarWhereWithAggregatesInput = {
 export type ComplaintCreateInput = {
   id?: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
   assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
+  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateInput = {
   id?: string
   bookingId: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   assignedToId?: string | null
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
   assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
+  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintCreateManyInput = {
   id?: string
   bookingId: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   assignedToId?: string | null
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -359,10 +417,13 @@ export type ComplaintCreateManyInput = {
 export type ComplaintUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -371,11 +432,14 @@ export type ComplaintUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -394,11 +458,14 @@ export type ComplaintCountOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
   assignedToId?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
   resolution?: Prisma.SortOrder
+  closedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -407,11 +474,14 @@ export type ComplaintMaxOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
   assignedToId?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
   resolution?: Prisma.SortOrder
+  closedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
 }
@@ -420,13 +490,21 @@ export type ComplaintMinOrderByAggregateInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   title?: Prisma.SortOrder
+  category?: Prisma.SortOrder
   description?: Prisma.SortOrder
   status?: Prisma.SortOrder
+  priority?: Prisma.SortOrder
   assignedToId?: Prisma.SortOrder
   resolvedAt?: Prisma.SortOrder
   resolution?: Prisma.SortOrder
+  closedAt?: Prisma.SortOrder
   createdAt?: Prisma.SortOrder
   updatedAt?: Prisma.SortOrder
+}
+
+export type ComplaintScalarRelationFilter = {
+  is?: Prisma.ComplaintWhereInput
+  isNot?: Prisma.ComplaintWhereInput
 }
 
 export type ComplaintCreateNestedManyWithoutAssignedToInput = {
@@ -517,28 +595,54 @@ export type EnumComplaintStatusFieldUpdateOperationsInput = {
   set?: $Enums.ComplaintStatus
 }
 
+export type EnumComplaintPriorityFieldUpdateOperationsInput = {
+  set?: $Enums.ComplaintPriority
+}
+
+export type ComplaintCreateNestedOneWithoutMessagesInput = {
+  create?: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
+  connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutMessagesInput
+  connect?: Prisma.ComplaintWhereUniqueInput
+}
+
+export type ComplaintUpdateOneRequiredWithoutMessagesNestedInput = {
+  create?: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
+  connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutMessagesInput
+  upsert?: Prisma.ComplaintUpsertWithoutMessagesInput
+  connect?: Prisma.ComplaintWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.ComplaintUpdateToOneWithWhereWithoutMessagesInput, Prisma.ComplaintUpdateWithoutMessagesInput>, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
+}
+
 export type ComplaintCreateWithoutAssignedToInput = {
   id?: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
+  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateWithoutAssignedToInput = {
   id?: string
   bookingId: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintCreateOrConnectWithoutAssignedToInput = {
@@ -574,11 +678,14 @@ export type ComplaintScalarWhereInput = {
   id?: Prisma.StringFilter<"Complaint"> | string
   bookingId?: Prisma.StringFilter<"Complaint"> | string
   title?: Prisma.StringFilter<"Complaint"> | string
+  category?: Prisma.StringFilter<"Complaint"> | string
   description?: Prisma.StringFilter<"Complaint"> | string
   status?: Prisma.EnumComplaintStatusFilter<"Complaint"> | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFilter<"Complaint"> | $Enums.ComplaintPriority
   assignedToId?: Prisma.StringNullableFilter<"Complaint"> | string | null
   resolvedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   resolution?: Prisma.StringNullableFilter<"Complaint"> | string | null
+  closedAt?: Prisma.DateTimeNullableFilter<"Complaint"> | Date | string | null
   createdAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   updatedAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
 }
@@ -586,25 +693,33 @@ export type ComplaintScalarWhereInput = {
 export type ComplaintCreateWithoutBookingInput = {
   id?: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
   assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
+  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateWithoutBookingInput = {
   id?: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   assignedToId?: string | null
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
+  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintCreateOrConnectWithoutBookingInput = {
@@ -633,14 +748,97 @@ export type ComplaintUpdateManyWithWhereWithoutBookingInput = {
   data: Prisma.XOR<Prisma.ComplaintUpdateManyMutationInput, Prisma.ComplaintUncheckedUpdateManyWithoutBookingInput>
 }
 
+export type ComplaintCreateWithoutMessagesInput = {
+  id?: string
+  title: string
+  category: string
+  description: string
+  status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
+  resolvedAt?: Date | string | null
+  resolution?: string | null
+  closedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
+  assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
+}
+
+export type ComplaintUncheckedCreateWithoutMessagesInput = {
+  id?: string
+  bookingId: string
+  title: string
+  category: string
+  description: string
+  status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
+  assignedToId?: string | null
+  resolvedAt?: Date | string | null
+  resolution?: string | null
+  closedAt?: Date | string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+}
+
+export type ComplaintCreateOrConnectWithoutMessagesInput = {
+  where: Prisma.ComplaintWhereUniqueInput
+  create: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
+}
+
+export type ComplaintUpsertWithoutMessagesInput = {
+  update: Prisma.XOR<Prisma.ComplaintUpdateWithoutMessagesInput, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
+  create: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
+  where?: Prisma.ComplaintWhereInput
+}
+
+export type ComplaintUpdateToOneWithWhereWithoutMessagesInput = {
+  where?: Prisma.ComplaintWhereInput
+  data: Prisma.XOR<Prisma.ComplaintUpdateWithoutMessagesInput, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
+}
+
+export type ComplaintUpdateWithoutMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
+  assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
+}
+
+export type ComplaintUncheckedUpdateWithoutMessagesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  bookingId?: Prisma.StringFieldUpdateOperationsInput | string
+  title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
+  description?: Prisma.StringFieldUpdateOperationsInput | string
+  status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
+  assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+}
+
 export type ComplaintCreateManyAssignedToInput = {
   id?: string
   bookingId: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -648,35 +846,46 @@ export type ComplaintCreateManyAssignedToInput = {
 export type ComplaintUpdateWithoutAssignedToInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
+  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateWithoutAssignedToInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateManyWithoutAssignedToInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
@@ -684,11 +893,14 @@ export type ComplaintUncheckedUpdateManyWithoutAssignedToInput = {
 export type ComplaintCreateManyBookingInput = {
   id?: string
   title: string
+  category: string
   description: string
   status?: $Enums.ComplaintStatus
+  priority?: $Enums.ComplaintPriority
   assignedToId?: string | null
   resolvedAt?: Date | string | null
   resolution?: string | null
+  closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
 }
@@ -696,65 +908,113 @@ export type ComplaintCreateManyBookingInput = {
 export type ComplaintUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
+  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateManyWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   title?: Prisma.StringFieldUpdateOperationsInput | string
+  category?: Prisma.StringFieldUpdateOperationsInput | string
   description?: Prisma.StringFieldUpdateOperationsInput | string
   status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
+  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
   assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
+
+/**
+ * Count Type ComplaintCountOutputType
+ */
+
+export type ComplaintCountOutputType = {
+  messages: number
+}
+
+export type ComplaintCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  messages?: boolean | ComplaintCountOutputTypeCountMessagesArgs
+}
+
+/**
+ * ComplaintCountOutputType without action
+ */
+export type ComplaintCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ComplaintCountOutputType
+   */
+  select?: Prisma.ComplaintCountOutputTypeSelect<ExtArgs> | null
+}
+
+/**
+ * ComplaintCountOutputType without action
+ */
+export type ComplaintCountOutputTypeCountMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.ComplaintMessageWhereInput
+}
 
 
 export type ComplaintSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookingId?: boolean
   title?: boolean
+  category?: boolean
   description?: boolean
   status?: boolean
+  priority?: boolean
   assignedToId?: boolean
   resolvedAt?: boolean
   resolution?: boolean
+  closedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
   assignedTo?: boolean | Prisma.Complaint$assignedToArgs<ExtArgs>
+  messages?: boolean | Prisma.Complaint$messagesArgs<ExtArgs>
+  _count?: boolean | Prisma.ComplaintCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["complaint"]>
 
 export type ComplaintSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
   bookingId?: boolean
   title?: boolean
+  category?: boolean
   description?: boolean
   status?: boolean
+  priority?: boolean
   assignedToId?: boolean
   resolvedAt?: boolean
   resolution?: boolean
+  closedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
@@ -765,11 +1025,14 @@ export type ComplaintSelectUpdateManyAndReturn<ExtArgs extends runtime.Types.Ext
   id?: boolean
   bookingId?: boolean
   title?: boolean
+  category?: boolean
   description?: boolean
   status?: boolean
+  priority?: boolean
   assignedToId?: boolean
   resolvedAt?: boolean
   resolution?: boolean
+  closedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
@@ -780,19 +1043,24 @@ export type ComplaintSelectScalar = {
   id?: boolean
   bookingId?: boolean
   title?: boolean
+  category?: boolean
   description?: boolean
   status?: boolean
+  priority?: boolean
   assignedToId?: boolean
   resolvedAt?: boolean
   resolution?: boolean
+  closedAt?: boolean
   createdAt?: boolean
   updatedAt?: boolean
 }
 
-export type ComplaintOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookingId" | "title" | "description" | "status" | "assignedToId" | "resolvedAt" | "resolution" | "createdAt" | "updatedAt", ExtArgs["result"]["complaint"]>
+export type ComplaintOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetOmit<"id" | "bookingId" | "title" | "category" | "description" | "status" | "priority" | "assignedToId" | "resolvedAt" | "resolution" | "closedAt" | "createdAt" | "updatedAt", ExtArgs["result"]["complaint"]>
 export type ComplaintInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
   assignedTo?: boolean | Prisma.Complaint$assignedToArgs<ExtArgs>
+  messages?: boolean | Prisma.Complaint$messagesArgs<ExtArgs>
+  _count?: boolean | Prisma.ComplaintCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ComplaintIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
@@ -808,16 +1076,20 @@ export type $ComplaintPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   objects: {
     booking: Prisma.$BookingPayload<ExtArgs>
     assignedTo: Prisma.$EmployeePayload<ExtArgs> | null
+    messages: Prisma.$ComplaintMessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
     bookingId: string
     title: string
+    category: string
     description: string
     status: $Enums.ComplaintStatus
+    priority: $Enums.ComplaintPriority
     assignedToId: string | null
     resolvedAt: Date | null
     resolution: string | null
+    closedAt: Date | null
     createdAt: Date
     updatedAt: Date
   }, ExtArgs["result"]["complaint"]>
@@ -1216,6 +1488,7 @@ export interface Prisma__ComplaintClient<T, Null = never, ExtArgs extends runtim
   readonly [Symbol.toStringTag]: "PrismaPromise"
   booking<T extends Prisma.BookingDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookingDefaultArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   assignedTo<T extends Prisma.Complaint$assignedToArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Complaint$assignedToArgs<ExtArgs>>): Prisma.Prisma__EmployeeClient<runtime.Types.Result.GetResult<Prisma.$EmployeePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+  messages<T extends Prisma.Complaint$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Complaint$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComplaintMessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1248,11 +1521,14 @@ export interface ComplaintFieldRefs {
   readonly id: Prisma.FieldRef<"Complaint", 'String'>
   readonly bookingId: Prisma.FieldRef<"Complaint", 'String'>
   readonly title: Prisma.FieldRef<"Complaint", 'String'>
+  readonly category: Prisma.FieldRef<"Complaint", 'String'>
   readonly description: Prisma.FieldRef<"Complaint", 'String'>
   readonly status: Prisma.FieldRef<"Complaint", 'ComplaintStatus'>
+  readonly priority: Prisma.FieldRef<"Complaint", 'ComplaintPriority'>
   readonly assignedToId: Prisma.FieldRef<"Complaint", 'String'>
   readonly resolvedAt: Prisma.FieldRef<"Complaint", 'DateTime'>
   readonly resolution: Prisma.FieldRef<"Complaint", 'String'>
+  readonly closedAt: Prisma.FieldRef<"Complaint", 'DateTime'>
   readonly createdAt: Prisma.FieldRef<"Complaint", 'DateTime'>
   readonly updatedAt: Prisma.FieldRef<"Complaint", 'DateTime'>
 }
@@ -1672,6 +1948,30 @@ export type Complaint$assignedToArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   include?: Prisma.EmployeeInclude<ExtArgs> | null
   where?: Prisma.EmployeeWhereInput
+}
+
+/**
+ * Complaint.messages
+ */
+export type Complaint$messagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the ComplaintMessage
+   */
+  select?: Prisma.ComplaintMessageSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the ComplaintMessage
+   */
+  omit?: Prisma.ComplaintMessageOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.ComplaintMessageInclude<ExtArgs> | null
+  where?: Prisma.ComplaintMessageWhereInput
+  orderBy?: Prisma.ComplaintMessageOrderByWithRelationInput | Prisma.ComplaintMessageOrderByWithRelationInput[]
+  cursor?: Prisma.ComplaintMessageWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.ComplaintMessageScalarFieldEnum | Prisma.ComplaintMessageScalarFieldEnum[]
 }
 
 /**

@@ -53,7 +53,18 @@ export const ComplaintStatus = {
   OPEN: 'OPEN',
   IN_PROGRESS: 'IN_PROGRESS',
   RESOLVED: 'RESOLVED',
-  CLOSED: 'CLOSED'
+  CLOSED: 'CLOSED',
+  REJECTED: 'REJECTED'
 } as const
 
 export type ComplaintStatus = (typeof ComplaintStatus)[keyof typeof ComplaintStatus]
+
+
+export const ComplaintPriority = {
+  LOW: 'LOW',
+  MEDIUM: 'MEDIUM',
+  HIGH: 'HIGH',
+  URGENT: 'URGENT'
+} as const
+
+export type ComplaintPriority = (typeof ComplaintPriority)[keyof typeof ComplaintPriority]

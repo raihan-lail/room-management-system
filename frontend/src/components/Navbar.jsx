@@ -113,6 +113,12 @@ export default function Navbar({ onToggleSidebar }) {
 }, [loadNotifications]);
 
   useEffect(() => {
+    const refreshNotifications = () => { void loadNotifications(); };
+    window.addEventListener("notifications:updated", refreshNotifications);
+    return () => window.removeEventListener("notifications:updated", refreshNotifications);
+  }, [loadNotifications]);
+
+  useEffect(() => {
     if (!userId) return;
 
     let socket = null;
@@ -130,6 +136,7 @@ export default function Navbar({ onToggleSidebar }) {
       notificationsRef.current = next;
       setNotifications(next);
       setUnreadCount((prev) => prev + 1);
+      window.dispatchEvent(new Event("notifications:updated"));
     };
 
     const scheduleReconnect = () => {
@@ -290,6 +297,7 @@ export default function Navbar({ onToggleSidebar }) {
       notificationsRef.current = next;
       setNotifications(next);
       setUnreadCount((prev) => Math.max(0, prev - 1));
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch {
       // Keep dropdown usable even if mark-as-read fails.
     }
@@ -305,6 +313,7 @@ export default function Navbar({ onToggleSidebar }) {
       notificationsRef.current = next;
       setNotifications(next);
       setUnreadCount(0);
+      window.dispatchEvent(new Event("notifications:updated"));
     } catch (err) {
       setNotificationsError(err?.message || "Failed to update notifications");
     }

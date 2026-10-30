@@ -70,6 +70,7 @@ export const residentMenu = [
     icon: "bi-building",
     items: [
       { label: 'Booking History', path: '/resident/history', icon: 'bi-clock-history' },
+      { label: 'My Complaints', path: '/resident/complaints', icon: 'bi-chat-dots' },
       { label: 'Change Password', path: '/change-password', icon: 'bi-pencil' },
     ],
   },

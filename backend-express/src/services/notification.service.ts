@@ -1,5 +1,6 @@
 import { prisma } from "../lib/prisma";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
+import { sendNotificationToUser } from "../websocket/notification.socket";
 
 interface CreateNotificationInput {
   userId: string;
@@ -33,7 +34,7 @@ export async function notifyActor(
 export async function createNotification(
   data: CreateNotificationInput
 ) {
-  return prisma.notification.create({
+  const notification = await prisma.notification.create({
     data: {
       userId: data.userId,
       title: data.title,
@@ -42,4 +43,68 @@ export async function createNotification(
       link: data.link,
     },
   });
+
+  sendNotificationToUser(data.userId, notification);
+  return notification;
+}
+
+export async function notifyUsers(
+  userIds: string[],
+  input: Omit<CreateNotificationInput, "userId">
+): Promise<void> {
+  const uniqueUserIds = [...new Set(userIds)];
+  const results = await Promise.allSettled(
+    uniqueUserIds.map((userId) => createNotification({ ...input, userId }))
+  );
+
+  for (const result of results) {
+    if (result.status === "rejected") {
+      console.error("Failed to create notification:", result.reason);
+    }
+  }
+}
+
+export async function notifyComplaintStaff(
+  siteId: string | null,
+  input: Omit<CreateNotificationInput, "userId">,
+  exceptUserId?: string
+): Promise<void> {
+  try {
+    const employees = await prisma.employee.findMany({
+      where: {
+        user: { isActive: true },
+        OR: [
+          {
+            AND: [
+              ...(siteId ? [{ siteId }] : []),
+              { permissions: { some: { permission: { name: "complaints" } } } },
+            ],
+          },
+          {
+            AND: [
+              ...(siteId ? [{ siteId }] : []),
+              {
+                roles: {
+                  some: {
+                    role: {
+                      permissions: { some: { permission: { name: "complaints" } } },
+                    },
+                  },
+                },
+              },
+            ],
+          },
+          { roles: { some: { role: { name: "superadmin", siteId: null } } } },
+        ],
+      },
+      select: { userId: true },
+    });
+
+    await notifyUsers(
+      employees.map(({ userId }) => userId).filter((userId) => userId !== exceptUserId),
+      input
+    );
+  } catch (error) {
+    console.error("Failed to notify complaint staff:", error);
+  }
 }
