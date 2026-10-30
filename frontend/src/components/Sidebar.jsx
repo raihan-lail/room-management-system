@@ -1,6 +1,7 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import useAuth from "../contexts/useAuth";
+import apiRequest from "../api/client";
 
 
 function getItemPermission(item) {
@@ -59,10 +60,39 @@ export default function Sidebar({
   const { hasPermission } = useAuth();
 
   const [openMenus, setOpenMenus] = useState({});
+  const [hasFrontdeskAlerts, setHasFrontdeskAlerts] = useState(false);
   const visibleMenuItems = useMemo(
   () => filterMenuItems(menuItems, hasPermission),
   [menuItems, hasPermission]
 );
+
+  useEffect(() => {
+    if (!hasPermission("frontdesk")) return undefined;
+
+    let isMounted = true;
+    const refreshAlerts = async () => {
+      try {
+        const today = new Date();
+        const date = `${today.getFullYear()}-${`${today.getMonth() + 1}`.padStart(2, "0")}-${`${today.getDate()}`.padStart(2, "0")}`;
+        const tabs = ["arrival", "departure", "near-end"];
+        const counts = await Promise.all(tabs.map(async (tab) => {
+          const params = new URLSearchParams({ tab, page: "1", limit: "1", date });
+          const response = await apiRequest(`/api/booking?${params}`);
+          return Number(response?.pagination?.total ?? 0);
+        }));
+        if (isMounted) setHasFrontdeskAlerts(counts.some((count) => count > 0));
+      } catch {
+        if (isMounted) setHasFrontdeskAlerts(false);
+      }
+    };
+
+    refreshAlerts();
+    const timer = window.setInterval(refreshAlerts, 60000);
+    return () => {
+      isMounted = false;
+      window.clearInterval(timer);
+    };
+  }, [hasPermission]);
 
   const toggleMenu = (path) => {
     // If sidebar is collapsed, open it first.
@@ -176,6 +206,10 @@ export default function Sidebar({
                 <span className="side-nav-link__label">
                   {item.label}
                 </span>
+
+                {item.path === "/frontdesk" && hasFrontdeskAlerts && (
+                  <span className="side-nav-alert-dot" aria-label="Front desk alerts" />
+                )}
 
                
                 {hasChildren && (

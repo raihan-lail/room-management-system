@@ -1307,6 +1307,26 @@ textarea,
   background-color: #f8fafc;
 }
 
+.side-nav-alert-dot {
+  width: 7px;
+  height: 7px;
+  flex: 0 0 7px;
+  border-radius: 50%;
+  background-color: #FF7900;
+}
+
+.frontdesk-overdue-alert {
+  padding: 10px 14px;
+  background-color: var(--brand-soft);
+  color: var(--brand-bold);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.office-table tbody tr.frontdesk-row--overdue td {
+  background-color: var(--brand-soft);
+}
+
 .office-table tbody tr:nth-child(even) td {
   background-color: #fcfdfe;
 }

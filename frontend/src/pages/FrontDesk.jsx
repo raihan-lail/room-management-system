@@ -502,6 +502,9 @@ export default function FrontDesk() {
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedBookings = sortedBookings;
+  const overdueArrivalCount = segment === "arrival" && isCurrentDate
+    ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
+    : 0;
 
   const startRow =
     bookingPagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
@@ -601,6 +604,11 @@ aria-label={
 
         {/* TABLE CARD */}
         <section className="table-card content">
+          {overdueArrivalCount > 0 && (
+            <div className="frontdesk-overdue-alert" role="alert">
+              {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
+            </div>
+          )}
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
@@ -818,6 +826,7 @@ aria-label={
                           ? booking.booking_id
                           : booking.id
                       }
+                      className={segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey() ? "frontdesk-row--overdue" : ""}
                     >
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}

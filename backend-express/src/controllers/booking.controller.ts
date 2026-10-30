@@ -2000,7 +2000,7 @@ export async function checkOutBooking(
 
     await notifyActor(req, {
       title:"Resident checked out",
-      message:`Resident ${booking.resident.fullName} with booking id ${booking.id} checked out`
+      message:`Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} checked out`
     })
 
     res.status(200).json({
