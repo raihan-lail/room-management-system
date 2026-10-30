@@ -37,7 +37,13 @@ export default function ComplainDetails() {
     }
   }, [complainId]);
 
-  useEffect(() => { loadComplaint(); }, [loadComplaint]);
+  useEffect(() => {
+  const timer = window.setTimeout(() => {
+    loadComplaint();
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadComplaint]);
 
   useEffect(() => {
     markComplaintNotificationsAsRead(complainId)
