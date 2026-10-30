@@ -83,19 +83,21 @@ const formatDaysLeft = (endedAt, today) => {
 };
 
 const toHomeLeaveRow = (booking) => {
-  const leaves = Array.isArray(booking.homeLeaves) ? booking.homeLeaves : [];
-  const leave =
-    leaves.find((item) => item.status === "ACTIVE") ?? leaves[0] ?? null;
+  const leave = booking?.booking ? booking : null;
+  const bookingRecord = leave?.booking ?? booking;
+  const embeddedLeaves = Array.isArray(bookingRecord?.homeLeaves) ? bookingRecord.homeLeaves : [];
+  const selectedLeave = leave ?? embeddedLeaves.find((item) => item.status === "ACTIVE") ?? embeddedLeaves[0] ?? {};
 
   return {
-    id: booking.id,
-    booking_id: booking.bookingNumber ?? "",
-    name: booking.resident?.fullName ?? "",
-    room: booking.bed?.room?.name ?? "",
-    started_at: leave?.startedAt?.slice(0, 10) ?? "",
-    expected_return_at: leave?.expectedReturnAt?.slice(0, 10) ?? "",
-    reason: leave?.reason ?? "",
-    status: leave?.status ?? "",
+    id: bookingRecord?.id,
+    booking_id: bookingRecord?.bookingNumber ?? "",
+    name: bookingRecord?.resident?.fullName ?? "",
+    room: bookingRecord?.bed?.room?.name ?? "",
+    started_at: selectedLeave.startedAt?.slice(0, 10) ?? "",
+    expected_return_at: selectedLeave.expectedReturnAt?.slice(0, 10) ?? "",
+    returned_at: selectedLeave.returnedAt?.slice(0, 10) ?? "",
+    reason: selectedLeave.reason ?? "",
+    status: selectedLeave.status ?? "",
   };
 };
 
@@ -192,8 +194,17 @@ export default function FrontDesk() {
           return [tab, Number(countResponse?.pagination?.total ?? 0)];
         });
 
+      const homeLeaveParams = new URLSearchParams({
+        page: String(currentPage),
+        limit: String(PAGE_SIZE),
+        startedAtFrom: selectedDate,
+        startedAtTo: selectedDate,
+        ...(search.trim() ? { search: search.trim() } : {}),
+      });
       const [response, ...otherCounts] = await Promise.all([
-        apiRequest(`/api/booking?${buildParams(segment).toString()}`),
+        apiRequest(segment === "home_leave"
+          ? `/api/booking/home-leaves?${homeLeaveParams}`
+          : `/api/booking?${buildParams(segment).toString()}`),
         ...countRequests,
       ]);
       const pagination = response?.pagination ?? {};
@@ -505,6 +516,12 @@ export default function FrontDesk() {
   const overdueArrivalCount = segment === "arrival" && isCurrentDate
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
+  const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
+    ? homeLeaveList.filter((leave) => leave.status === "ACTIVE" && leave.expected_return_at && leave.expected_return_at < getTodayKey()).length
+    : 0;
+  const returnedHomeLeaveCount = segment === "home_leave" && isCurrentDate
+    ? homeLeaveList.filter((leave) => leave.returned_at === getTodayKey()).length
+    : 0;
 
   const startRow =
     bookingPagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
@@ -607,6 +624,16 @@ aria-label={
           {overdueArrivalCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
+            </div>
+          )}
+          {returnedHomeLeaveCount > 0 && (
+            <div className="frontdesk-overdue-alert" role="status">
+              {returnedHomeLeaveCount} home leave resident{returnedHomeLeaveCount === 1 ? " has" : "s have"} returned today
+            </div>
+          )}
+          {overdueHomeLeaveCount > 0 && (
+            <div className="frontdesk-overdue-alert" role="alert">
+              {overdueHomeLeaveCount} home leave resident{overdueHomeLeaveCount === 1 ? " is" : "s are"} overdue for return
             </div>
           )}
           <div className="office-table-wrapper">
@@ -826,7 +853,12 @@ aria-label={
                           ? booking.booking_id
                           : booking.id
                       }
-                      className={segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey() ? "frontdesk-row--overdue" : ""}
+                      className={
+                        (segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey()) ||
+                        (segment === "home_leave" && isCurrentDate && booking.status === "ACTIVE" && booking.expected_return_at && booking.expected_return_at < getTodayKey())
+                          ? "frontdesk-row--overdue"
+                          : ""
+                      }
                     >
                       <td className="table-col-no">
                         {(safePage - 1) * PAGE_SIZE + index + 1}

@@ -80,7 +80,17 @@ export default function Sidebar({
           const response = await apiRequest(`/api/booking?${params}`);
           return Number(response?.pagination?.total ?? 0);
         }));
-        if (isMounted) setHasFrontdeskAlerts(counts.some((count) => count > 0));
+        let hasHomeLeaveAlert = false;
+        if (hasPermission("home.leaves")) {
+          const params = new URLSearchParams({ page: "1", limit: "100", startedAtFrom: date });
+          const response = await apiRequest(`/api/booking/home-leaves?${params}`);
+          const leaves = Array.isArray(response?.data) ? response.data : [];
+          hasHomeLeaveAlert = leaves.some((leave) =>
+            (leave.status === "ACTIVE" && leave.expectedReturnAt?.slice(0, 10) < date) ||
+            leave.returnedAt?.slice(0, 10) === date
+          );
+        }
+        if (isMounted) setHasFrontdeskAlerts(counts.some((count) => count > 0) || hasHomeLeaveAlert);
       } catch {
         if (isMounted) setHasFrontdeskAlerts(false);
       }
