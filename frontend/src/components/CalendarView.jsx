@@ -168,6 +168,20 @@ function formatVisibleDate(date) {
   });
 }
 
+function daysUntil(dateString) {
+  const target = parseDate(dateString);
+  if (!target) return null;
+  const now = new Date();
+  const current = new Date(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()));
+  return Math.ceil((target.getTime() - current.getTime()) / MS_PER_DAY);
+}
+
+function countdownLabel(label, dateString) {
+  const days = daysUntil(dateString);
+  if (days === null) return null;
+  return `${label}: ${days} ${days === 1 ? "day" : "days"}`;
+}
+
 function bookingOverlaps(
   windowStart,
   windowEnd,
@@ -1567,6 +1581,16 @@ const BookingTooltip = forwardRef(
 
     const statusClass =
       normalizeStatus(booking?.status);
+    const homeLeave = Array.isArray(booking?.homeLeaves)
+      ? booking.homeLeaves.find((leave) => leave.status === "ACTIVE") ?? booking.homeLeaves[0]
+      : null;
+    const countdown = statusClass === "confirmed"
+      ? countdownLabel("Arriving in", booking?.started_at)
+      : statusClass === "in_house"
+        ? countdownLabel("Leaving in", booking?.ended_at)
+        : statusClass === "home_leave"
+          ? countdownLabel("Expected return in", homeLeave?.expectedReturnAt?.slice(0, 10))
+          : null;
 
     /*
      * The node mounts before it is measured, so it
@@ -1610,6 +1634,12 @@ const BookingTooltip = forwardRef(
         </div>
 
         <div className="booking-tooltip__divider" />
+        {countdown && (
+          <div className="booking-tooltip__row">
+            <span>{countdown.slice(0, countdown.indexOf(":"))}</span>
+            <strong>{countdown.slice(countdown.indexOf(":") + 2)}</strong>
+          </div>
+        )}
         <div className="booking-tooltip__row">
           <span>Booking ID</span>
           <strong>{booking?.bookingNumber} </strong>
