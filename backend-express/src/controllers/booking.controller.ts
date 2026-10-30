@@ -2093,7 +2093,7 @@ export async function archiveBooking(
 
     await notifyActor(req, {
       title:"Booking Archived",
-      message: `Booking ${result.id} successfully archived`,
+      message: `Booking ${result.bookingNumber} successfully archived`,
       type: "SUCCESS"
     })
 

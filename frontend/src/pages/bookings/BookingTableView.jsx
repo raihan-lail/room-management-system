@@ -5,6 +5,7 @@ import BookingCreateModal from "../../components/modals/BookingCreateModal";
 import BookingDetailsModal from "../../components/modals/BookingDetailsModal";
 import BookingEditModal from "../../components/modals/BookingEditModal";
 import ExportModal from "../../components/modals/ExportModal";
+import ConfirmModal from "../../components/modals/ConfirmModal";
 import FlexibleButton from "../../components/FlexibleButtons";
 import apiRequest from "../../api/client";
 
@@ -128,6 +129,12 @@ export default function BookingTableView() {
   const [viewingBookingId, setViewingBookingId] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [extendingBooking, setExtendingBooking] = useState(null);
+  const [extensionDate, setExtensionDate] = useState("");
+  const [archivingBooking, setArchivingBooking] = useState(null);
+  const [checkingOutBooking, setCheckingOutBooking] = useState(null);
+  const [actionError, setActionError] = useState("");
+  const [isSavingAction, setIsSavingAction] = useState(false);
 
   const exportFilterFields = useMemo(() => [
     { name: "search", label: "Search", type: "search", placeholder: "Resident, room, bed, company..." },
@@ -273,6 +280,35 @@ export default function BookingTableView() {
     setCurrentPage(1);
   }, [currentPage, loadBookings]);
 
+  const performBookingAction = async (booking, action, body) => {
+    setIsSavingAction(true);
+    setActionError("");
+    try {
+      await apiRequest(`/api/booking/${booking.id}/${action}`, {
+        method: "POST",
+        ...(body ? { body: JSON.stringify(body) } : {}),
+      });
+      await handleBookingChanged();
+      setExtendingBooking(null);
+      setArchivingBooking(null);
+    } catch (err) {
+      setActionError(err.message || "Booking action failed.");
+    } finally {
+      setIsSavingAction(false);
+    }
+  };
+
+  const submitExtension = (event) => {
+    event.preventDefault();
+    if (!extendingBooking || !extensionDate || extensionDate <= formatDate(extendingBooking.endedAt)) {
+      setActionError("Choose an end date later than the current end date.");
+      return;
+    }
+    performBookingAction(extendingBooking, "extend", {
+      endedAt: new Date(`${extensionDate}T00:00:00.000Z`).toISOString(),
+    });
+  };
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -366,6 +402,9 @@ export default function BookingTableView() {
 
         {/* TABLE CARD */}
         <section className="table-card content">
+          {actionError && !extendingBooking && (
+            <div className="frontdesk-overdue-alert" role="alert">{actionError}</div>
+          )}
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
@@ -565,16 +604,56 @@ export default function BookingTableView() {
                             rowLabel={booking.resident?.fullName}
                             onView={() => setViewingBookingId(booking.id)}
                           />
-                          <FlexibleButton
-                            permission="bookings.create"
-                            className="btn btn-neutral"
-                            title={booking.status === "CONFIRMED" ? "Edit booking" : "Only confirmed bookings can be edited"}
-                            aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
-                            disabled={booking.status !== "CONFIRMED"}
-                            onClick={() => setEditingBooking(booking)}
-                          >
-                            <i className="bi bi-pencil-square" aria-hidden="true" />
-                          </FlexibleButton>
+                          {booking.status === "CONFIRMED" && (
+                            <FlexibleButton
+                              permission="bookings.create"
+                              className="btn btn-neutral"
+                              title="Edit booking"
+                              aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
+                              onClick={() => setEditingBooking(booking)}
+                            >
+                              <i className="bi bi-pencil-square" aria-hidden="true" />
+                            </FlexibleButton>
+                          )}
+                          {booking.status === "IN_HOUSE" && (
+                            <>
+                              <FlexibleButton
+                                permission="bookings.create"
+                                className="btn btn-neutral"
+                                title="Extend stay"
+                                aria-label={`Extend stay for ${booking.resident?.fullName || booking.id}`}
+                                onClick={() => {
+                                  setActionError("");
+                                  setExtensionDate("");
+                                  setExtendingBooking(booking);
+                                }}
+                              >
+                                Extend
+                              </FlexibleButton>
+                              <FlexibleButton
+                                permission="bookings.create"
+                                className="btn btn-primary"
+                                onClick={() => {
+                                  setActionError("");
+                                  setCheckingOutBooking(booking);
+                                }}
+                              >
+                                Check Out
+                              </FlexibleButton>
+                            </>
+                          )}
+                          {["CHECKED_OUT", "CANCELLED"].includes(booking.status) && (
+                            <FlexibleButton
+                              permission="bookings.create"
+                              className="btn btn-neutral"
+                              onClick={() => {
+                                setActionError("");
+                                setArchivingBooking(booking);
+                              }}
+                            >
+                              Archive
+                            </FlexibleButton>
+                          )}
                         </div>
                       </td>
                     </tr>
@@ -656,6 +735,59 @@ export default function BookingTableView() {
           filterFields={exportFilterFields}
           initialFilters={{ search, status: statusFilter, startedAtFrom, startedAtTo }}
           onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
+
+      {extendingBooking && (
+        <div className="modal-overlay" onMouseDown={() => !isSavingAction && setExtendingBooking(null)}>
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="booking-table-extend-title"
+            onSubmit={submitExtension}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal__header">
+              <h2 className="modal__title" id="booking-table-extend-title">Extend Stay</h2>
+              <button type="button" className="modal__close" onClick={() => setExtendingBooking(null)} aria-label="Close" disabled={isSavingAction}>
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="modal__message">Choose a new end date for {extendingBooking.resident?.fullName || "this booking"}.</p>
+            <label className="frontdesk-date">
+              <span>New end date</span>
+              <input type="date" required min={formatDate(extendingBooking.endedAt)} value={extensionDate} onChange={(event) => setExtensionDate(event.target.value)} />
+            </label>
+            {actionError && <p role="alert">{actionError}</p>}
+            <div className="modal__actions">
+              <button type="button" className="btn btn-neutral" onClick={() => setExtendingBooking(null)} disabled={isSavingAction}>Cancel</button>
+              <button type="submit" className="btn btn-primary" disabled={isSavingAction}>{isSavingAction ? "Saving..." : "Extend Stay"}</button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {archivingBooking && (
+        <ConfirmModal
+          title="Archive booking"
+          message={`Archive the booking for ${archivingBooking.resident?.fullName || "this resident"}?`}
+          confirmLabel="Archive"
+          onClose={() => setArchivingBooking(null)}
+          onConfirm={() => performBookingAction(archivingBooking, "archive")}
+        />
+      )}
+
+      {checkingOutBooking && (
+        <ConfirmModal
+          title="Check out booking"
+          message={`Check out ${checkingOutBooking.resident?.fullName || "this resident"}?`}
+          confirmLabel="Check Out"
+          onClose={() => setCheckingOutBooking(null)}
+          onConfirm={() => {
+            performBookingAction(checkingOutBooking, "check-out");
+            setCheckingOutBooking(null);
+          }}
         />
       )}
     </MainLayout>

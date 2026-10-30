@@ -745,7 +745,7 @@ export default function CalendarView() {
   const filteredBookings = useMemo(() => {
     return bookings.filter(
       (booking) =>
-        String(booking.status).toUpperCase() !== "CANCELLED" &&
+        !["CANCELLED", "ARCHIVED"].includes(String(booking.status).toUpperCase()) &&
         bookingOverlaps(
           windowStart,
           windowEnd,
