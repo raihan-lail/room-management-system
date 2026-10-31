@@ -5,6 +5,15 @@ import apiRequest from "../api/client";
 import { fetchNotifications } from "../api/notifications";
 
 
+const COMPLAINT_PATHS = new Set([
+  "/bookings/complains",
+  "/resident/complaints",
+]);
+
+function isComplaintPath(path) {
+  return COMPLAINT_PATHS.has(path);
+}
+
 function getItemPermission(item) {
   return item.permission ?? item.permissions ?? null;
 }
@@ -249,6 +258,15 @@ export default function Sidebar({
                   <span className="side-nav-alert-dot" aria-label="Front desk alerts" />
                 )}
 
+                {hasChildren &&
+                  hasComplaintAlerts &&
+                  item.items.some((child) => isComplaintPath(child.path)) && (
+                    <span
+                      className="side-nav-alert-dot"
+                      aria-label="Unread complaint activity"
+                    />
+                  )}
+
                
                 {hasChildren && (
                   <i
@@ -268,7 +286,7 @@ export default function Sidebar({
                   {item.items.map((child) => {
                     const isChildActive =
                       location.pathname === child.path;
-                    const isComplaintItem = child.path === "/bookings/complains" || child.path === "/resident/complaints";
+                    const isComplaintItem = isComplaintPath(child.path);
 
                     return (
                       <button

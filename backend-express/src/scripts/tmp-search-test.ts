@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { prisma } from "./src/lib/prisma.js";
+import { prisma } from "../lib/prisma.js";
 
 async function main() {
   const search = process.argv[2] ?? "10";
