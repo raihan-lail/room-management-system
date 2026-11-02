@@ -694,3 +694,167 @@ export async function replyToMyComplaint(
   }
 
 }
+const MAX_REVIEW_LENGTH = 2000;
+
+export async function createBookingRating(
+  req: AuthRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+    const { bookingId } = req.params;
+    const { score, details } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Authentication required",
+      });
+    }
+
+    // Validate score
+    if (
+      !Number.isInteger(score) ||
+      score < 1 ||
+      score > 5
+    ) {
+      return res.status(400).json({
+        message: "Score must be an integer between 1 and 5.",
+      });
+    }
+
+    // Validate review details
+    if (
+      details !== undefined &&
+      details !== null &&
+      typeof details !== "string"
+    ) {
+      return res.status(400).json({
+        message: "Review details must be a string.",
+      });
+    }
+
+    const review = typeof details === "string"
+      ? details.trim()
+      : null;
+
+    if (review && review.length > MAX_REVIEW_LENGTH) {
+      return res.status(400).json({
+        message: `Review details cannot exceed ${MAX_REVIEW_LENGTH} characters.`,
+      });
+    }
+
+    // Find booking belonging to the authenticated resident
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: bookingId as string,
+        resident: {
+          userId,
+        },
+      },
+      select: {
+        id: true,
+        status: true,
+      },
+    });
+
+    if (!booking) {
+      return res.status(404).json({
+        message: "Booking not found.",
+      });
+    }
+
+    // Only checked-out bookings can be rated
+    if (!["CHECKED_OUT", "ARCHIVED"].includes(booking.status)) {
+      return res.status(400).json({
+        message: "You can only rate a booking after checking out.",
+      });
+    }
+
+    // Create rating
+    const rating = await prisma.bookingRating.create({
+      data: {
+        bookingId: booking.id,
+        score,
+        details: review || null,
+      },
+    });
+
+    
+
+    return res.status(201).json({
+      message: "Booking rating submitted successfully.",
+      data: rating,
+    });
+  } catch (error: any) {
+    // Handle duplicate rating
+    if (error.code === "P2002") {
+      return res.status(409).json({
+        message: "You have already rated this booking.",
+      });
+    }
+
+    console.error("createBookingRating:", error);
+
+    return res.status(500).json({
+      message: "Failed to submit booking rating.",
+    });
+  }
+}
+
+export async function getMyBookingRatings(
+  req: AuthRequest,
+  res: Response
+) {
+  try {
+    const userId = req.userId;
+
+    if (!userId) {
+      return res.status(401).json({
+        message: "Authentication required",
+      });
+    }
+
+    const ratings = await prisma.bookingRating.findMany({
+      where: {
+        booking: {
+          resident: {
+            userId,
+          },
+        },
+      },
+      include: {
+        booking: {
+          select: {
+            id: true,
+            bookingNumber: true,
+            startedAt: true,
+            endedAt: true,
+            bed: {
+              select: {
+                name: true,
+                room: {
+                  select: {
+                    name: true,
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+      orderBy: {
+        createdAt: "desc",
+      },
+    });
+
+    return res.status(200).json({
+      data: ratings,
+    });
+  } catch (error) {
+    console.error("getMyBookingRatings:", error);
+
+    return res.status(500).json({
+      message: "Failed to retrieve ratings.",
+    });
+  }
+}

@@ -2170,3 +2170,4 @@ export async function archiveBooking(
     sendError(res, 500, "Failed to archive booking.");
   }
 }
+

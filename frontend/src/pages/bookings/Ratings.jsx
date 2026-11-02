@@ -1,6 +1,6 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
-import { ratingsData } from "../../data/ratings";
+import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
 
@@ -8,6 +8,33 @@ export default function Ratings() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [search, setSearch] = useState("");
+  const [ratings, setRatings] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    let isCurrent = true;
+    apiRequest("/api/rating?page=1&limit=100")
+      .then((response) => {
+        if (!isCurrent) return;
+        const rows = Array.isArray(response?.data) ? response.data : [];
+        setRatings(rows.map((rating) => ({
+          rating_id: rating.booking?.bookingNumber || rating.id,
+          room: [rating.booking?.bed?.room?.name, rating.booking?.bed?.name].filter(Boolean).join(" / "),
+          name: rating.booking?.resident?.fullName || "-",
+          score: rating.score,
+          submitted_date: rating.createdAt ? new Date(rating.createdAt).toLocaleDateString("en-GB") : "-",
+          details: rating.details || "-",
+        })));
+      })
+      .catch((err) => {
+        if (isCurrent) setError(err?.message || "Failed to load ratings.");
+      })
+      .finally(() => {
+        if (isCurrent) setLoading(false);
+      });
+    return () => { isCurrent = false; };
+  }, []);
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -32,9 +59,9 @@ export default function Ratings() {
   const filteredRatings = useMemo(() => {
     const query = search.trim().toLowerCase();
 
-    if (!query) return ratingsData;
+    if (!query) return ratings;
 
-    return ratingsData.filter((rating) =>
+    return ratings.filter((rating) =>
       [
         rating.rating_id,
         rating.room,
@@ -49,7 +76,7 @@ export default function Ratings() {
           .includes(query)
       )
     );
-  }, [search]);
+  }, [search, ratings]);
 
   /*
    * SORT
@@ -357,7 +384,11 @@ export default function Ratings() {
               </thead>
 
               <tbody>
-                {pagedRatings.length === 0 ? (
+                {loading ? (
+                  <tr><td colSpan="8" className="muted">Loading ratings...</td></tr>
+                ) : error ? (
+                  <tr><td colSpan="8" className="muted">{error}</td></tr>
+                ) : pagedRatings.length === 0 ? (
                   <tr>
                     <td
                       colSpan="8"

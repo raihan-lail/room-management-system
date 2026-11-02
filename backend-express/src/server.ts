@@ -19,6 +19,7 @@ import residentRouter from "./routes/resident.route";
 import bookingRouter from "./routes/booking.route";
 import residentPortalRouter from "./routes/resident-portal.route";
 import complaintRouter from "./routes/complaints.route";
+import ratingRouter from "./routes/rating.route";
 
 
 const app = express();
@@ -51,6 +52,7 @@ app.use("/api/resident", residentRouter);
 app.use("/api/booking", bookingRouter);
 app.use("/api/resident-portal", residentPortalRouter);
 app.use("/api/complaint", complaintRouter);
+app.use("/api/rating", ratingRouter);
 
 
 
