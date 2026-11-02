@@ -30,6 +30,17 @@ import {
 } from "../helpers/booking.helper.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
+import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
+
+function getResidentPortalUrl(): string | undefined {
+  const origin =
+    process.env.APP_URL?.trim() ||
+    process.env.CORS_ORIGINS?.split(",")[0]?.trim();
+
+  if (!origin) return undefined;
+
+  return `${origin.replace(/\/+$/, "")}/login`;
+}
 
 
 
@@ -805,6 +816,7 @@ export async function createBooking(
       startedAt: startedAtInput,
       endedAt: endedAtInput,
       notes,
+      residentPassword,
     } = req.body;
 
     if (
@@ -833,6 +845,9 @@ export async function createBooking(
           id: residentId,
           ...getSiteResidentFilter(actor),
           user: { isActive: true },
+        },
+        include: {
+          user: { select: { email: true } },
         },
       });
       const bed = await tx.bed.findFirst({
@@ -912,25 +927,61 @@ export async function createBooking(
         },
       });
 
-      return booking;
+      return { booking, recipientEmail: resident.user.email };
     });
 
+    const { booking, recipientEmail } = result;
+    const loginPassword =
+      typeof residentPassword === "string" && residentPassword.length > 0
+        ? residentPassword
+        : undefined;
+    let emailSent = false;
+
+    try {
+      const email = buildBookingCreatedEmail({
+        residentName: booking.resident.fullName,
+        bookingNumber: booking.bookingNumber,
+        roomName: booking.bed.room.name,
+        bedName: booking.bed.name,
+        startedAt: booking.startedAt,
+        endedAt: booking.endedAt,
+        notes: booking.notes,
+        loginEmail: recipientEmail,
+        loginPassword,
+        loginUrl: getResidentPortalUrl(),
+      });
+
+      await sendEmail({ to: recipientEmail, ...email });
+      emailSent = true;
+    } catch (error) {
+      console.error("Booking confirmation email error:", error);
+
+      await notifyActor(req, {
+        title: "Booking created, email not sent",
+        message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,
+        type: "WARNING",
+      });
+    }
+
     await auditBooking(req, actor, {
-      bookingId: result.bookingNumber,
+      bookingId: booking.bookingNumber,
       action: "booking_created",
-      description: `Booking ${result.bookingNumber} created for resident ${result.resident.fullName}.`,
+      description: `Booking ${booking.bookingNumber} created for resident ${booking.resident.fullName}.${
+        emailSent ? " Booking confirmation email was sent to the resident." : ""
+      }`,
     });
 
     await notifyActor(req, {
       title: "Booking Successfully Created",
-      message:`Booking ${result.bookingNumber} successfully created for resident ${result.resident.fullName}`,
-      type: "SUCCESS"
-    })
-
+      message: `Booking ${booking.bookingNumber} successfully created for resident ${booking.resident.fullName}${
+        emailSent ? " and the confirmation email was sent" : ""
+      }`,
+      type: "SUCCESS",
+    });
 
     res.status(201).json({
       message: "Booking created successfully.",
-      data: result,
+      data: booking,
     });
   } catch (error) {
     const statusCode =

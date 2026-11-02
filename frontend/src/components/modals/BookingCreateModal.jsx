@@ -259,6 +259,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     setError("");
 
     let createdResident = null;
+    let createdResidentPassword = "";
 
     try {
       let residentId = values.residentId;
@@ -289,6 +290,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         }
 
         residentId = createdResident.id;
+        createdResidentPassword = newResident.password;
 
         setNewResident((prev) => ({
           ...EMPTY_NEW_RESIDENT,
@@ -304,6 +306,9 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
           startedAt: startedAt.toISOString(),
           endedAt: endedAt.toISOString(),
           notes: values.notes.trim() || undefined,
+          ...(createdResidentPassword
+            ? { residentPassword: createdResidentPassword }
+            : {}),
         }),
       });
 
