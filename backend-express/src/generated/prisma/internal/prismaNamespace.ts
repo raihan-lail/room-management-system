@@ -416,6 +416,7 @@ export const ModelName = {
   BookingEvent: 'BookingEvent',
   Complaint: 'Complaint',
   ComplaintMessage: 'ComplaintMessage',
+  BookingRating: 'BookingRating',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -433,7 +434,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "notification" | "auditLog"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "bookingRating" | "notification" | "auditLog"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1843,6 +1844,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BookingRating: {
+      payload: Prisma.$BookingRatingPayload<ExtArgs>
+      fields: Prisma.BookingRatingFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BookingRatingFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BookingRatingFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        findFirst: {
+          args: Prisma.BookingRatingFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BookingRatingFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        findMany: {
+          args: Prisma.BookingRatingFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>[]
+        }
+        create: {
+          args: Prisma.BookingRatingCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        createMany: {
+          args: Prisma.BookingRatingCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BookingRatingCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>[]
+        }
+        delete: {
+          args: Prisma.BookingRatingDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        update: {
+          args: Prisma.BookingRatingUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        deleteMany: {
+          args: Prisma.BookingRatingDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BookingRatingUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BookingRatingUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>[]
+        }
+        upsert: {
+          args: Prisma.BookingRatingUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingRatingPayload>
+        }
+        aggregate: {
+          args: Prisma.BookingRatingAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBookingRating>
+        }
+        groupBy: {
+          args: Prisma.BookingRatingGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookingRatingGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BookingRatingCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookingRatingCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -2285,6 +2360,18 @@ export const ComplaintMessageScalarFieldEnum = {
 export type ComplaintMessageScalarFieldEnum = (typeof ComplaintMessageScalarFieldEnum)[keyof typeof ComplaintMessageScalarFieldEnum]
 
 
+export const BookingRatingScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  score: 'score',
+  details: 'details',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2694,6 +2781,7 @@ export type GlobalOmitConfig = {
   bookingEvent?: Prisma.BookingEventOmit
   complaint?: Prisma.ComplaintOmit
   complaintMessage?: Prisma.ComplaintMessageOmit
+  bookingRating?: Prisma.BookingRatingOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
 }

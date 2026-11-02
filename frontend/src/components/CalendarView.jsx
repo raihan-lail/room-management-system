@@ -1,4 +1,5 @@
 import {
+  Fragment,
   forwardRef,
   useCallback,
   useEffect,
@@ -268,6 +269,9 @@ export default function CalendarView() {
 
   const [search, setSearch] =
     useState("");
+
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedFloor, setSelectedFloor] = useState("");
 
   const [startDate, setStartDate] =
     useState("");
@@ -755,7 +759,25 @@ export default function CalendarView() {
   }, [windowStart, windowEnd, bookings]);
 
   /* Calendar rows follow beds because bookings reserve beds. */
-  const activeBeds = useMemo(() => beds, [beds]);
+  const locations = useMemo(() => [...new Map(beds.map((bed) => {
+    const location = bed.room?.floor?.location;
+    return location?.id ? [location.id, location] : null;
+  }).filter(Boolean)).values()].sort((a, b) => a.name.localeCompare(b.name)), [beds]);
+  const floors = useMemo(() => [...new Map(beds.map((bed) => {
+    const floor = bed.room?.floor;
+    return floor?.id && (!selectedLocation || floor.location?.id === selectedLocation)
+      ? [floor.id, floor] : null;
+  }).filter(Boolean)).values()].sort((a, b) => (a.floorNumber ?? 0) - (b.floorNumber ?? 0)), [beds, selectedLocation]);
+  const activeBeds = useMemo(() => beds.filter((bed) =>
+    (!selectedLocation || bed.room?.floor?.location?.id === selectedLocation) &&
+    (!selectedFloor || bed.room?.floor?.id === selectedFloor)
+  ).sort((a, b) => {
+    const locationOrder = (a.room?.floor?.location?.name ?? "").localeCompare(b.room?.floor?.location?.name ?? "");
+    if (locationOrder) return locationOrder;
+    const floorOrder = (a.room?.floor?.floorNumber ?? 0) - (b.room?.floor?.floorNumber ?? 0);
+    if (floorOrder) return floorOrder;
+    return (a.room?.name ?? "").localeCompare(b.room?.name ?? "") || (a.name ?? "").localeCompare(b.name ?? "");
+  }), [beds, selectedLocation, selectedFloor]);
 
   /*
    * Calculate booking position
@@ -819,7 +841,7 @@ export default function CalendarView() {
   };
 
   const hasActiveFilters = Boolean(
-    search.trim() ||
+      search.trim() || selectedLocation || selectedFloor ||
       startDate ||
       endDate ||
       calendarStart !== DEFAULT_SETTINGS.calendarStart ||
@@ -829,6 +851,8 @@ export default function CalendarView() {
 
   const clearFilters = () => {
     setSearch("");
+    setSelectedLocation("");
+    setSelectedFloor("");
     setStartDate("");
     setEndDate("");
     setCalendarStart(
@@ -1146,7 +1170,7 @@ export default function CalendarView() {
           FILTERS
       ========================== */}
 
-      <div className="calendar-filters form-actions bookings-toolbar">
+      <div className="calendar-filters calendar-filters--primary form-actions bookings-toolbar">
 
         <div className="calendar-filters__search">
 
@@ -1166,7 +1190,27 @@ export default function CalendarView() {
 
         </div>
 
-        <div className="calendar-filters__dates">
+        <div className="calendar-filters__dates calendar-filters__locations">
+          <label className="calendar-date-filter">
+            <span>Location</span>
+            <select value={selectedLocation} onChange={(event) => {
+              setSelectedLocation(event.target.value);
+              setSelectedFloor("");
+            }}>
+              <option value="">All locations</option>
+              {locations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}
+            </select>
+          </label>
+          <label className="calendar-date-filter">
+            <span>Floor</span>
+            <select value={selectedFloor} onChange={(event) => setSelectedFloor(event.target.value)}>
+              <option value="">All floors</option>
+              {floors.map((floor) => <option key={floor.id} value={floor.id}>{floor.name}</option>)}
+            </select>
+          </label>
+        </div>
+
+        <div className="calendar-filters__dates calendar-filters__range-filters">
 
           <label className="calendar-date-filter">
             <span>From</span>
@@ -1216,26 +1260,11 @@ export default function CalendarView() {
 
             Clear
           </button>
+          
 
         </div>
 
-        <div className="calendar-legend">
-
-          {STATUS_ORDER.map((key) => (
-            <span
-              className="calendar-legend__item"
-              key={key}
-            >
-              <i
-                className={`calendar-legend__dot calendar-legend__dot--${key}`}
-                aria-hidden="true"
-              />
-
-              {STATUS_META[key].label}
-            </span>
-          ))}
-
-        </div>
+       
 
       </div>
 
@@ -1243,9 +1272,9 @@ export default function CalendarView() {
           CALENDAR SETTINGS
       ========================== */}
 
-      <div className="calendar-filters form-actions bookings-toolbar">
+      <div className="calendar-filters calendar-filters--settings form-actions bookings-toolbar">
 
-        <div className="calendar-filters__dates">
+        <div className="calendar-filters__dates calendar-filters__settings-fields">
 
           <label
             className="calendar-date-filter"
@@ -1309,6 +1338,23 @@ export default function CalendarView() {
               </option>
             </select>
           </label>
+
+        </div>
+         <div className="calendar-legend">
+
+          {STATUS_ORDER.map((key) => (
+            <span
+              className="calendar-legend__item"
+              key={key}
+            >
+              <i
+                className={`calendar-legend__dot calendar-legend__dot--${key}`}
+                aria-hidden="true"
+              />
+
+              {STATUS_META[key].label}
+            </span>
+          ))}
 
         </div>
 
@@ -1393,7 +1439,7 @@ export default function CalendarView() {
             </div>
           ) : (
 
-            activeBeds.map((bed) => {
+            activeBeds.map((bed, bedIndex) => {
 
               const roomBookings =
                 filteredBookings.filter(
@@ -1401,12 +1447,16 @@ export default function CalendarView() {
                     booking.bedId === bed.id
                 );
 
+              const groupName = `${bed.room?.floor?.location?.name ?? "Unassigned location"} · ${bed.room?.floor?.name ?? "Unassigned floor"}`;
+              const previousBed = activeBeds[bedIndex - 1];
+              const previousGroupName = previousBed
+                ? `${previousBed.room?.floor?.location?.name ?? "Unassigned location"} · ${previousBed.room?.floor?.name ?? "Unassigned floor"}`
+                : null;
               return (
+                <Fragment key={bed.id}>
+                {groupName !== previousGroupName && <div className="calendar-location-heading">{groupName}</div>}
                 <div
                   className="calendar-row"
-                  key={
-                    bed.id
-                  }
                 >
 
                   <div className="calendar-room">
@@ -1534,6 +1584,7 @@ export default function CalendarView() {
                   </div>
 
                 </div>
+                </Fragment>
               );
             })
           )}

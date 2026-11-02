@@ -135,6 +135,11 @@ export type Complaint = Prisma.ComplaintModel
  */
 export type ComplaintMessage = Prisma.ComplaintMessageModel
 /**
+ * Model BookingRating
+ * 
+ */
+export type BookingRating = Prisma.BookingRatingModel
+/**
  * Model Notification
  * 
  */

@@ -70,6 +70,7 @@ export const ModelName = {
   BookingEvent: 'BookingEvent',
   Complaint: 'Complaint',
   ComplaintMessage: 'ComplaintMessage',
+  BookingRating: 'BookingRating',
   Notification: 'Notification',
   AuditLog: 'AuditLog'
 } as const
@@ -343,6 +344,18 @@ export const ComplaintMessageScalarFieldEnum = {
 } as const
 
 export type ComplaintMessageScalarFieldEnum = (typeof ComplaintMessageScalarFieldEnum)[keyof typeof ComplaintMessageScalarFieldEnum]
+
+
+export const BookingRatingScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  score: 'score',
+  details: 'details',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
 
 
 export const NotificationScalarFieldEnum = {

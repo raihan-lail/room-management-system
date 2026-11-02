@@ -295,6 +295,8 @@ model Booking {
   homeLeaves  HomeLeave[]
   complaints  Complaint[]
   events      BookingEvent[]
+  rating      BookingRating?
+
 
   @@index([residentId, status])
   @@index([bedId, status])
@@ -396,7 +398,21 @@ model ComplaintMessage {
   @@index([complaintId, createdAt])
 }
 
+model BookingRating {
+  id        String   @id @default(cuid())
+  bookingId String   @unique
 
+  score     Int
+  details   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking Booking @relation( fields: [bookingId], references: [id], onDelete: Restrict )
+
+  @@index([score])
+  @@index([createdAt])
+}
 
 
 model Notification {
