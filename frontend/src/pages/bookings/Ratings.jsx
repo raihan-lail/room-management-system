@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import apiRequest from "../../api/client";
 import PageSizeSelect from "../../components/PageSizeSelect";
+import ExportModal from "../../components/modals/ExportModal";
 
 const PAGE_SIZE = 10;
 
@@ -13,6 +14,7 @@ export default function Ratings() {
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
     let isCurrent = true;
@@ -262,7 +264,7 @@ export default function Ratings() {
             <button
               type="button"
               className="btn btn-neutral"
-              onClick={() => console.log("Import Excel")}
+              onClick={() => setIsExportModalOpen(true)}
             >
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
               Export Excel
@@ -543,6 +545,28 @@ export default function Ratings() {
 
         </section>
       </div>
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Ratings"
+          endpoint="/api/rating/export"
+          filename="ratings.xlsx"
+          entityLabel="ratings"
+          initialFilters={{ search }}
+          filterFields={[
+            { name: "search", label: "Search", placeholder: "Booking ID or resident name" },
+            {
+              name: "score",
+              label: "Rating",
+              type: "select",
+              placeholderOption: "Any rating",
+              options: [1, 2, 3, 4, 5].map((value) => ({ value: String(value), label: `${value} star${value > 1 ? "s" : ""}` })),
+            },
+            { name: "dateFrom", label: "Submitted from", type: "date" },
+            { name: "dateTo", label: "Submitted to", type: "date" },
+          ]}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 }
