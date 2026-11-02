@@ -1323,12 +1323,12 @@ textarea,
   font-weight: 600;
 }
 
-.office-table tbody tr.frontdesk-row--overdue td {
-  background-color: var(--brand-soft);
-}
-
 .office-table tbody tr:nth-child(even) td {
   background-color: #fcfdfe;
+}
+
+.office-table tbody tr.frontdesk-row--overdue td {
+  background-color: var(--brand-soft);
 }
 
 .office-table tbody tr:hover td {

@@ -435,6 +435,9 @@ bun run build
 | Frontend cannot reach the API | Set `VITE_API_BASE_URL` in `frontend/.env` and restart Vite. |
 | Logger shows `bun.lock` changed unexpectedly | Use Bun for all installs and commit `bun.lock`. |
 
+## ARCHITECTURE AND GUIDES
+system architecture and guide can be accessed at docs.
+
 ## License
 
 ISC
