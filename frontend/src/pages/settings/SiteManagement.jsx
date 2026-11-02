@@ -5,6 +5,7 @@ import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -44,6 +45,7 @@ export default function SiteManagement() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -158,17 +160,17 @@ export default function SiteManagement() {
     });
   }, [filteredSites, sortConfig]);
 
-  const totalPages = Math.max(1, Math.ceil(filteredSites.length / PAGE_SIZE));
+  const totalPages = Math.max(1, Math.ceil(filteredSites.length / pageSize));
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedSites = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-    return sortedSites.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [sortedSites, safePage]);
+    const startIndex = (safePage - 1) * pageSize;
+    return sortedSites.slice(startIndex, startIndex + pageSize);
+  }, [sortedSites, pageSize, safePage]);
 
   const startRow =
-    filteredSites.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredSites.length);
+    filteredSites.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endRow = Math.min(safePage * pageSize, filteredSites.length);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -270,7 +272,7 @@ export default function SiteManagement() {
                   pagedSites.map((site, index) => (
                     <tr key={site.id}>
                       <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                        {(safePage - 1) * pageSize + index + 1}
                       </td>
 
                       <td>
@@ -303,6 +305,14 @@ export default function SiteManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

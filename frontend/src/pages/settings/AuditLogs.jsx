@@ -2,8 +2,9 @@
 import MainLayout from "../../components/MainLayout";
 import { useEffect, useState } from "react";
 import apiRequest from "../../api/client";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 10;
 
 const INITIAL_FILTERS = {
   actor: "",
@@ -39,6 +40,7 @@ export default function AuditLog() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [selectedLogId, setSelectedLogId] = useState(null);
@@ -57,7 +59,7 @@ export default function AuditLog() {
 
       const params = new URLSearchParams({
         page: String(currentPage),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
       });
 
       if (search.trim()) {
@@ -81,7 +83,7 @@ export default function AuditLog() {
         setPagination(
           response.pagination ?? {
             page: currentPage,
-            pageSize: PAGE_SIZE,
+            pageSize,
             total: 0,
             totalPages: 0,
           }
@@ -102,7 +104,7 @@ export default function AuditLog() {
       clearTimeout(timer);
       controller.abort();
     };
-  }, [currentPage, search, filters]);
+  }, [currentPage, pageSize, search, filters]);
 
  
 
@@ -123,10 +125,10 @@ export default function AuditLog() {
   const startRow =
     pagination.total === 0
       ? 0
-      : (currentPage - 1) * PAGE_SIZE + 1;
+      : (currentPage - 1) * pageSize + 1;
 
   const endRow = Math.min(
-    currentPage * PAGE_SIZE,
+    currentPage * pageSize,
     pagination.total
   );
 
@@ -357,6 +359,14 @@ export default function AuditLog() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

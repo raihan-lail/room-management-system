@@ -9,6 +9,7 @@ import ConfirmModal from "../../components/modals/ConfirmModal";
 import ImportModal from "../../components/modals/ImportModal";
 import { buildRoomSchema } from "../../components/modals/addFormSchemas";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 
 const PAGE_SIZE = 10;
@@ -42,18 +43,18 @@ function getBedList(response) {
   return [];
 }
 
-function getPagination(response, currentPage) {
+function getPagination(response, currentPage, pageSize) {
   const pagination = response?.pagination ?? response?.meta ?? {};
 
   return {
     page: Number(pagination.page ?? currentPage),
-    pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
+    pageSize: Number(pagination.pageSize ?? pageSize),
     total: Number(pagination.total ?? 0),
     totalPages: Math.max(
       1,
       Number(
         pagination.totalPages ??
-          Math.ceil((pagination.total ?? 0) / PAGE_SIZE)
+          Math.ceil((pagination.total ?? 0) / pageSize)
       )
     ),
   };
@@ -113,6 +114,7 @@ export default function RoomManagement() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [bedPage, setBedPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [bedStatus, setBedStatus] = useState("");
   const [bedDate, setBedDate] = useState(getTodayDate);
   const [viewMode, setViewMode] = useState("room");
@@ -152,7 +154,7 @@ export default function RoomManagement() {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
         search: search.trim(),
       });
 
@@ -161,7 +163,7 @@ export default function RoomManagement() {
       );
 
       const rooms = getRoomList(response);
-      const pageInfo = getPagination(response, currentPage);
+      const pageInfo = getPagination(response, currentPage, pageSize);
 
       setRoomList(rooms);
       setPagination(pageInfo);
@@ -176,7 +178,7 @@ export default function RoomManagement() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, pageSize, search]);
 
   const loadBeds = useCallback(async () => {
     setLoading(true);
@@ -185,7 +187,7 @@ export default function RoomManagement() {
     try {
       const params = new URLSearchParams({
         page: String(bedPage),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
         search: search.trim(),
         date: bedDate,
       });
@@ -197,7 +199,7 @@ export default function RoomManagement() {
       const response = await apiRequest(`/api/bed?${params.toString()}`);
 
       const beds = getBedList(response);
-      const pageInfo = getPagination(response, bedPage);
+      const pageInfo = getPagination(response, bedPage, pageSize);
 
       setBedList(beds);
       setBedPagination(pageInfo);
@@ -212,7 +214,7 @@ export default function RoomManagement() {
     } finally {
       setLoading(false);
     }
-  }, [bedPage, search, bedStatus, bedDate]);
+  }, [bedPage, pageSize, search, bedStatus, bedDate]);
 
   useEffect(() => {
     if (viewMode !== "room") return undefined;
@@ -967,6 +969,15 @@ export default function RoomManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                  setBedPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

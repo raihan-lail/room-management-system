@@ -5,6 +5,7 @@ import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -91,6 +92,7 @@ export default function EmployeeManagement() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -223,18 +225,18 @@ export default function EmployeeManagement() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredEmployees.length / PAGE_SIZE),
+    Math.ceil(filteredEmployees.length / pageSize),
   );
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedEmployees = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-    return filteredEmployees.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredEmployees, safePage]);
+    const startIndex = (safePage - 1) * pageSize;
+    return filteredEmployees.slice(startIndex, startIndex + pageSize);
+  }, [filteredEmployees, pageSize, safePage]);
 
   const startRow =
-    filteredEmployees.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredEmployees.length);
+    filteredEmployees.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endRow = Math.min(safePage * pageSize, filteredEmployees.length);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -319,7 +321,7 @@ export default function EmployeeManagement() {
                   pagedEmployees.map((employee, index) => (
                     <tr key={employee.id}>
                       <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                        {(safePage - 1) * pageSize + index + 1}
                       </td>
 
                       <td>
@@ -354,6 +356,14 @@ export default function EmployeeManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

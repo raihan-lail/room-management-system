@@ -3,6 +3,7 @@ import MainLayout from "../../components/MainLayout";
 import apiRequest from "../../api/client";
 import ExportModal from "../../components/modals/ExportModal";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -27,6 +28,7 @@ export default function HomeLeave() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [startedAtFrom, setStartedAtFrom] = useState("");
@@ -45,7 +47,7 @@ export default function HomeLeave() {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        limit: String(PAGE_SIZE),
+        limit: String(pageSize),
       });
 
       if (search.trim()) params.set("search", search.trim());
@@ -57,7 +59,7 @@ export default function HomeLeave() {
       const total = Number(response?.pagination?.total ?? 0);
       const totalPages = Math.max(
         1,
-        Number(response?.pagination?.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+        Number(response?.pagination?.totalPages ?? Math.ceil(total / pageSize)),
       );
 
       setHomeLeaves(Array.isArray(response?.data) ? response.data : []);
@@ -71,7 +73,7 @@ export default function HomeLeave() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search, statusFilter, startedAtFrom, startedAtTo]);
+  }, [currentPage, pageSize, search, statusFilter, startedAtFrom, startedAtTo]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -175,9 +177,9 @@ export default function HomeLeave() {
   const safePage = Math.min(currentPage, pagination.totalPages);
 
   const startRow =
-    pagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+    pagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1;
 
-  const endRow = Math.min(safePage * PAGE_SIZE, pagination.total);
+  const endRow = Math.min(safePage * pageSize, pagination.total);
 
   return (
     <MainLayout>
@@ -363,7 +365,7 @@ export default function HomeLeave() {
                   sortedHomeLeaves.map((homeLeave, index) => (
                     <tr key={homeLeave.id}>
                       <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                        {(safePage - 1) * pageSize + index + 1}
                       </td>
 
                       <td>
@@ -405,6 +407,14 @@ export default function HomeLeave() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

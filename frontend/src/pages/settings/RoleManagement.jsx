@@ -6,6 +6,7 @@ import ConfirmModal from "../../components/modals/ConfirmModal";
 import { addFormSchemas } from "../../components/modals/addFormSchemas";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 
 const PAGE_SIZE = 10;
@@ -20,6 +21,7 @@ export default function RoleManagement() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -109,18 +111,18 @@ export default function RoleManagement() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(filteredRoles.length / PAGE_SIZE),
+    Math.ceil(filteredRoles.length / pageSize),
   );
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedRoles = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
-    return filteredRoles.slice(startIndex, startIndex + PAGE_SIZE);
-  }, [filteredRoles, safePage]);
+    const startIndex = (safePage - 1) * pageSize;
+    return filteredRoles.slice(startIndex, startIndex + pageSize);
+  }, [filteredRoles, pageSize, safePage]);
 
   const startRow =
-    filteredRoles.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, filteredRoles.length);
+    filteredRoles.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endRow = Math.min(safePage * pageSize, filteredRoles.length);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -204,7 +206,7 @@ export default function RoleManagement() {
                       key={role.id}
                     >
                       <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                        {(safePage - 1) * pageSize + index + 1}
                       </td>
 
                       <td>
@@ -235,6 +237,14 @@ export default function RoleManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

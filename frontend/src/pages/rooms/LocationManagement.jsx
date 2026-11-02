@@ -5,6 +5,7 @@ import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import apiRequest from "../../api/client";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -40,6 +41,7 @@ export default function LocationManagement() {
 
   const [search, setSearch] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [sortConfig, setSortConfig] = useState({
     key: "name",
     direction: "asc",
@@ -151,21 +153,21 @@ export default function LocationManagement() {
 
   const totalPages = Math.max(
     1,
-    Math.ceil(sortedLocations.length / PAGE_SIZE)
+    Math.ceil(sortedLocations.length / pageSize)
   );
 
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedLocations = useMemo(() => {
-    const start = (safePage - 1) * PAGE_SIZE;
-    return sortedLocations.slice(start, start + PAGE_SIZE);
-  }, [sortedLocations, safePage]);
+    const start = (safePage - 1) * pageSize;
+    return sortedLocations.slice(start, start + pageSize);
+  }, [sortedLocations, pageSize, safePage]);
 
   const startRow =
-    sortedLocations.length === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
+    sortedLocations.length === 0 ? 0 : (safePage - 1) * pageSize + 1;
 
   const endRow = Math.min(
-    safePage * PAGE_SIZE,
+    safePage * pageSize,
     sortedLocations.length
   );
 
@@ -574,7 +576,7 @@ export default function LocationManagement() {
                       <Fragment key={location.id}>
                         <tr className={isExpanded ? "is-expanded" : ""}>
                           <td className="table-col-no">
-                            {(safePage - 1) * PAGE_SIZE + index + 1}
+                            {(safePage - 1) * pageSize + index + 1}
                           </td>
 
                           <td>
@@ -732,6 +734,14 @@ export default function LocationManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

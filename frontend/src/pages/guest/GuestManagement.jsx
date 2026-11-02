@@ -7,6 +7,7 @@ import ExportModal from "../../components/modals/ExportModal";
 import ImportModal from "../../components/modals/ImportModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -47,17 +48,17 @@ function getResidentList(response) {
   return Array.isArray(response?.residents) ? response.residents : [];
 }
 
-function getPagination(response, currentPage) {
+function getPagination(response, currentPage, pageSize) {
   const pagination = response?.pagination ?? {};
   const total = Number(pagination.total ?? 0);
 
   return {
     page: Number(pagination.page ?? currentPage),
-    pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
+    pageSize: Number(pagination.pageSize ?? pageSize),
     total,
     totalPages: Math.max(
       1,
-      Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+      Number(pagination.totalPages ?? Math.ceil(total / pageSize)),
     ),
   };
 }
@@ -182,6 +183,7 @@ export default function GuestManagement() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -204,12 +206,12 @@ export default function GuestManagement() {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
         search: search.trim(),
       });
 
       const response = await apiRequest(`/api/resident?${params.toString()}`);
-      const pageInfo = getPagination(response, currentPage);
+      const pageInfo = getPagination(response, currentPage, pageSize);
 
       setResidents(getResidentList(response));
       setPagination(pageInfo);
@@ -224,7 +226,7 @@ export default function GuestManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, pageSize, search]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -629,6 +631,14 @@ export default function GuestManagement() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

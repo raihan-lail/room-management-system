@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
 import { fetchComplaints } from "../../api/complaints";
 import { fetchNotifications } from "../../api/notifications";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -10,6 +11,7 @@ export default function Complains() {
   const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [complaints, setComplaints] = useState([]);
   const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
@@ -141,27 +143,27 @@ export default function Complains() {
    */
   const totalPages = Math.max(
     1,
-    Math.ceil(sortedComplains.length / PAGE_SIZE)
+    Math.ceil(sortedComplains.length / pageSize)
   );
 
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedComplains = useMemo(() => {
-    const startIndex = (safePage - 1) * PAGE_SIZE;
+    const startIndex = (safePage - 1) * pageSize;
 
     return sortedComplains.slice(
       startIndex,
-      startIndex + PAGE_SIZE
+      startIndex + pageSize
     );
-  }, [sortedComplains, safePage]);
+  }, [sortedComplains, pageSize, safePage]);
 
   const startRow =
     filteredComplains.length === 0
       ? 0
-      : (safePage - 1) * PAGE_SIZE + 1;
+      : (safePage - 1) * pageSize + 1;
 
   const endRow = Math.min(
-    safePage * PAGE_SIZE,
+    safePage * pageSize,
     filteredComplains.length
   );
 
@@ -369,7 +371,7 @@ export default function Complains() {
                         {/* NO */}
                         <td className="table-col-no">
                           {(safePage - 1) *
-                            PAGE_SIZE +
+                            pageSize +
                             index +
                             1}
                         </td>
@@ -449,6 +451,14 @@ export default function Complains() {
             </span>
 
             <div className="office-page-nav">
+
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
 
               <button
                 type="button"

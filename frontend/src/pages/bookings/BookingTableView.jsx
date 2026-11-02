@@ -7,6 +7,7 @@ import BookingEditModal from "../../components/modals/BookingEditModal";
 import ExportModal from "../../components/modals/ExportModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import FlexibleButton from "../../components/FlexibleButtons";
+import PageSizeSelect from "../../components/PageSizeSelect";
 import apiRequest from "../../api/client";
 
 const PAGE_SIZE = 10;
@@ -87,17 +88,17 @@ function getBookings(response) {
   return Array.isArray(response?.data) ? response.data : [];
 }
 
-function getPagination(response, currentPage) {
+function getPagination(response, currentPage, pageSize) {
   const pagination = response?.pagination ?? {};
   const total = Number(pagination.total ?? 0);
 
   return {
     page: Number(pagination.page ?? currentPage),
-    limit: Number(pagination.limit ?? PAGE_SIZE),
+    limit: Number(pagination.limit ?? pageSize),
     total,
     totalPages: Math.max(
       1,
-      Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)),
+      Number(pagination.totalPages ?? Math.ceil(total / pageSize)),
     ),
   };
 }
@@ -112,6 +113,7 @@ export default function BookingTableView() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
   const [startedAtFrom, setStartedAtFrom] = useState("");
@@ -161,7 +163,7 @@ export default function BookingTableView() {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        limit: String(PAGE_SIZE),
+        limit: String(pageSize),
       });
 
       if (search.trim()) params.set("search", search.trim());
@@ -182,7 +184,7 @@ export default function BookingTableView() {
       }
 
       const response = await apiRequest(`/api/booking?${params.toString()}`);
-      const pageInfo = getPagination(response, currentPage);
+      const pageInfo = getPagination(response, currentPage, pageSize);
 
       setBookings(getBookings(response));
       setPagination(pageInfo);
@@ -197,7 +199,7 @@ export default function BookingTableView() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, search, statusFilter, startedAtFrom, startedAtTo]);
+  }, [currentPage, pageSize, search, statusFilter, startedAtFrom, startedAtTo]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -670,6 +672,14 @@ export default function BookingTableView() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

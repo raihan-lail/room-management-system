@@ -7,6 +7,7 @@ import { buildRoomAllocationSchema } from "../../components/modals/addFormSchema
 import FlexibleButton from "../../components/FlexibleButtons";
 import useAuth from "../../contexts/useAuth";
 import apiRequest from "../../api/client";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
@@ -22,18 +23,18 @@ function getRoomList(response) {
   return [];
 }
 
-function getPagination(response, currentPage) {
+function getPagination(response, currentPage, pageSize) {
   const pagination = response?.pagination ?? response?.meta ?? {};
 
   return {
     page: Number(pagination.page ?? currentPage),
-    pageSize: Number(pagination.pageSize ?? PAGE_SIZE),
+    pageSize: Number(pagination.pageSize ?? pageSize),
     total: Number(pagination.total ?? 0),
     totalPages: Math.max(
       1,
       Number(
         pagination.totalPages ??
-          Math.ceil((pagination.total ?? 0) / PAGE_SIZE)
+          Math.ceil((pagination.total ?? 0) / pageSize)
       )
     ),
   };
@@ -52,6 +53,7 @@ export default function RoomAllocation() {
   });
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -73,7 +75,7 @@ export default function RoomAllocation() {
     try {
       const params = new URLSearchParams({
         page: String(currentPage),
-        pageSize: String(PAGE_SIZE),
+        pageSize: String(pageSize),
         search: search.trim(),
       });
 
@@ -82,7 +84,7 @@ export default function RoomAllocation() {
       );
 
       const allocations = getAllocationList(response);
-      const pageInfo = getPagination(response, currentPage);
+      const pageInfo = getPagination(response, currentPage, pageSize);
 
       setAllocationList(allocations);
       setPagination(pageInfo);
@@ -97,7 +99,7 @@ export default function RoomAllocation() {
     } finally {
       setLoading(false);
     }
-  }, [currentPage, search]);
+  }, [currentPage, pageSize, search]);
 
   const loadRooms = useCallback(async () => {
     try {
@@ -412,6 +414,14 @@ export default function RoomAllocation() {
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"

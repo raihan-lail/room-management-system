@@ -1,12 +1,14 @@
 import { useEffect, useMemo, useState } from "react";
 import MainLayout from "../../components/MainLayout";
 import apiRequest from "../../api/client";
+import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
 export default function Ratings() {
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [ratings, setRatings] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -154,7 +156,7 @@ export default function Ratings() {
    */
   const totalPages = Math.max(
     1,
-    Math.ceil(sortedRatings.length / PAGE_SIZE)
+    Math.ceil(sortedRatings.length / pageSize)
   );
 
   const safePage = Math.min(
@@ -164,21 +166,21 @@ export default function Ratings() {
 
   const pagedRatings = useMemo(() => {
     const startIndex =
-      (safePage - 1) * PAGE_SIZE;
+      (safePage - 1) * pageSize;
 
     return sortedRatings.slice(
       startIndex,
-      startIndex + PAGE_SIZE
+      startIndex + pageSize
     );
-  }, [sortedRatings, safePage]);
+  }, [sortedRatings, pageSize, safePage]);
 
   const startRow =
     filteredRatings.length === 0
       ? 0
-      : (safePage - 1) * PAGE_SIZE + 1;
+      : (safePage - 1) * pageSize + 1;
 
   const endRow = Math.min(
-    safePage * PAGE_SIZE,
+    safePage * pageSize,
     filteredRatings.length
   );
 
@@ -407,7 +409,7 @@ export default function Ratings() {
                         {/* NO */}
                         <td className="table-col-no">
                           {(safePage - 1) *
-                            PAGE_SIZE +
+                            pageSize +
                             index +
                             1}
                         </td>
@@ -482,6 +484,14 @@ export default function Ratings() {
             </span>
 
             <div className="office-page-nav">
+
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
 
               <button
                 type="button"

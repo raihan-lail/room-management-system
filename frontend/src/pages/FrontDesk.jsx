@@ -10,6 +10,7 @@ import {
   buildRow,
 } from "../components/modals/addFormSchemas";
 import FlexibleButton from "../components/FlexibleButtons";
+import PageSizeSelect from "../components/PageSizeSelect";
 
 
 const PAGE_SIZE = 10;
@@ -107,6 +108,7 @@ const toHomeLeaveRow = (booking) => {
  */
 export default function FrontDesk() {
   const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [segment, setSegment] = useState("arrival");
   const [sortConfig, setSortConfig] = useState({
@@ -178,7 +180,7 @@ export default function FrontDesk() {
         const params = new URLSearchParams({
           tab: toApiTab(tab),
           page: tab === segment ? String(currentPage) : "1",
-          limit: tab === segment ? String(PAGE_SIZE) : "1",
+          limit: tab === segment ? String(pageSize) : "1",
           date: selectedDate,
           ...(isCurrentDate ? {} : { history: "true" }),
         });
@@ -196,7 +198,7 @@ export default function FrontDesk() {
 
       const homeLeaveParams = new URLSearchParams({
         page: String(currentPage),
-        limit: String(PAGE_SIZE),
+        limit: String(pageSize),
         startedAtFrom: selectedDate,
         startedAtTo: selectedDate,
         ...(search.trim() ? { search: search.trim() } : {}),
@@ -232,7 +234,7 @@ export default function FrontDesk() {
           ended_at: booking.endedAt?.slice(0, 10) ?? "",
         })));
       }
-      const totalPages = Math.max(1, Number(pagination.totalPages ?? Math.ceil(total / PAGE_SIZE)));
+      const totalPages = Math.max(1, Number(pagination.totalPages ?? Math.ceil(total / pageSize)));
       setBookingPagination({ total, totalPages });
       if (currentPage > totalPages) setCurrentPage(totalPages);
     } catch (err) {
@@ -243,7 +245,7 @@ export default function FrontDesk() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, isCurrentDate, search, segment, selectedDate]);
+  }, [currentPage, pageSize, isCurrentDate, search, segment, selectedDate]);
 
   useEffect(() => {
   const timer = window.setTimeout(() => {
@@ -524,8 +526,8 @@ export default function FrontDesk() {
     : 0;
 
   const startRow =
-    bookingPagination.total === 0 ? 0 : (safePage - 1) * PAGE_SIZE + 1;
-  const endRow = Math.min(safePage * PAGE_SIZE, bookingPagination.total);
+    bookingPagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1;
+  const endRow = Math.min(safePage * pageSize, bookingPagination.total);
 
   const handleSearchChange = (value) => {
     setSearch(value);
@@ -861,7 +863,7 @@ aria-label={
                       }
                     >
                       <td className="table-col-no">
-                        {(safePage - 1) * PAGE_SIZE + index + 1}
+                        {(safePage - 1) * pageSize + index + 1}
                       </td>
 
                       {isHomeLeave ? (
@@ -971,6 +973,14 @@ aria-label={
             </span>
 
             <div className="office-page-nav">
+              <PageSizeSelect
+                value={pageSize}
+                onChange={(size) => {
+                  setPageSize(size);
+                  setCurrentPage(1);
+                }}
+              />
+
               <button
                 type="button"
                 className="btn btn-neutral"
