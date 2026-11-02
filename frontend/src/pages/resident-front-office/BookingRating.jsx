@@ -48,8 +48,12 @@ export default function BookingRating() {
   }, [bookingId]);
 
   useEffect(() => {
+  const timer = window.setTimeout(() => {
     loadRatingData();
-  }, [loadRatingData]);
+  }, 0);
+
+  return () => window.clearTimeout(timer);
+}, [loadRatingData]);
 
   const submitRating = async () => {
     setSubmitting(true);
