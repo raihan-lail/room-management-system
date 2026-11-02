@@ -1062,6 +1062,20 @@ textarea,
   white-space: nowrap;
 }
 
+.dashboard-date-filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.dashboard-chart .dashboard-chart__head .calendar-date-filter {
+  flex-direction: row;
+  align-items: center;
+  min-width: 0;
+  white-space: nowrap;
+}
+
 
 /* Dashboard KPI cards */
 
@@ -3652,6 +3666,18 @@ textarea,
 
   .dashboard-kpis {
     grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  }
+
+  .dashboard-date-filters {
+    width: 100%;
+  }
+
+  .dashboard-date-filters .calendar-date-filter {
+    flex: 1 1 150px;
+  }
+
+  .dashboard-chart__head {
+    flex-wrap: wrap;
   }
 
   .dashboard-chart__canvas {

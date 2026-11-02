@@ -111,6 +111,20 @@ export async function listBeds(req: AuthRequest, res: Response) {
     const singleDateBookingFilter: Prisma.BookingWhereInput = {
       OR: [occupiedOnDate, bookedBeforeArrival],
     };
+    const statusFilteredBookingWhere: Prisma.BookingWhereInput | undefined =
+      dateStart && statusParam && statusParam !== "VACANT"
+        ? isSingleDateStatusQuery && statusParam === "BOOKED"
+          ? bookedBeforeArrival
+          : {
+              status: {
+                in: dateStatusBookingStatuses[
+                  statusParam as Exclude<BedStatus, "VACANT">
+                ],
+              },
+              startedAt: { lt: dateEnd! },
+              endedAt: { gt: dateStart },
+            }
+        : undefined;
 
     const where: Prisma.BedWhereInput = {
       ...(!dateStart && statusParam
@@ -132,15 +146,8 @@ export async function listBeds(req: AuthRequest, res: Response) {
       ...(dateStart && statusParam && statusParam !== "VACANT"
         ? {
             bookings: {
-              some: {
-                ...(isSingleDateStatusQuery && statusParam === "BOOKED"
-                  ? bookedBeforeArrival
-                  : {
-                      status: { in: dateStatusBookingStatuses[statusParam as Exclude<BedStatus, "VACANT">] },
-                      startedAt: { lt: dateEnd! },
-                      endedAt: { gt: dateStart },
-                    }),
-              },
+              some: statusFilteredBookingWhere!,
+              ...(statusParam === "BOOKED" ? { none: occupiedOnDate } : {}),
             },
           }
         : {}),
@@ -186,14 +193,14 @@ export async function listBeds(req: AuthRequest, res: Response) {
         where,
         include: {
           bookings: {
-            where: {
-              ...(isSingleDateStatusQuery
+            where:
+              statusFilteredBookingWhere ??
+              (isSingleDateStatusQuery
                 ? singleDateBookingFilter
                 : {
                     status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
                     ...(dateStart ? { startedAt: { lt: dateEnd! }, endedAt: { gt: dateStart } } : {}),
                   }),
-            },
             orderBy: { startedAt: isSingleDateStatusQuery ? "asc" : "desc" },
             take: 1,
             include: {
