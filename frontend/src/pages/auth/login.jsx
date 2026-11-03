@@ -46,7 +46,7 @@ export default function Login() {
           <div className="login-heading">
             <h1 className="login-title">Login</h1>
             <p className="login-subtitle">
-              Enter your email and password to continue.
+              Enter your email and password to login.
             </p>
           </div>
 
