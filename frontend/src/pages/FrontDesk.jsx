@@ -3,6 +3,7 @@ import MainLayout from "../components/MainLayout";
 import apiRequest from "../api/client";
 import TableRowActions from "../components/TableRowActions";
 import BookingModal from "../components/modals/BookingModal";
+import BookingDetailsModal from "../components/modals/BookingDetailsModal";
 import ConfirmModal from "../components/modals/ConfirmModal";
 import ExportModal from "../components/modals/ExportModal";
 import {
@@ -140,6 +141,7 @@ export default function FrontDesk() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [checkingInBooking, setCheckingInBooking] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
@@ -936,7 +938,7 @@ aria-label={
                           <td>
                             {!isCurrentDate ? "-" : segment === "arrival" ? (
                               <div className="table-actions">
-                                <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-in")}>Check In</FlexibleButton>
+                                <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setCheckingInBooking(booking); }}>Check In</FlexibleButton>
                                 <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => setCancellingBooking(booking)}>Cancel Booking</FlexibleButton>
                               </div>
                             ) : segment === "near-end" ? (
@@ -1041,6 +1043,23 @@ aria-label={
           onConfirm={() => {
             performBookingAction(cancellingBooking, "cancel");
             setCancellingBooking(null);
+          }}
+        />
+      )}
+
+      {checkingInBooking && (
+        <BookingDetailsModal
+          bookingId={checkingInBooking.id}
+          title="Confirm Check In"
+          confirmLabel="Check In"
+          isSubmitting={isSavingAction}
+          actionError={actionError}
+          onClose={() => {
+            if (!isSavingAction) setCheckingInBooking(null);
+          }}
+          onConfirm={async () => {
+            const succeeded = await performBookingAction(checkingInBooking, "check-in");
+            if (succeeded) setCheckingInBooking(null);
           }}
         />
       )}
@@ -1188,7 +1207,7 @@ aria-label={
         </div>
       )}
 
-      {actionError && !extendingRow && !isHomeLeaveModalOpen && (
+      {actionError && !extendingRow && !isHomeLeaveModalOpen && !checkingInBooking && (
         <div className="error-message" role="alert">{actionError}</div>
       )}
       {isExportModalOpen && (
