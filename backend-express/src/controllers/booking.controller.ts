@@ -32,6 +32,9 @@ import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
 
+// Booking confirmation emails are temporarily disabled.
+const BOOKING_EMAIL_ENABLED: boolean = false;
+
 function getResidentPortalUrl(): string | undefined {
   const origin =
     process.env.APP_URL?.trim() ||
@@ -937,30 +940,32 @@ export async function createBooking(
         : undefined;
     let emailSent = false;
 
-    try {
-      const email = buildBookingCreatedEmail({
-        residentName: booking.resident.fullName,
-        bookingNumber: booking.bookingNumber,
-        roomName: booking.bed.room.name,
-        bedName: booking.bed.name,
-        startedAt: booking.startedAt,
-        endedAt: booking.endedAt,
-        notes: booking.notes,
-        loginEmail: recipientEmail,
-        loginPassword,
-        loginUrl: getResidentPortalUrl(),
-      });
+    if (BOOKING_EMAIL_ENABLED) {
+      try {
+        const email = buildBookingCreatedEmail({
+          residentName: booking.resident.fullName,
+          bookingNumber: booking.bookingNumber,
+          roomName: booking.bed.room.name,
+          bedName: booking.bed.name,
+          startedAt: booking.startedAt,
+          endedAt: booking.endedAt,
+          notes: booking.notes,
+          loginEmail: recipientEmail,
+          loginPassword,
+          loginUrl: getResidentPortalUrl(),
+        });
 
-      await sendEmail({ to: recipientEmail, ...email });
-      emailSent = true;
-    } catch (error) {
-      console.error("Booking confirmation email error:", error);
+        await sendEmail({ to: recipientEmail, ...email });
+        emailSent = true;
+      } catch (error) {
+        console.error("Booking confirmation email error:", error);
 
-      await notifyActor(req, {
-        title: "Booking created, email not sent",
-        message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,
-        type: "WARNING",
-      });
+        await notifyActor(req, {
+          title: "Booking created, email not sent",
+          message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,
+          type: "WARNING",
+        });
+      }
     }
 
     await auditBooking(req, actor, {
