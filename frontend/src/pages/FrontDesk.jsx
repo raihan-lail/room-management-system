@@ -16,6 +16,7 @@ import PageSizeSelect from "../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 const BOOKING_TABS = ["arrival", "in-house", "home_leave", "near-end", "departure"];
+const ALERT_SEGMENTS = new Set(["arrival", "near-end", "departure"]);
 
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
@@ -584,22 +585,34 @@ export default function FrontDesk() {
                 role="tablist"
                 aria-label="Booking segment"
               >
-                {SEGMENTS.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    role="tab"
-                    aria-selected={segment === item.id}
-                    className={`frontdesk-segment ${segment === item.id ? "is-active" : ""}`}
-                    onClick={() => handleSegmentChange(item.id)}
-                  >
-                    
-                    {item.label}
-                    <span className="frontdesk-segment__count">
-                      {segmentCounts[item.id] ?? 0}
-                    </span>
-                  </button>
-                ))}
+                {SEGMENTS.map((item) => {
+                  const needsAction =
+                    isCurrentDate &&
+                    ALERT_SEGMENTS.has(item.id) &&
+                    (segmentCounts[item.id] ?? 0) > 0;
+
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      role="tab"
+                      aria-selected={segment === item.id}
+                      className={`frontdesk-segment ${segment === item.id ? "is-active" : ""}`}
+                      onClick={() => handleSegmentChange(item.id)}
+                    >
+                      {needsAction && (
+                        <span
+                          className="frontdesk-segment__dot"
+                          aria-label={`${item.label} needs action`}
+                        />
+                      )}
+                      {item.label}
+                      <span className="frontdesk-segment__count">
+                        {segmentCounts[item.id] ?? 0}
+                      </span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
