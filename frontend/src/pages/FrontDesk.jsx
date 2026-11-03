@@ -141,6 +141,7 @@ export default function FrontDesk() {
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
   const [checkingInBooking, setCheckingInBooking] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
@@ -294,6 +295,23 @@ export default function FrontDesk() {
     } finally {
       setIsSavingAction(false);
       setExtendingRow(null);
+    }
+  };
+
+  const submitCancellation = async (event) => {
+    event.preventDefault();
+    if (!cancellingBooking) return;
+
+    const reason = cancelReason.trim();
+    if (!reason) {
+      setActionError("Enter a cancellation reason.");
+      return;
+    }
+
+    const succeeded = await performBookingAction(cancellingBooking, "cancel", { reason });
+    if (succeeded) {
+      setCancellingBooking(null);
+      setCancelReason("");
     }
   };
 
@@ -939,7 +957,7 @@ aria-label={
                             {!isCurrentDate ? "-" : segment === "arrival" ? (
                               <div className="table-actions">
                                 <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setCheckingInBooking(booking); }}>Check In</FlexibleButton>
-                                <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => setCancellingBooking(booking)}>Cancel Booking</FlexibleButton>
+                                <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => { setActionError(""); setCancelReason(""); setCancellingBooking(booking); }}>Cancel Booking</FlexibleButton>
                               </div>
                             ) : segment === "near-end" ? (
                               <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setExtendingRow(booking); setExtensionDate(""); }}>Extend</FlexibleButton>
@@ -1034,17 +1052,65 @@ aria-label={
       )}
 
       {cancellingBooking && (
-        <ConfirmModal
-          title="Cancel booking"
-          message={`Cancel the booking for ${cancellingBooking.guest?.name || "this resident"}?`}
-          confirmLabel="Cancel Booking"
-          danger
-          onClose={() => setCancellingBooking(null)}
-          onConfirm={() => {
-            performBookingAction(cancellingBooking, "cancel");
-            setCancellingBooking(null);
-          }}
-        />
+        <div
+          className="modal-overlay"
+          onMouseDown={() => !isSavingAction && setCancellingBooking(null)}
+        >
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-booking-title"
+            onSubmit={submitCancellation}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal__header">
+              <h2 className="modal__title" id="cancel-booking-title">Cancel booking</h2>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={() => setCancellingBooking(null)}
+                aria-label="Close"
+                disabled={isSavingAction}
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="modal__message">
+              Cancel the booking for {cancellingBooking.guest?.name || "this resident"}? This cannot be undone.
+            </p>
+            <div className="form-stack">
+              <label className="form-field">
+                <span>Cancellation reason</span>
+                <input
+                  type="text"
+                  required
+                  placeholder="Reason for cancellation"
+                  value={cancelReason}
+                  onChange={(event) => {
+                    setCancelReason(event.target.value);
+                    setActionError("");
+                  }}
+                  disabled={isSavingAction}
+                />
+              </label>
+            </div>
+            {actionError && <p role="alert">{actionError}</p>}
+            <div className="modal__actions">
+              <button
+                type="button"
+                className="btn btn-neutral"
+                onClick={() => setCancellingBooking(null)}
+                disabled={isSavingAction}
+              >
+                Keep Booking
+              </button>
+              <button type="submit" className="btn btn-danger" disabled={isSavingAction}>
+                {isSavingAction ? "Cancelling..." : "Cancel Booking"}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
 
       {checkingInBooking && (
@@ -1207,7 +1273,7 @@ aria-label={
         </div>
       )}
 
-      {actionError && !extendingRow && !isHomeLeaveModalOpen && !checkingInBooking && (
+      {actionError && !extendingRow && !isHomeLeaveModalOpen && !checkingInBooking && !cancellingBooking && (
         <div className="error-message" role="alert">{actionError}</div>
       )}
       {isExportModalOpen && (
