@@ -17,6 +17,7 @@ export default function TableRowActions({
   onView,
   onEdit,
   onDelete,
+  actions = [],
   permission = "rooms.manage",
 }) {
   const [isOpen, setIsOpen] = useState(false);
@@ -25,7 +26,8 @@ export default function TableRowActions({
   const triggerRef = useRef(null);
   const menuRef = useRef(null);
 
-  const hasMenu = Boolean(onEdit || onDelete);
+  const hasCustomActions = actions.length > 0;
+  const hasMenu = Boolean(onEdit || onDelete || hasCustomActions);
 
   const closeMenu = useCallback(() => {
     setIsOpen(false);
@@ -87,6 +89,11 @@ export default function TableRowActions({
   }, [isOpen, closeMenu]);
 
   const title = `${label}${rowLabel ? ` ${rowLabel}` : ""}`;
+  const triggerTitle = hasCustomActions
+    ? `More actions for ${title}`
+    : onEdit
+      ? `Edit or delete ${title}`
+      : `Delete ${title}`;
 
   return (
     <div className="table-actions">
@@ -107,17 +114,19 @@ export default function TableRowActions({
           ref={triggerRef}
           permission={permission}
           className="btn btn-neutral"
-          title={onEdit ? `Edit or delete ${title}` : `Delete ${title}`}
-          aria-label={onEdit ? `Edit or delete ${title}` : `Delete ${title}`}
+          title={triggerTitle}
+          aria-label={triggerTitle}
           aria-haspopup="menu"
           aria-expanded={isOpen}
           onClick={() => (isOpen ? closeMenu() : setIsOpen(true))}
         >
           <i
             className={
-              onEdit
-                ? "bi bi-pencil-square"
-                : "bi bi-trash"
+              hasCustomActions
+                ? "bi bi-three-dots"
+                : onEdit
+                  ? "bi bi-pencil-square"
+                  : "bi bi-trash"
             }
             aria-hidden="true"
           />
@@ -165,6 +174,26 @@ export default function TableRowActions({
                 Delete
               </button>
             )}
+
+            {actions.map((action) => (
+              <button
+                key={action.label}
+                type="button"
+                role="menuitem"
+                className={`table-action-menu__item${
+                  action.danger ? " table-action-menu__item--danger" : ""
+                }`}
+                onClick={() => {
+                  closeMenu();
+                  action.onClick();
+                }}
+              >
+                {action.icon && (
+                  <i className={action.icon} aria-hidden="true" />
+                )}
+                {action.label}
+              </button>
+            ))}
           </div>,
           document.body,
         )}
