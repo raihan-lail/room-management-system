@@ -331,6 +331,65 @@ export default function BookingTableView() {
     });
   };
 
+  const getBookingActions = (booking) => {
+    if (booking.status === "CONFIRMED") {
+      return [
+        {
+          label: "Edit",
+          icon: "bi bi-pencil-square",
+          onClick: () => setEditingBooking(booking),
+        },
+        {
+          label: "Cancel",
+          icon: "bi bi-x-circle",
+          danger: true,
+          onClick: () => {
+            setActionError("");
+            setCancelReason("");
+            setCancellingBooking(booking);
+          },
+        },
+      ];
+    }
+
+    if (booking.status === "IN_HOUSE") {
+      return [
+        {
+          label: "Extend Stay",
+          icon: "bi bi-calendar-plus",
+          onClick: () => {
+            setActionError("");
+            setExtensionDate("");
+            setExtendingBooking(booking);
+          },
+        },
+        {
+          label: "Check Out",
+          icon: "bi bi-box-arrow-right",
+          onClick: () => {
+            setActionError("");
+            setCheckingOutBooking(booking);
+          },
+        },
+      ];
+    }
+
+    if (["CHECKED_OUT", "CANCELLED"].includes(booking.status)) {
+      return [
+        {
+          label: "Archive",
+          icon: "bi bi-archive",
+          onClick: () => {
+            setActionError("");
+            setArchivingBooking(booking);
+          },
+        },
+      ];
+    }
+
+    return [];
+  };
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -552,7 +611,7 @@ export default function BookingTableView() {
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
-                  <th>Notes</th>
+                  
                   <th>Action</th>
                 </tr>
               </thead>
@@ -617,81 +676,16 @@ export default function BookingTableView() {
                         </span>
                       </td>
 
-                      <td>{booking.notes || "-"}</td>
+                      
 
                       <td>
-                        <div className="table-actions">
-                          <TableRowActions
-                            label="booking"
-                            rowLabel={booking.resident?.fullName}
-                            onView={() => setViewingBookingId(booking.id)}
-                          />
-                          {booking.status === "CONFIRMED" && (
-                            <>
-                              <FlexibleButton
-                                permission="bookings.create"
-                                className="btn btn-neutral"
-                                title="Edit booking"
-                                aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
-                                onClick={() => setEditingBooking(booking)}
-                              >
-                                <i className="bi bi-pencil-square" aria-hidden="true" />
-                              </FlexibleButton>
-                              <FlexibleButton
-                                permission="bookings.create"
-                                className="btn btn-neutral"
-                                title="Cancel booking"
-                                aria-label={`Cancel booking for ${booking.resident?.fullName || booking.id}`}
-                                onClick={() => {
-                                  setActionError("");
-                                  setCancelReason("");
-                                  setCancellingBooking(booking);
-                                }}
-                              >
-                                Cancel
-                              </FlexibleButton>
-                            </>
-                          )}
-                          {booking.status === "IN_HOUSE" && (
-                            <>
-                              <FlexibleButton
-                                permission="bookings.create"
-                                className="btn btn-neutral"
-                                title="Extend stay"
-                                aria-label={`Extend stay for ${booking.resident?.fullName || booking.id}`}
-                                onClick={() => {
-                                  setActionError("");
-                                  setExtensionDate("");
-                                  setExtendingBooking(booking);
-                                }}
-                              >
-                                Extend
-                              </FlexibleButton>
-                              <FlexibleButton
-                                permission="bookings.create"
-                                className="btn btn-primary"
-                                onClick={() => {
-                                  setActionError("");
-                                  setCheckingOutBooking(booking);
-                                }}
-                              >
-                                Check Out
-                              </FlexibleButton>
-                            </>
-                          )}
-                          {["CHECKED_OUT", "CANCELLED"].includes(booking.status) && (
-                            <FlexibleButton
-                              permission="bookings.create"
-                              className="btn btn-neutral"
-                              onClick={() => {
-                                setActionError("");
-                                setArchivingBooking(booking);
-                              }}
-                            >
-                              Archive
-                            </FlexibleButton>
-                          )}
-                        </div>
+                        <TableRowActions
+                          label="booking"
+                          rowLabel={booking.resident?.fullName}
+                          onView={() => setViewingBookingId(booking.id)}
+                          actions={getBookingActions(booking)}
+                          permission="bookings.create"
+                        />
                       </td>
                     </tr>
                   ))
