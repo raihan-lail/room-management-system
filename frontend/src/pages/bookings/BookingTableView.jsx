@@ -135,6 +135,8 @@ export default function BookingTableView() {
   const [extensionDate, setExtensionDate] = useState("");
   const [archivingBooking, setArchivingBooking] = useState(null);
   const [checkingOutBooking, setCheckingOutBooking] = useState(null);
+  const [cancellingBooking, setCancellingBooking] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState("");
   const [isSavingAction, setIsSavingAction] = useState(false);
 
@@ -293,10 +295,28 @@ export default function BookingTableView() {
       await handleBookingChanged();
       setExtendingBooking(null);
       setArchivingBooking(null);
+      return true;
     } catch (err) {
       setActionError(err.message || "Booking action failed.");
     } finally {
       setIsSavingAction(false);
+    }
+  };
+
+  const submitCancellation = async (event) => {
+    event.preventDefault();
+    if (!cancellingBooking) return;
+
+    const reason = cancelReason.trim();
+    if (!reason) {
+      setActionError("Enter a cancellation reason.");
+      return;
+    }
+
+    const succeeded = await performBookingAction(cancellingBooking, "cancel", { reason });
+    if (succeeded) {
+      setCancellingBooking(null);
+      setCancelReason("");
     }
   };
 
@@ -404,7 +424,7 @@ export default function BookingTableView() {
 
         {/* TABLE CARD */}
         <section className="table-card content">
-          {actionError && !extendingBooking && (
+          {actionError && !extendingBooking && !cancellingBooking && (
             <div className="frontdesk-overdue-alert" role="alert">{actionError}</div>
           )}
           <div className="office-table-wrapper">
@@ -607,15 +627,30 @@ export default function BookingTableView() {
                             onView={() => setViewingBookingId(booking.id)}
                           />
                           {booking.status === "CONFIRMED" && (
-                            <FlexibleButton
-                              permission="bookings.create"
-                              className="btn btn-neutral"
-                              title="Edit booking"
-                              aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
-                              onClick={() => setEditingBooking(booking)}
-                            >
-                              <i className="bi bi-pencil-square" aria-hidden="true" />
-                            </FlexibleButton>
+                            <>
+                              <FlexibleButton
+                                permission="bookings.create"
+                                className="btn btn-neutral"
+                                title="Edit booking"
+                                aria-label={`Edit booking for ${booking.resident?.fullName || booking.id}`}
+                                onClick={() => setEditingBooking(booking)}
+                              >
+                                <i className="bi bi-pencil-square" aria-hidden="true" />
+                              </FlexibleButton>
+                              <FlexibleButton
+                                permission="bookings.create"
+                                className="btn btn-neutral"
+                                title="Cancel booking"
+                                aria-label={`Cancel booking for ${booking.resident?.fullName || booking.id}`}
+                                onClick={() => {
+                                  setActionError("");
+                                  setCancelReason("");
+                                  setCancellingBooking(booking);
+                                }}
+                              >
+                                Cancel
+                              </FlexibleButton>
+                            </>
                           )}
                           {booking.status === "IN_HOUSE" && (
                             <>
@@ -799,6 +834,68 @@ export default function BookingTableView() {
             setCheckingOutBooking(null);
           }}
         />
+      )}
+
+      {cancellingBooking && (
+        <div
+          className="modal-overlay"
+          onMouseDown={() => !isSavingAction && setCancellingBooking(null)}
+        >
+          <form
+            className="modal"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancel-booking-title"
+            onSubmit={submitCancellation}
+            onMouseDown={(event) => event.stopPropagation()}
+          >
+            <div className="modal__header">
+              <h2 className="modal__title" id="cancel-booking-title">Cancel booking</h2>
+              <button
+                type="button"
+                className="modal__close"
+                onClick={() => setCancellingBooking(null)}
+                aria-label="Close"
+                disabled={isSavingAction}
+              >
+                <i className="bi bi-x-lg" aria-hidden="true" />
+              </button>
+            </div>
+            <p className="modal__message">
+              Cancel the booking for {cancellingBooking.resident?.fullName || "this resident"}? This cannot be undone.
+            </p>
+            <div className="form-stack">
+              <label className="form-field">
+                <span>Cancellation reason</span>
+                <input
+                  type="text"
+                  required
+                  placeholder="Reason for cancellation"
+                  value={cancelReason}
+                  onChange={(event) => {
+                    setCancelReason(event.target.value);
+                    setActionError("");
+                  }}
+                  disabled={isSavingAction}
+                />
+              </label>
+            </div>
+            {actionError && <p role="alert">{actionError}</p>}
+            <div className="modal__actions">
+              <button
+                type="button"
+                className="btn btn-neutral"
+                onClick={() => setCancellingBooking(null)}
+                disabled={isSavingAction}
+              >
+                Keep Booking
+              </button>
+              <button type="submit" className="btn btn-danger" disabled={isSavingAction}>
+                {isSavingAction ? "Cancelling..." : "Cancel Booking"}
+              </button>
+            </div>
+          </form>
+        </div>
       )}
     </MainLayout>
   );
