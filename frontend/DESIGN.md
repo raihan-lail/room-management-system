@@ -12,4 +12,3 @@
 - Do not animate keyboard shortcuts, filters, search, or rapid actions.
 - Add only subtle hover and active states.
 - Keep interactions instant and useful.
-- no animations.
