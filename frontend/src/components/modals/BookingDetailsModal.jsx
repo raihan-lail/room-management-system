@@ -50,7 +50,16 @@ function DetailItem({ label, value, isStatus }) {
   );
 }
 
-export default function BookingDetailsModal({ bookingId, onClose }) {
+export default function BookingDetailsModal({
+  bookingId,
+  onClose,
+  title = "Booking Details",
+  confirmLabel,
+  onConfirm,
+  isSubmitting = false,
+  actionError = "",
+}) {
+  const isConfirmMode = Boolean(confirmLabel && onConfirm);
   const [booking, setBooking] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -105,6 +114,7 @@ export default function BookingDetailsModal({ bookingId, onClose }) {
           label: "Cancellation Reason",
           value: booking.cancellationReason,
         },
+        { label: "Site", value: booking.bed?.room?.floor?.location?.site?.name },
         { label: "Notes", value: booking.notes },
       ]
     : [];
@@ -131,11 +141,19 @@ export default function BookingDetailsModal({ bookingId, onClose }) {
         { label: "Department", value: booking.resident?.department },
         { label: "Title", value: booking.resident?.title },
         { label: "Site", value: booking.resident?.site?.name },
+        { label: "Status", value: booking.resident?.status },
+        {
+          label: "Registered At",
+          value: formatDate(booking.resident?.createdAt),
+        },
       ]
     : [];
 
   return (
-    <div className="modal-overlay" onMouseDown={onClose}>
+    <div
+      className="modal-overlay"
+      onMouseDown={() => !isSubmitting && onClose()}
+    >
       <div
         className="modal modal--wide"
         role="dialog"
@@ -144,13 +162,14 @@ export default function BookingDetailsModal({ bookingId, onClose }) {
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal__header">
-          <h2 className="modal__title">Booking Details</h2>
+          <h2 className="modal__title">{title}</h2>
 
           <button
             type="button"
             className="modal__close"
             onClick={onClose}
             aria-label="Close"
+            disabled={isSubmitting}
           >
             <i className="bi bi-x-lg" aria-hidden="true" />
           </button>
@@ -195,10 +214,32 @@ export default function BookingDetailsModal({ bookingId, onClose }) {
           )}
 
           <div className="modal__actions">
-            <button type="button" className="btn btn-neutral" onClick={onClose}>
-              Close
+            <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={onClose}
+              disabled={isSubmitting}
+            >
+              {isConfirmMode ? "Cancel" : "Close"}
             </button>
+
+            {isConfirmMode && (
+              <button
+                type="button"
+                className="btn btn-primary"
+                onClick={onConfirm}
+                disabled={isSubmitting || !booking}
+              >
+                {isSubmitting ? "Processing..." : confirmLabel}
+              </button>
+            )}
           </div>
+
+          {actionError && (
+            <p className="error-text" role="alert">
+              {actionError}
+            </p>
+          )}
         </div>
       </div>
     </div>
