@@ -1,0 +1,61 @@
+name: Deploy to VPS
+
+on:
+  push:
+    branches:
+      - main
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: production-deployment
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: Deploy Application
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Configure SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" \
+            > ~/.ssh/deploy_key
+
+          chmod 600 ~/.ssh/deploy_key
+
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" \
+            > ~/.ssh/known_hosts
+
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Deploy to VPS
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_APP_DIR: ${{ secrets.VPS_APP_DIR }}
+        run: |
+          APP_DIR="${VPS_APP_DIR:-/opt/room-management-system}"
+
+          ssh \
+            -i ~/.ssh/deploy_key \
+            -o IdentitiesOnly=yes \
+            -o StrictHostKeyChecking=yes \
+            "$VPS_USER@$VPS_HOST" \
+            "set -eu
+             cd '$APP_DIR'
+             test -f .env || { echo 'Missing $APP_DIR/.env on the VPS' >&2; exit 1; }
+             git fetch --prune origin main
+             git reset --hard origin/main
+             docker compose build --pull
+             docker compose up -d --wait database
+             docker compose run --rm --no-deps backend bunx prisma migrate deploy
+             docker compose up -d --remove-orphans
+             docker image prune -f"

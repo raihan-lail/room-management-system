@@ -220,6 +220,7 @@ Edit `backend-express/.env`:
 | `SUPERADMIN_NAME` | No | `Super Admin` | Employee name created by `superAdminSeeder.ts` |
 | `JWT_ALGORITHM` | No | `HS256` | Reserved. The current JWT helper always uses HS256. |
 | `JWT_EXPIRES_HOURS` | No | `8` | Reserved. Tokens currently expire in 1 hour, or 30 days with "Remember me". |
+| `COOKIE_SECURE` | No | `true` when `NODE_ENV=production` | Set to `false` only when the app is served over plain HTTP; browsers drop `Secure` cookies on HTTP hosts. |
 
 Never commit the real `.env` file.
 
@@ -397,6 +398,72 @@ origin or port.
 - Employee accounts are linked one-to-one to `User` through `Employee.userId`.
 - Every important mutation is written to the audit log with actor, action,
   resource and optional before/after values.
+
+## Deployment (Docker + VPS)
+
+`docker-compose.yml` runs three containers on one bridge network:
+
+| Service | Image | Exposure | Purpose |
+| --- | --- | --- | --- |
+| `database` | `postgres:17-alpine` | internal only | PostgreSQL with a named volume |
+| `backend` | `backend-express/Dockerfile` | internal port `5000` | Express API + WebSocket |
+| `frontend` | `frontend/Dockerfile` | host port `80` | nginx serving the SPA and proxying `/api/` and `/ws/` |
+
+The frontend build uses an empty `VITE_API_BASE_URL`, so the browser calls the
+API on the same origin and nginx forwards `/api/` and `/ws/` to the backend.
+
+### VPS setup (one time)
+
+1. Install Docker Engine with the Compose plugin and clone the repository:
+
+   ```bash
+   git clone https://github.com/FuTour-App/room-management-system.git /opt/room-management-system
+   cd /opt/room-management-system
+   ```
+
+2. Create the environment file:
+
+   ```bash
+   cp .env.example .env
+   # Edit .env: set POSTGRES_PASSWORD, JWT_SECRET, SUPERADMIN_* and SMTP_*
+   ```
+
+   `DATABASE_URL` is built by compose from the `POSTGRES_*` values, pointing at
+   the `database` service. URL-encode reserved characters in the password
+   (`@` → `%40`, `:` → `%3A`).
+
+   When the host has no domain and is served over plain HTTP, keep
+   `COOKIE_SECURE=false`; otherwise login succeeds but the browser discards the
+   `Secure` auth cookie.
+
+3. Build and start, then seed the base data once:
+
+   ```bash
+   docker compose up -d --build
+   docker compose run --rm --no-deps backend bun prisma/seeders/permissionSeeder.ts
+   docker compose run --rm --no-deps backend bun prisma/seeders/siteSeeder.ts
+   docker compose run --rm --no-deps backend bun prisma/seeders/superAdminSeeder.ts
+   ```
+
+### Continuous deployment
+
+`.github/workflows/deploy.yml` deploys every push to `main` (and can be run
+manually via `workflow_dispatch`). It fetches `origin/main`, resets the working
+tree, rebuilds the images, applies migrations with `prisma migrate deploy`, then
+recreates the containers.
+
+Required repository secrets:
+
+| Secret | Purpose |
+| --- | --- |
+| `VPS_HOST` | VPS hostname or IP |
+| `VPS_USER` | SSH user with access to Docker |
+| `VPS_SSH_KEY` | Private SSH key for that user |
+| `VPS_KNOWN_HOSTS` | Pinned host key (`ssh-keyscan -H <host>`) |
+| `VPS_APP_DIR` | Optional, defaults to `/opt/room-management-system` |
+
+The workflow fails if `.env` is missing on the server, so secrets stay on the
+VPS and are never committed.
 
 ## CI
 

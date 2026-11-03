@@ -8,7 +8,14 @@ import { auditActor } from "../services/audit.service.js";
 import { buildAuthUser } from "../helpers/auth.helper.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
+function cookieSecure(): boolean {
+  const override = process.env.COOKIE_SECURE;
 
+  if (override === "true") return true;
+  if (override === "false") return false;
+
+  return process.env.NODE_ENV === "production";
+}
 
 export async function login(
   req: Request,
@@ -172,7 +179,7 @@ export async function login(
 
     const cookieOptions: CookieOptions = {
       httpOnly: true,
-      secure: process.env.NODE_ENV === "production",
+      secure: cookieSecure(),
       sameSite: "lax",
       path: "/",
     };
@@ -242,7 +249,7 @@ export async function logout(
 
   res.clearCookie("access_token", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: cookieSecure(),
     sameSite: "lax",
     path: "/",
   });
