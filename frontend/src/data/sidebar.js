@@ -1,3 +1,5 @@
+export const residentMenu = [];
+
 export const sidebarMenu = [
   {
     label: "Dashboard",
@@ -22,8 +24,6 @@ export const sidebarMenu = [
      
        { label: 'Table View', path: '/bookings/table', icon: 'bi-table', permission:"bookings.read" },
        { label: 'Home Leaves', path: '/bookings/home-leave', icon: 'bi-house-door', permission:"home.leaves" },
-       { label: 'Complaints', path: '/bookings/complains', icon: 'bi-chat-dots', permission: "complaints" },
-        { label: 'Ratings', path: '/bookings/ratings', icon: 'bi-star', permission: "ratings" },
     ],
   },
   {
@@ -64,15 +64,3 @@ export const sidebarMenu = [
   },
 ];
 
-export const residentMenu = [
-  {
-    label: "Resident's front office",
-    path: "/resident",
-    icon: "bi-building",
-    items: [
-      { label: 'Booking History', path: '/resident/history', icon: 'bi-clock-history' },
-      { label: 'My Complaints', path: '/resident/complaints', icon: 'bi-chat-dots' },
-      { label: 'Change Password', path: '/change-password', icon: 'bi-pencil' },
-    ],
-  },
-];

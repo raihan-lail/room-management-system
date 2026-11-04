@@ -2,6 +2,7 @@ import type { Response } from "express";
 import { Prisma, type Gender } from "../generated/prisma/client.js";
 import { prisma } from "../lib/prisma.js";
 import argon2 from "argon2";
+import { randomBytes } from "node:crypto";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 
 import {
@@ -149,7 +150,6 @@ export async function createResident(req: AuthRequest, res: Response) {
 
     const {
       email,
-      password,
       siteId,
       fullName,
       gender,
@@ -164,8 +164,6 @@ export async function createResident(req: AuthRequest, res: Response) {
     if (
       typeof email !== "string" ||
       !email.trim() ||
-      typeof password !== "string" ||
-      password.length < 8 ||
       typeof siteId !== "string" ||
       !siteId ||
       typeof fullName !== "string" ||
@@ -173,7 +171,7 @@ export async function createResident(req: AuthRequest, res: Response) {
     ) {
       return res.status(400).json({
         message:
-          "Valid email, password (at least 8 characters), siteId, and fullName are required.",
+          "Valid email, siteId, and fullName are required.",
       });
     }
 
@@ -219,7 +217,7 @@ export async function createResident(req: AuthRequest, res: Response) {
       });
     }
 
-    const passwordHash = await argon2.hash(password, {
+    const passwordHash = await argon2.hash(randomBytes(32).toString("hex"), {
   type: argon2.argon2id,
 });
 

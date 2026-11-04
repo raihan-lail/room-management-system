@@ -44,8 +44,7 @@ interface BookingCreatedEmailInput {
   endedAt: Date;
   notes?: string | null;
   loginEmail: string;
-  loginPassword?: string;
-  loginUrl?: string;
+ 
 }
 
 const EMAIL_DATE_FORMATTER = new Intl.DateTimeFormat("en-GB", {
@@ -115,34 +114,7 @@ export function buildBookingCreatedEmail(input: BookingCreatedEmailInput): {
                   </tr>`
     : "";
 
-  const loginButton = input.loginUrl
-    ? `
-                  <tr>
-                    <td style="padding:20px 32px 0;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td style="background-color:#273896;border-radius:4px;">
-                            <a href="${escapeHtml(input.loginUrl)}" style="display:inline-block;padding:11px 22px;font-size:13px;font-weight:600;color:#ffffff;text-decoration:none;">Sign in to the Resident Portal</a>
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                  </tr>`
-    : "";
-
-  const passwordBlock = input.loginPassword
-    ? `
-                      <p style="margin:0;font-size:13px;color:#1a1f2e;">
-                        Password:
-                        <span style="display:inline-block;margin-left:4px;padding:3px 8px;background-color:#ffffff;border:1px solid #dfe3ea;border-radius:4px;font-family:Consolas,'Courier New',monospace;font-size:13px;color:#1a1f2e;">${escapeHtml(input.loginPassword)}</span>
-                      </p>
-                      <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#5a6275;">
-                        Please change this password immidiately after signing in.
-                      </p>`
-    : `
-                      <p style="margin:12px 0 0;font-size:12px;line-height:1.6;color:#5a6275;">
-                        Contact the receptionist or administrator to obtain your password. If you ever log in to this system before, use that password.
-                      </p>`;
+  
 
   const html = `<!doctype html>
 <html lang="en">
@@ -185,18 +157,12 @@ ${notesBlock}
               <td style="padding:24px 32px 0;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f8fb;border:1px solid #dfe3ea;border-radius:6px;">
                   <tr>
-                    <td style="padding:18px 20px;">
-                      <p style="margin:0 0 12px;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#273896;">Resident Portal Access</p>
-                      <p style="margin:0 0 8px;font-size:13px;color:#1a1f2e;">
-                        Email: <strong>${loginEmail}</strong>
-                      </p>
-                      ${passwordBlock}
-                    </td>
+                   
                   </tr>
                 </table>
               </td>
             </tr>
-${loginButton}
+
             <tr>
               <td style="padding:24px 32px 28px;">
                 <p style="margin:0;font-size:11px;line-height:1.6;color:#8a90a2;">
@@ -225,15 +191,8 @@ ${loginButton}
     "Status: Confirmed",
     ...(input.notes ? ["", `Notes: ${input.notes}`] : []),
     "",
-    "Resident Portal Access",
-    `Email: ${input.loginEmail}`,
-    ...(input.loginPassword
-      ? [
-          `Password: ${input.loginPassword}`,
-          "You can change this password after signing in.",
-        ]
-      : ["Contact the receptionist or administrator to obtain your password."]),
-    ...(input.loginUrl ? ["", `Sign in: ${input.loginUrl}`] : []),
+   
+    
     "",
     "This is an automated message from the Camp Management System. Please do not reply to this email.",
   ];
