@@ -11,6 +11,7 @@ services:
 
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      
 
     healthcheck:
       test:
@@ -60,6 +61,20 @@ services:
 
     networks:
       - app_network
+  
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
 
   frontend:
     build:
