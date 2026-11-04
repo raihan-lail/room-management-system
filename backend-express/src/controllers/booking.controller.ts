@@ -959,7 +959,7 @@ export async function createBooking(
           endedAt: booking.endedAt,
           notes: booking.notes,
           loginEmail: recipientEmail,
-          loginUrl: getResidentPortalUrl(),
+        
         });
 
         await sendEmail({ to: recipientEmail, ...email });
