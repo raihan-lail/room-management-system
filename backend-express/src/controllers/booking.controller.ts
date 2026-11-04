@@ -480,9 +480,18 @@ export async function exportBookingsToExcel(
     const startedAtExact = getParam("startedAt", "started_at", "startedDate");
     const startedAtFrom = getParam("startedAtFrom", "started_at_from") || startedAtExact;
     const startedAtTo = getParam("startedAtTo", "started_at_to") || startedAtExact;
+    const checkedInAt = getParam("checkedInAt", "checked_in_at", "checkInDate");
+    const checkedOutAt = getParam("checkedOutAt", "checked_out_at", "checkOutDate");
     const bookedAtFilter = dateRange(bookedAtFrom, bookedAtTo);
     const startedAtFilter = dateRange(startedAtFrom, startedAtTo);
-    if (bookedAtFilter === null || startedAtFilter === null) {
+    const checkedInAtFilter = dateRange(checkedInAt, checkedInAt);
+    const checkedOutAtFilter = dateRange(checkedOutAt, checkedOutAt);
+    if (
+      bookedAtFilter === null ||
+      startedAtFilter === null ||
+      checkedInAtFilter === null ||
+      checkedOutAtFilter === null
+    ) {
       sendError(res, 400, "Invalid date filter. Use YYYY-MM-DD or a valid date-time.");
       return;
     }
@@ -653,6 +662,8 @@ export async function exportBookingsToExcel(
       siteFilter,
       ...(bookedAtFilter ? [{ createdAt: bookedAtFilter }] : []),
       ...(startedAtFilter ? [{ startedAt: startedAtFilter }] : []),
+      ...(checkedInAtFilter ? [{ checkedInAt: checkedInAtFilter }] : []),
+      ...(checkedOutAtFilter ? [{ checkedOutAt: checkedOutAtFilter }] : []),
       ...(statusInput ? [{ status: statusInput as BookingStatus }] : []),
       ...(Object.keys(residentFilters).length
         ? [{ resident: residentFilters }]
@@ -699,6 +710,8 @@ export async function exportBookingsToExcel(
       Title: booking.resident.title ?? "",
       "Started At": booking.startedAt.toDateString(),
       "Ended At": booking.endedAt.toDateString(),
+      "Checked In At": booking.checkedInAt?.toDateString() ?? "",
+      "Checked Out At": booking.checkedOutAt?.toDateString() ?? "",
     }));
 
     const workbook = XLSX.utils.book_new();

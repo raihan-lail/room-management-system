@@ -145,6 +145,8 @@ export default function BookingTableView() {
     { name: "status", label: "Status", type: "select", placeholderOption: "All statuses", options: STATUS_OPTIONS.map((status) => ({ value: status, label: formatStatus(status) })) },
     { name: "startedAtFrom", label: "Start From", type: "date" },
     { name: "startedAtTo", label: "Start To", type: "date" },
+    { name: "checkedInAt", label: "Checked In At", type: "date" },
+    { name: "checkedOutAt", label: "Checked Out At", type: "date" },
     { name: "bookedAtFrom", label: "Booked From", type: "date" },
     { name: "bookedAtTo", label: "Booked To", type: "date" },
     { name: "residentName", label: "Resident Name" },
