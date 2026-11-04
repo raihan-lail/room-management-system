@@ -222,14 +222,7 @@ export default function Complains() {
           <div className="bookings-toolbar__actions">
            
 
-            <button
-              type="button"
-              className="btn btn-neutral"
-              onClick={() => window.print()}
-            >
-              <i className="bi bi-printer" aria-hidden="true" />
-              Print
-            </button>
+           
           </div>
         </div>
 
