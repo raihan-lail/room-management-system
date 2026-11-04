@@ -174,6 +174,9 @@ export function ModalField({ field, value, values = {}, onChange }) {
         placeholder={field.placeholder}
         readOnly={field.readOnly}
         required={field.required}
+        min={field.min}
+        max={field.max}
+        step={field.step}
       />
     );
   }
