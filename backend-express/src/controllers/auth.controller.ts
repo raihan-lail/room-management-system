@@ -295,6 +295,12 @@ export async function me(
       user: authUser,
     });
   } catch {
+    res.clearCookie("access_token", {
+      httpOnly: true,
+      secure: cookieSecure(),
+      sameSite: "lax",
+      path: "/",
+    });
     res.status(401).json({
       message: "Invalid or expired token",
     });
