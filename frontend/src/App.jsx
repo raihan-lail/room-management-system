@@ -31,13 +31,6 @@ import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 import RoleManagement from "./pages/settings/RoleManagement";
 import FrontDesk from "./pages/FrontDesk";
-import Complains from "./pages/bookings/Complains";
-import ComplainDetails from "./pages/bookings/ComplainDetails";
-import Ratings from "./pages/bookings/Ratings";
-import BookingHistory from "./pages/resident-front-office/BookingHistory";
-import BookingRating from "./pages/resident-front-office/BookingRating";
-import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
-import ResidentComplaints from "./pages/resident-front-office/ResidentComplaints";
 import HomeLeave from "./pages/bookings/HomeLeave";
 import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
@@ -100,30 +93,6 @@ function App() {
                 element={
                   <RequirePermission permission="home.leaves">
                     <HomeLeave />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="/bookings/complains"
-                element={
-                  <RequirePermission permission="complaints">
-                    <Complains />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="/bookings/ratings"
-                element={
-                  <RequirePermission permission="ratings">
-                    <Ratings />
-                  </RequirePermission>
-                }
-              />
-              <Route
-                path="/bookings/complains/:complainId"
-                element={
-                  <RequirePermission permission="complaints">
-                    <ComplainDetails />
                   </RequirePermission>
                 }
               />
@@ -244,23 +213,6 @@ function App() {
 
               <Route path="/change-password" element={<ChangePassword />} />
 
-              <Route element={<RequireAccountType accountType="resident" />}>
-                <Route
-                  path="/resident"
-                  element={<Navigate to="/resident/history" replace />}
-                />
-                <Route path="/resident/history" element={<BookingHistory />} />
-                <Route
-                  path="/resident/rating/:bookingId"
-                  element={<BookingRating />}
-                />
-                <Route
-                  path="/resident/bookings/:bookingId/complaints"
-                  element={<BookingComplaints />}
-                />
-                <Route path="/resident/complaints" element={<ResidentComplaints />} />
-                <Route path="/resident/complaints/:complaintId" element={<ResidentComplaints />} />
-              </Route>
 
               <Route
                 path="/"

@@ -159,6 +159,19 @@ export async function login(
       user.resident?.fullName ??
       null;
 
+    if (user.resident) {
+      await auditActor(req, { userId: user.id, name: actorName }, {
+        action: "login_failed",
+        resource: "auth",
+        resourceId: user.id,
+        description: `Resident login blocked for ${user.email}`,
+      });
+      res.status(403).json({
+        message: "Resident access to the system is unavailable.",
+      });
+      return;
+    }
+
     const authUser = await buildAuthUser(user.id);
 
     if (!authUser) {
@@ -287,6 +300,19 @@ export async function me(
     if (!authUser) {
       res.status(401).json({
         message: "User not found",
+      });
+      return;
+    }
+
+    if (authUser.accountType === "resident") {
+      res.clearCookie("access_token", {
+        httpOnly: true,
+        secure: cookieSecure(),
+        sameSite: "lax",
+        path: "/",
+      });
+      res.status(403).json({
+        message: "Resident access to the system is unavailable.",
       });
       return;
     }
