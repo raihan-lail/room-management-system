@@ -262,6 +262,8 @@ export function buildRoomSchema(locations = [], { includeBeds = true } = {}) {
               label: "Number of Beds",
               type: "number",
               defaultValue: 1,
+              min: 0,
+              step: 1,
               required: true,
             },
           ]
