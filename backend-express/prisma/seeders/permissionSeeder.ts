@@ -179,6 +179,10 @@ const permissions = [
     description: "access audit logs page",
   },
   {
+    name: "email.logs",
+    description: "access email logs page",
+  },
+  {
     name:"bookings.import",
     description:"import bookings in excel/csv"
   },

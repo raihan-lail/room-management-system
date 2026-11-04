@@ -68,3 +68,12 @@ export const ComplaintPriority = {
 } as const
 
 export type ComplaintPriority = (typeof ComplaintPriority)[keyof typeof ComplaintPriority]
+
+
+export const EmailStatus = {
+  PENDING: 'PENDING',
+  SENT: 'SENT',
+  FAILED: 'FAILED'
+} as const
+
+export type EmailStatus = (typeof EmailStatus)[keyof typeof EmailStatus]
