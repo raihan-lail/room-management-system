@@ -33,7 +33,7 @@ import { auditActor } from "../services/audit.service.js";
 import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
 
 // Booking confirmation emails are temporarily disabled.
-const BOOKING_EMAIL_ENABLED: boolean = false;
+const BOOKING_EMAIL_ENABLED: boolean = true;
 
 function getResidentPortalUrl(): string | undefined {
   const origin =
@@ -959,7 +959,7 @@ export async function createBooking(
           endedAt: booking.endedAt,
           notes: booking.notes,
           loginEmail: recipientEmail,
-          loginUrl: getResidentPortalUrl(),
+        
         });
 
         await sendEmail({ to: recipientEmail, ...email });
