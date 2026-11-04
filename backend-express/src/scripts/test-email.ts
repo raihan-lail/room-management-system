@@ -13,7 +13,14 @@ async function main() {
       <p>This is a test email from the Dorm Management System.</p>
     `,
     text: "This is a test email from the Dorm Management System.",
+    type: "TEST_EMAIL",
   });
+
+  if (!result.success) {
+    console.error("Email failed:", result.error);
+    process.exitCode = 1;
+    return;
+  }
 
   console.log("Email sent:", result.messageId);
 }
