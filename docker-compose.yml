@@ -1,5 +1,22 @@
 
 services:
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+
+    networks:
+      - app_network
+
   database:
     image: postgres:17-alpine
     restart: unless-stopped
@@ -43,7 +60,7 @@ services:
       JWT_EXPIRES_HOURS: ${JWT_EXPIRES_HOURS:-8}
 
       CORS_ORIGINS: ${CORS_ORIGINS:-}
-      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      COOKIE_SECURE: ${COOKIE_SECURE:-true}
 
       SUPERADMIN_EMAIL: ${SUPERADMIN_EMAIL:-}
       SUPERADMIN_PASSWORD: ${SUPERADMIN_PASSWORD:-}
@@ -85,9 +102,6 @@ services:
 
     restart: unless-stopped
 
-    ports:
-      - "80:80"
-
     depends_on:
       - backend
 
@@ -96,6 +110,8 @@ services:
 
 volumes:
   postgres_data:
+  caddy_data:
+  caddy_config:
 
 networks:
   app_network:
