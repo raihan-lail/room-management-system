@@ -962,8 +962,21 @@ export async function createBooking(
         
         });
 
-        await sendEmail({ to: recipientEmail, ...email });
-        emailSent = true;
+        const emailResult = await sendEmail({
+          to: recipientEmail,
+          ...email,
+          type: "BOOKING_CREATED",
+          bookingId: booking.id,
+        });
+        emailSent = emailResult.success;
+
+        if (!emailSent) {
+          await notifyActor(req, {
+            title: "Booking created, email not sent",
+            message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,
+            type: "WARNING",
+          });
+        }
       } catch (error) {
         console.error("Booking confirmation email error:", error);
 
