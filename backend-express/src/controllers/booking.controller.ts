@@ -832,7 +832,6 @@ export async function createBooking(
       startedAt: startedAtInput,
       endedAt: endedAtInput,
       notes,
-      residentPassword,
     } = req.body;
 
     if (
@@ -947,10 +946,6 @@ export async function createBooking(
     });
 
     const { booking, recipientEmail } = result;
-    const loginPassword =
-      typeof residentPassword === "string" && residentPassword.length > 0
-        ? residentPassword
-        : undefined;
     let emailSent = false;
 
     if (BOOKING_EMAIL_ENABLED) {
@@ -964,7 +959,6 @@ export async function createBooking(
           endedAt: booking.endedAt,
           notes: booking.notes,
           loginEmail: recipientEmail,
-          loginPassword,
           loginUrl: getResidentPortalUrl(),
         });
 

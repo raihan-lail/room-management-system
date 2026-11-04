@@ -86,13 +86,6 @@ function buildResidentSchema({ isEdit, siteOptions }) {
               placeholder: "Email address",
               required: true,
             },
-            {
-              name: "password",
-              label: "Password",
-              type: "password",
-              placeholder: "Minimum 8 characters",
-              required: true,
-            },
           ]),
       {
         name: "siteId",
@@ -292,7 +285,6 @@ export default function GuestManagement() {
         method: "POST",
         body: JSON.stringify({
           email: values.email,
-          password: values.password,
           siteId: values.siteId,
           fullName: values.fullName,
           phone: values.phone,

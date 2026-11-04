@@ -21,7 +21,6 @@ const EMPTY_VALUES = {
 const EMPTY_NEW_RESIDENT = {
   fullName: "",
   email: "",
-  password: "",
   phone: "",
   gender: "",
   siteId: "",
@@ -223,11 +222,10 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         !newResident.phone.trim() ||
         !newResident.gender ||
         !newResident.siteId ||
-        !newResident.mealType ||
-        newResident.password.length < 8
+        !newResident.mealType
       ) {
         setError(
-          "Fill in the required resident fields. The password must be at least 8 characters.",
+          "Fill in the required resident fields.",
         );
         return;
       }
@@ -259,7 +257,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     setError("");
 
     let createdResident = null;
-    let createdResidentPassword = "";
 
     try {
       let residentId = values.residentId;
@@ -269,7 +266,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
           method: "POST",
           body: JSON.stringify({
             email: newResident.email.trim(),
-            password: newResident.password,
             siteId: newResident.siteId,
             fullName: newResident.fullName.trim(),
             phone: newResident.phone.trim(),
@@ -290,7 +286,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         }
 
         residentId = createdResident.id;
-        createdResidentPassword = newResident.password;
 
         setNewResident((prev) => ({
           ...EMPTY_NEW_RESIDENT,
@@ -306,9 +301,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
           startedAt: startedAt.toISOString(),
           endedAt: endedAt.toISOString(),
           notes: values.notes.trim() || undefined,
-          ...(createdResidentPassword
-            ? { residentPassword: createdResidentPassword }
-            : {}),
         }),
       });
 
@@ -439,18 +431,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                       required: true,
                     }}
                     value={newResident.email}
-                    onChange={handleNewResidentChange}
-                  />
-
-                  <ModalField
-                    field={{
-                      name: "password",
-                      label: "Password",
-                      type: "password",
-                      placeholder: "Minimum 8 characters",
-                      required: true,
-                    }}
-                    value={newResident.password}
                     onChange={handleNewResidentChange}
                   />
 
