@@ -12,6 +12,7 @@ import {
 } from "../components/modals/addFormSchemas";
 import FlexibleButton from "../components/FlexibleButtons";
 import PageSizeSelect from "../components/PageSizeSelect";
+import useAuth from "../contexts/useAuth";
 
 
 const PAGE_SIZE = 10;
@@ -109,6 +110,7 @@ const toHomeLeaveRow = (booking) => {
  * instead of the booking list.
  */
 export default function FrontDesk() {
+  const { hasPermission } = useAuth();
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
@@ -132,6 +134,7 @@ export default function FrontDesk() {
   const [extendingRow, setExtendingRow] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
   const [homeLeaveList, setHomeLeaveList] = useState([]);
+  const [homeLeaveOverdueCount, setHomeLeaveOverdueCount] = useState(0);
   const [homeLeaveRow, setHomeLeaveRow] = useState(null);
   const [isHomeLeaveModalOpen, setIsHomeLeaveModalOpen] = useState(false);
   const [homeLeaveBookings, setHomeLeaveBookings] = useState([]);
@@ -207,10 +210,19 @@ export default function FrontDesk() {
         startedAtTo: selectedDate,
         ...(search.trim() ? { search: search.trim() } : {}),
       });
-      const [response, ...otherCounts] = await Promise.all([
+      const homeLeaveAlertParams = new URLSearchParams({
+        page: "1",
+        limit: "100",
+        startedAtFrom: selectedDate,
+        status: "ACTIVE",
+      });
+      const [response, homeLeaveAlertResponse, ...otherCounts] = await Promise.all([
         apiRequest(segment === "home_leave"
           ? `/api/booking/home-leaves?${homeLeaveParams}`
           : `/api/booking?${buildParams(segment).toString()}`),
+        isCurrentDate && hasPermission("home.leaves")
+          ? apiRequest(`/api/booking/home-leaves?${homeLeaveAlertParams}`)
+          : Promise.resolve(null),
         ...countRequests,
       ]);
       const pagination = response?.pagination ?? {};
@@ -219,6 +231,13 @@ export default function FrontDesk() {
         ...Object.fromEntries(otherCounts),
         [segment]: total,
       });
+      const todayKey = getTodayKey();
+      const overdueHomeLeaves = Array.isArray(homeLeaveAlertResponse?.data)
+        ? homeLeaveAlertResponse.data.filter(
+          (leave) => leave.status === "ACTIVE" && leave.expectedReturnAt && leave.expectedReturnAt.slice(0, 10) < todayKey,
+        )
+        : [];
+      setHomeLeaveOverdueCount(overdueHomeLeaves.length);
       const records = Array.isArray(response?.data) ? response.data : [];
       if (segment === "home_leave") {
         setHomeLeaveList(records.map(toHomeLeaveRow));
@@ -245,11 +264,12 @@ export default function FrontDesk() {
       setError(err.message || "Failed to load bookings.");
       setBookingList([]);
       setHomeLeaveList([]);
+      setHomeLeaveOverdueCount(0);
       setBookingPagination({ total: 0, totalPages: 1 });
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, isCurrentDate, search, segment, selectedDate]);
+  }, [currentPage, pageSize, hasPermission, isCurrentDate, search, segment, selectedDate]);
 
   useEffect(() => {
   const timer = window.setTimeout(() => {
@@ -540,7 +560,7 @@ export default function FrontDesk() {
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
   const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
-    ? homeLeaveList.filter((leave) => leave.status === "ACTIVE" && leave.expected_return_at && leave.expected_return_at < getTodayKey()).length
+    ? homeLeaveOverdueCount
     : 0;
   const returnedHomeLeaveCount = segment === "home_leave" && isCurrentDate
     ? homeLeaveList.filter((leave) => leave.returned_at === getTodayKey()).length
@@ -586,10 +606,11 @@ export default function FrontDesk() {
                 aria-label="Booking segment"
               >
                 {SEGMENTS.map((item) => {
-                  const needsAction =
-                    isCurrentDate &&
-                    ALERT_SEGMENTS.has(item.id) &&
-                    (segmentCounts[item.id] ?? 0) > 0;
+                  const needsAction = isCurrentDate && (
+                    item.id === "home_leave"
+                      ? homeLeaveOverdueCount > 0
+                      : ALERT_SEGMENTS.has(item.id) && (segmentCounts[item.id] ?? 0) > 0
+                  );
 
                   return (
                     <button
