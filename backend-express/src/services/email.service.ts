@@ -1,5 +1,6 @@
 import { transporter } from "../lib/mailer.js";
 import { prisma } from "../lib/prisma.js";
+import { isEmailEnabled } from "./setting.service.js";
 
 interface SendEmailOptions {
   to: string;
@@ -23,7 +24,14 @@ export async function sendEmail({
   bookingId,
   siteId,
 }: SendEmailOptions) {
-  
+  if (!(await isEmailEnabled())) {
+    return {
+      success: false,
+      skipped: true,
+      error: "Email sending is disabled.",
+    };
+  }
+
   const emailLog = await prisma.emailLog.create({
     data: {
       recipient: to,

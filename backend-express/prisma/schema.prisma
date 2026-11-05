@@ -498,3 +498,10 @@ model EmailLog {
   @@index([bookingId])
   @@index([siteId, createdAt])
 }
+
+model SystemSetting {
+  key       String   @id
+  value     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
