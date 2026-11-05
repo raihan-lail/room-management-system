@@ -39,6 +39,42 @@ export default function EmailLog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [settingsLoading, setSettingsLoading] = useState(true);
+  const [savingEmailSetting, setSavingEmailSetting] = useState(false);
+  const [settingsError, setSettingsError] = useState("");
+
+  // Load the booking email sending setting.
+  useEffect(() => {
+    let active = true;
+
+    async function loadEmailSettings() {
+      try {
+        const response = await apiRequest("/api/email-log/settings");
+
+        if (active) {
+          setEmailEnabled(
+            Boolean(response.data?.emailEnabled)
+          );
+        }
+      } catch (err) {
+        if (active) {
+          setSettingsError(
+            err.message || "Failed to load email settings."
+          );
+        }
+      } finally {
+        if (active) setSettingsLoading(false);
+      }
+    }
+
+    loadEmailSettings();
+
+    return () => {
+      active = false;
+    };
+  }, []);
+
   // Fetch email logs from the API.
   useEffect(() => {
     const controller = new AbortController();
@@ -102,6 +138,30 @@ export default function EmailLog() {
     setSelectedLogId(null);
   }
 
+  async function handleToggleEmailSetting() {
+    setSavingEmailSetting(true);
+    setSettingsError("");
+
+    try {
+      const response = await apiRequest("/api/email-log/settings", {
+        method: "PATCH",
+        body: JSON.stringify({
+          emailEnabled: !emailEnabled,
+        }),
+      });
+
+      setEmailEnabled(
+        Boolean(response.data?.emailEnabled)
+      );
+    } catch (err) {
+      setSettingsError(
+        err.message || "Failed to update email settings."
+      );
+    } finally {
+      setSavingEmailSetting(false);
+    }
+  }
+
   const totalPages = pagination.totalPages || 0;
   const startRow =
     pagination.total === 0
@@ -145,6 +205,49 @@ export default function EmailLog() {
           </label>
 
           <div className="bookings-toolbar__actions">
+            {settingsError && (
+              <span className="muted" role="alert">
+                {settingsError}
+              </span>
+            )}
+
+            <span className="muted">
+              Email sending
+            </span>
+
+            <button
+              type="button"
+              role="switch"
+              aria-checked={emailEnabled}
+              aria-label="Email sending"
+              className={`driver-availability-toggle ${
+                emailEnabled ? "is-on" : "is-off"
+              }`}
+              disabled={settingsLoading || savingEmailSetting}
+              onClick={handleToggleEmailSetting}
+              title={
+                emailEnabled
+                  ? "Turn email sending off"
+                  : "Turn email sending on"
+              }
+            >
+              <i
+                className={`bi ${
+                  emailEnabled
+                    ? "bi-toggle-on"
+                    : "bi-toggle-off"
+                }`}
+                aria-hidden="true"
+              />
+              <span>
+                {savingEmailSetting
+                  ? "Saving..."
+                  : emailEnabled
+                    ? "On"
+                    : "Off"}
+              </span>
+            </button>
+
             <button
               type="button"
               className="btn btn-neutral"

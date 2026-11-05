@@ -31,9 +31,7 @@ import {
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
-
-// Booking confirmation emails are temporarily disabled.
-const BOOKING_EMAIL_ENABLED: boolean = true;
+import { isEmailEnabled } from "../services/setting.service.js";
 
 function getResidentPortalUrl(): string | undefined {
   const origin =
@@ -948,7 +946,7 @@ export async function createBooking(
     const { booking, recipientEmail } = result;
     let emailSent = false;
 
-    if (BOOKING_EMAIL_ENABLED) {
+    if (await isEmailEnabled()) {
       try {
         const email = buildBookingCreatedEmail({
           residentName: booking.resident.fullName,
@@ -970,7 +968,7 @@ export async function createBooking(
         });
         emailSent = emailResult.success;
 
-        if (!emailSent) {
+        if (!emailSent && !emailResult.skipped) {
           await notifyActor(req, {
             title: "Booking created, email not sent",
             message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,

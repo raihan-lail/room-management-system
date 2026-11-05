@@ -154,3 +154,8 @@ export type AuditLog = Prisma.AuditLogModel
  * 
  */
 export type EmailLog = Prisma.EmailLogModel
+/**
+ * Model SystemSetting
+ * 
+ */
+export type SystemSetting = Prisma.SystemSettingModel
