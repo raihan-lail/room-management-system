@@ -208,6 +208,7 @@ export default function FrontDesk() {
         limit: String(pageSize),
         startedAtFrom: selectedDate,
         startedAtTo: selectedDate,
+        status: "ACTIVE",
         ...(search.trim() ? { search: search.trim() } : {}),
       });
       const homeLeaveAlertParams = new URLSearchParams({
@@ -562,9 +563,6 @@ export default function FrontDesk() {
   const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
     ? homeLeaveOverdueCount
     : 0;
-  const returnedHomeLeaveCount = segment === "home_leave" && isCurrentDate
-    ? homeLeaveList.filter((leave) => leave.returned_at === getTodayKey()).length
-    : 0;
 
   const startRow =
     bookingPagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1;
@@ -680,11 +678,6 @@ aria-label={
           {overdueArrivalCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
-            </div>
-          )}
-          {returnedHomeLeaveCount > 0 && (
-            <div className="frontdesk-overdue-alert" role="status">
-              {returnedHomeLeaveCount} home leave resident{returnedHomeLeaveCount === 1 ? " has" : "s have"} returned today
             </div>
           )}
           {overdueHomeLeaveCount > 0 && (
