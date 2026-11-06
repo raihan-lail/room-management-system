@@ -68,6 +68,164 @@ flowchart TB
 
 The API mounts routers under `/api`: auth, employees, roles, sites, permissions, locations, rooms, beds, notifications, audit logs, room allocations, residents, bookings, dashboard, and email logs. Authentication and authorization middleware protect routes according to account type and permissions. The frontend applies matching route guards for employee pages. The schema also contains complaint and rating data models.
 
+## Use cases
+
+The use cases below describe the domain supported by the application and data model. An employee's available actions depend on their assigned roles and permissions. Resident-facing use is represented by the resident account and booking data; the mounted frontend routes are employee-focused.
+
+```mermaid
+flowchart LR
+  Employee[Employee / front desk]
+  Admin[Administrator]
+  Resident[Resident]
+
+  UCAuth([Sign in and manage account])
+  UCInventory([Maintain sites and room inventory])
+  UCAllocation([Allocate rooms])
+  UCResident([Manage resident profiles])
+  UCBooking([Create and manage bookings])
+  UCCheck([Check in, home leave, return, and check out])
+  UCNotify([Receive notifications and email updates])
+  UCAudit([Review audit and email logs])
+  UCAccess([Manage employees, roles, and permissions])
+  UCComplaint([Submit and handle booking complaints])
+  UCRating([Rate a completed stay])
+
+  Employee --> UCAuth
+  Employee --> UCInventory
+  Employee --> UCAllocation
+  Employee --> UCResident
+  Employee --> UCBooking
+  Employee --> UCCheck
+  Employee --> UCNotify
+  Employee --> UCAudit
+  Admin --> UCAccess
+  Admin --> UCInventory
+  Admin --> UCAudit
+  Resident --> UCAuth
+  Resident --> UCBooking
+  Resident --> UCNotify
+  Resident --> UCComplaint
+  Resident --> UCRating
+  Employee --> UCComplaint
+```
+
+## Data flow diagrams
+
+### Level 0: system context
+
+```mermaid
+flowchart LR
+  Employee[Employee / administrator]
+  Resident[Resident]
+  RMS((Room Management System))
+  Mail[SMTP provider]
+  Store[(PostgreSQL)]
+
+  Employee -->|Credentials, inventory and booking actions| RMS
+  RMS -->|Pages' data, access results, notifications| Employee
+  Resident -->|Account and booking-related requests| RMS
+  RMS -->|Booking information and status updates| Resident
+  RMS -->|Email messages| Mail
+  Mail -->|Delivery result| RMS
+  RMS <-->|Accounts, permissions, inventory, bookings,<br/>events, notifications and logs| Store
+```
+
+### Level 1: request, persistence, and notification flow
+
+```mermaid
+flowchart TB
+  Actor[Employee or resident]
+  UI[React frontend]
+  Auth[Authenticate and authorize request]
+  Handler[Express route and controller]
+  Domain[Validate and apply domain operation]
+  DB[(PostgreSQL via Prisma)]
+  Audit[(Audit log)]
+  Notify[Create user notification]
+  WS{Active WebSocket?}
+  Browser[Connected user browser]
+  Email[Send email when required]
+  EmailLog[(Email log)]
+  Response[HTTP JSON response]
+
+  Actor -->|Input| UI
+  UI -->|Credentialed HTTP request| Auth
+  Auth -->|Rejected| Response
+  Auth -->|Allowed| Handler
+  Handler --> Domain
+  Domain <-->|Read/write domain records| DB
+  Domain -->|Audited action| Audit
+  Audit --> DB
+  Domain -->|When action requires notification| Notify
+  Notify --> DB
+  Notify --> WS
+  WS -->|Yes: push event| Browser
+  WS -->|No: persisted for later retrieval| DB
+  Domain -->|When action requires email| Email
+  Email -->|Result| EmailLog
+  EmailLog --> DB
+  Domain --> Response
+  Response --> UI
+  UI -->|Rendered result| Actor
+```
+
+## Main business flows
+
+### Room inventory setup
+
+```mermaid
+flowchart LR
+  Site[Create or select site] --> Location[Create location]
+  Location --> Floor[Add floor]
+  Floor --> Room[Create room and set bookable status]
+  Room --> Bed[Add beds and set bed status]
+  Room --> Allocation{Room has a dedicated allocation?}
+  Allocation -->|Yes| Purpose[Record allocation purpose and notes]
+  Allocation -->|No| Ready[Room remains in general inventory]
+  Bed --> Ready
+  Purpose --> Ready
+```
+
+The hierarchy is persisted as `Site → Location → Floor → Room → Bed`. A room can have at most one `RoomAllocation`; bed status is represented by `VACANT`, `BOOKED`, `OCCUPIED`, or `HOME_LEAVE`.
+
+### Booking and stay lifecycle
+
+```mermaid
+stateDiagram-v2
+  [*] --> CONFIRMED: Booking created
+  CONFIRMED --> IN_HOUSE: Resident checks in
+  IN_HOUSE --> HOME_LEAVE: Home leave starts
+  HOME_LEAVE --> IN_HOUSE: Resident returns
+  IN_HOUSE --> CHECKED_OUT: Resident checks out
+  CONFIRMED --> CANCELLED: Booking cancelled
+  CONFIRMED --> ARCHIVED: Booking archived / no-show handled
+  CHECKED_OUT --> ARCHIVED: Record archived
+  CANCELLED --> [*]
+  ARCHIVED --> [*]
+```
+
+Each booking links a resident to a bed and stores the planned start/end dates, current status, and applicable lifecycle timestamps. Home leave is tracked in a separate `HomeLeave` record, while `BookingEvent` records actions and their actor. The bed's availability/status must remain consistent with the booking lifecycle; exact transitions are enforced by booking endpoints.
+
+### Complaint and stay feedback
+
+```mermaid
+flowchart TD
+  Stay[Booking / stay] --> Complaint{Complaint raised?}
+  Complaint -->|Yes| Open[Create complaint linked to booking]
+  Open --> Assign[Optionally assign to employee]
+  Assign --> Thread[Exchange complaint messages]
+  Thread --> Resolve[Record resolution and update status]
+  Resolve --> Close[Close or reject complaint]
+  Complaint -->|No or after stay| Complete[Stay completed]
+  Close --> Complete
+  Complete --> Rating{Rating submitted?}
+  Rating -->|Yes| Save[Store one booking rating]
+  Rating -->|No| End[Workflow ends]
+  Save --> End
+```
+
+The schema supports complaints, assignment, message threads, resolution details, and one rating per booking. Complaint and rating route modules exist in the repository but are not mounted in `server.ts` at the time of writing; the data model therefore does not by itself imply that these flows are reachable through the running API.
+
 ## Request and data flows
 
 ### Authenticated API request
