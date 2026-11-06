@@ -19,6 +19,7 @@ export default function TableRowActions({
   onDelete,
   actions = [],
   permission = "rooms.manage",
+  viewPermission = "bookings.read",
 }) {
   const [isOpen, setIsOpen] = useState(false);
   const [position, setPosition] = useState(null);
@@ -99,7 +100,7 @@ export default function TableRowActions({
     <div className="table-actions">
       {onView && (
         <FlexibleButton
-          permission="bookings.read"
+          permission={viewPermission}
           className="btn btn-neutral"
           title={`View ${title}`}
           aria-label={`View ${title}`}

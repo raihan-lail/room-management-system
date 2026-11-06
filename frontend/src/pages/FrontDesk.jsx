@@ -875,7 +875,7 @@ aria-label={
                         </button>
                       </th>
 
-                      <th>Notes</th>
+                      
 
                       <th>Action</th>
                     </>
@@ -978,7 +978,7 @@ aria-label={
                             </span>
                           </td>
 
-                          <td>{booking.notes || "-"}</td>
+                         
 
                           <td>
                             {!isCurrentDate ? "-" : segment === "arrival" ? (
