@@ -21,6 +21,7 @@ import RoomManagement from "./pages/rooms/RoomManagement";
 import RoomBookingDetails from "./pages/rooms/RoomBookingDetails";
 import RoomAllocation from "./pages/rooms/RoomAllocations";
 import GuestManagement from "./pages/guest/GuestManagement";
+import ResidentDetails from "./pages/guest/ResidentDetails";
 import SiteManagement from "./pages/settings/SiteManagement";
 import EmployeeManagement from "./pages/settings/EmployeeManagement";
 import ManagePermissions from "./pages/settings/ManagePermissions";
@@ -149,6 +150,14 @@ function App() {
                 element={
                   <RequirePermission permission="resident.view">
                     <GuestManagement />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/guests/:residentId"
+                element={
+                  <RequirePermission permission="resident.read">
+                    <ResidentDetails />
                   </RequirePermission>
                 }
               />
