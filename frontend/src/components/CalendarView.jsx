@@ -29,6 +29,12 @@ const TOOLTIP_MARGIN = 8;
 
 const BLOCKED_FLASH_MS = 400;
 
+const RANGE_EXTEND_DAYS = 30;
+
+const RANGE_EXTEND_THRESHOLD = 240;
+
+const INITIAL_LEAD_DAYS = 30;
+
 const today = new Date();
 const todayString = [today.getFullYear(), String(today.getMonth() + 1).padStart(2, "0"), String(today.getDate()).padStart(2, "0")].join("-");
 const defaultEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 90);
@@ -288,6 +294,9 @@ export default function CalendarView() {
   const [viewMode, setViewMode] =
     useState(DEFAULT_SETTINGS.viewMode);
 
+  const [leadDays, setLeadDays] =
+    useState(INITIAL_LEAD_DAYS);
+
   const calendarRef = useRef(null);
 
   const [visibleStart, setVisibleStart] =
@@ -320,6 +329,10 @@ export default function CalendarView() {
   const tooltipRef = useRef(null);
   const tooltipAnchorRef = useRef(null);
   const blockedTimerRef = useRef(null);
+  const loadedRangeRef = useRef(null);
+  const pendingScrollAdjustRef = useRef(0);
+  const backwardExtendPendingRef = useRef(false);
+  const initialScrollDoneRef = useRef(false);
 
   useEffect(() => {
     dragRangeRef.current = dragRange;
@@ -386,50 +399,113 @@ export default function CalendarView() {
   }
 
   /*
+   * Rendered range start. A lead buffer lets the
+   * calendar scroll into dates before the window
+   * start without moving the initial view.
+   */
+  const rangeStart =
+    viewMode === "CUSTOM" && !startDate
+      ? addDays(windowStart, -leadDays) || windowStart
+      : windowStart;
+
+  /*
    * Generate calendar dates
    */
   const dates = useMemo(() => {
     return generateDates(
-      windowStart,
+      rangeStart,
       windowEnd
     );
-  }, [windowStart, windowEnd]);
+  }, [rangeStart, windowEnd]);
 
   useEffect(() => {
     let isCurrentRequest = true;
+    const previous = loadedRangeRef.current;
+    const isForwardExtension =
+      Boolean(previous?.loaded) &&
+      previous.search === search &&
+      previous.start === rangeStart &&
+      windowEnd > previous.end;
+    const isBackwardExtension =
+      Boolean(previous?.loaded) &&
+      previous.search === search &&
+      previous.end === windowEnd &&
+      rangeStart < previous.start;
+    const isExtension =
+      isForwardExtension || isBackwardExtension;
+
+    const extensionStart = isBackwardExtension
+      ? rangeStart
+      : addDays(previous?.end, 1);
+
+    const extensionEnd = isBackwardExtension
+      ? previous.start
+      : addDays(windowEnd, 1);
+
     const fetchCalendarData = async () => {
-      setIsLoadingCalendar(true);
-      setCalendarError("");
+      if (!isExtension) {
+        setIsLoadingCalendar(true);
+        setCalendarError("");
+      }
       try {
         const searchParams = search.trim() ? { search: search.trim() } : {};
         const bookingParams = {
           ...searchParams,
-          overlapStart: `${windowStart}T00:00:00.000Z`,
-          overlapEnd: `${addDays(windowEnd, 1)}T00:00:00.000Z`,
+          overlapStart: `${
+            isExtension ? extensionStart : rangeStart
+          }T00:00:00.000Z`,
+          overlapEnd: `${
+            isExtension ? extensionEnd : addDays(windowEnd, 1)
+          }T00:00:00.000Z`,
         };
         const bedParams = { ...searchParams };
-        const [bedRecords, bookingRecords] = await Promise.all([
-          loadAllPages("/api/bed", "page", "pageSize", bedParams),
-          loadAllPages("/api/booking", "page", "limit", bookingParams),
-        ]);
-        if (!isCurrentRequest) return;
 
-        const normalizedBookings = bookingRecords.map(toCalendarBooking);
-        const bedMap = new Map(bedRecords.map((bed) => [bed.id, bed]));
-        normalizedBookings.forEach((booking) => {
-          if (booking.bed?.id && !bedMap.has(booking.bed.id)) {
-            bedMap.set(booking.bed.id, booking.bed);
-          }
-        });
-        setBeds([...bedMap.values()].filter(
-          (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
-        ));
-        setBookings(normalizedBookings);
+        if (isExtension) {
+          const bookingRecords = await loadAllPages("/api/booking", "page", "limit", bookingParams);
+          if (!isCurrentRequest) return;
+
+          const normalizedBookings = bookingRecords.map(toCalendarBooking);
+          setBookings((current) => {
+            const bookingMap = new Map(current.map((booking) => [booking.id, booking]));
+            normalizedBookings.forEach((booking) => {
+              bookingMap.set(booking.id, booking);
+            });
+            return [...bookingMap.values()];
+          });
+        } else {
+          const [bedRecords, bookingRecords] = await Promise.all([
+            loadAllPages("/api/bed", "page", "pageSize", bedParams),
+            loadAllPages("/api/booking", "page", "limit", bookingParams),
+          ]);
+          if (!isCurrentRequest) return;
+
+          const normalizedBookings = bookingRecords.map(toCalendarBooking);
+          const bedMap = new Map(bedRecords.map((bed) => [bed.id, bed]));
+          normalizedBookings.forEach((booking) => {
+            if (booking.bed?.id && !bedMap.has(booking.bed.id)) {
+              bedMap.set(booking.bed.id, booking.bed);
+            }
+          });
+          setBeds([...bedMap.values()].filter(
+            (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
+          ));
+          setBookings(normalizedBookings);
+        }
+
+        loadedRangeRef.current = {
+          loaded: true,
+          search,
+          start: rangeStart,
+          end: windowEnd,
+        };
       } catch (error) {
         if (isCurrentRequest) {
           setCalendarError(error.message || "Failed to load calendar bookings.");
-          setBeds([]);
-          setBookings([]);
+          if (!isExtension) {
+            loadedRangeRef.current = null;
+            setBeds([]);
+            setBookings([]);
+          }
         }
       } finally {
         if (isCurrentRequest) setIsLoadingCalendar(false);
@@ -439,7 +515,7 @@ export default function CalendarView() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [search, windowStart, windowEnd, reloadKey]);
+  }, [search, rangeStart, windowEnd, reloadKey]);
 
   /*
    * Booked days per room (all bookings, not the
@@ -462,7 +538,7 @@ export default function CalendarView() {
         !roomName ||
         !["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"].includes(String(booking.status).toUpperCase()) ||
         !bookingOverlaps(
-          windowStart,
+          rangeStart,
           windowEnd,
           booking
         )
@@ -477,12 +553,12 @@ export default function CalendarView() {
 
       const from = Math.max(
         0,
-        dayCount(windowStart, start)
+        dayCount(rangeStart, start)
       );
 
       const to = Math.min(
         lastIndex,
-        dayCount(windowStart, end) - 1
+        dayCount(rangeStart, end) - 1
       );
 
       if (to < from) return;
@@ -500,7 +576,7 @@ export default function CalendarView() {
     });
 
     return map;
-  }, [bookings, windowStart, windowEnd, dates]);
+  }, [bookings, rangeStart, windowEnd, dates]);
 
   const isDayBooked = useCallback(
     (roomName, index) => {
@@ -597,9 +673,7 @@ export default function CalendarView() {
 
     const firstIndex = Math.max(
       0,
-      Math.floor(
-        (scrollLeft - headerWidth) / DAY_WIDTH
-      )
+      Math.floor(scrollLeft / DAY_WIDTH)
     );
 
     const lastIndex = Math.min(
@@ -618,6 +692,90 @@ export default function CalendarView() {
       dates[Math.max(firstIndex, lastIndex)]
     );
   }, [dates]);
+
+  /*
+   * Extend the calendar range while scrolling: forward
+   * into future dates and backward into past dates.
+   */
+  const handleCalendarScroll = useCallback(() => {
+    updateVisibleRange();
+
+    const container = calendarRef.current;
+
+    if (
+      !container ||
+      dates.length === 0 ||
+      viewMode !== "CUSTOM"
+    ) {
+      return;
+    }
+
+    if (
+      !dragActiveRef.current &&
+      !startDate &&
+      !backwardExtendPendingRef.current &&
+      container.scrollLeft <= RANGE_EXTEND_THRESHOLD
+    ) {
+      backwardExtendPendingRef.current = true;
+      pendingScrollAdjustRef.current +=
+        RANGE_EXTEND_DAYS * DAY_WIDTH;
+      setLeadDays(
+        (current) => current + RANGE_EXTEND_DAYS
+      );
+    }
+
+    if (endDate) return;
+
+    const maxScroll =
+      container.scrollWidth - container.clientWidth;
+
+    if (maxScroll <= 0) return;
+
+    const remaining =
+      maxScroll - container.scrollLeft;
+
+    if (remaining > RANGE_EXTEND_THRESHOLD) return;
+
+    setCalendarEnd((current) => {
+      const extended = addDays(current, RANGE_EXTEND_DAYS);
+      return extended || current;
+    });
+  }, [dates.length, endDate, startDate, updateVisibleRange, viewMode]);
+
+  /*
+   * Anchor the initial view on the window start once
+   * the lead buffer exists. Scrolling left then reveals
+   * the buffered past dates.
+   */
+  useLayoutEffect(() => {
+    const container = calendarRef.current;
+
+    if (
+      !container ||
+      initialScrollDoneRef.current ||
+      dates.length === 0
+    ) {
+      return;
+    }
+
+    initialScrollDoneRef.current = true;
+    container.scrollLeft = leadDays * DAY_WIDTH;
+  }, [dates.length, leadDays]);
+
+  /*
+   * Prepending past dates shifts the timeline, so
+   * restore scrollLeft to keep the view from jumping.
+   */
+  useLayoutEffect(() => {
+    const container = calendarRef.current;
+    const adjust = pendingScrollAdjustRef.current;
+
+    if (!container || !adjust) return;
+
+    pendingScrollAdjustRef.current = 0;
+    backwardExtendPendingRef.current = false;
+    container.scrollLeft += adjust;
+  }, [leadDays]);
 
   useEffect(() => {
     updateVisibleRange();
@@ -751,12 +909,12 @@ export default function CalendarView() {
       (booking) =>
         !["CANCELLED", "ARCHIVED"].includes(String(booking.status).toUpperCase()) &&
         bookingOverlaps(
-          windowStart,
+          rangeStart,
           windowEnd,
           booking
         )
     );
-  }, [windowStart, windowEnd, bookings]);
+  }, [rangeStart, windowEnd, bookings]);
 
   /* Calendar rows follow beds because bookings reserve beds. */
   const locations = useMemo(() => [...new Map(beds.map((bed) => {
@@ -768,6 +926,8 @@ export default function CalendarView() {
     return floor?.id && (!selectedLocation || floor.location?.id === selectedLocation)
       ? [floor.id, floor] : null;
   }).filter(Boolean)).values()].sort((a, b) => (a.floorNumber ?? 0) - (b.floorNumber ?? 0)), [beds, selectedLocation]);
+  const activeLocationName = locations.find((location) => location.id === selectedLocation)?.name ?? "All locations";
+  const activeFloorName = floors.find((floor) => floor.id === selectedFloor)?.name ?? "All floors";
   const activeBeds = useMemo(() => beds.filter((bed) =>
     (!selectedLocation || bed.room?.floor?.location?.id === selectedLocation) &&
     (!selectedFloor || bed.room?.floor?.id === selectedFloor)
@@ -790,7 +950,7 @@ export default function CalendarView() {
       parseDate(booking.ended_at);
 
     const calendarStart =
-      parseDate(windowStart);
+      parseDate(rangeStart);
 
     const calendarExclusiveEnd =
       parseDate(addDays(windowEnd, 1));
@@ -822,7 +982,7 @@ export default function CalendarView() {
 
     const left =
       dayCount(
-        windowStart,
+        rangeStart,
         effectiveStart
       ) * DAY_WIDTH;
 
@@ -862,6 +1022,16 @@ export default function CalendarView() {
       defaultEndString
     );
     setViewMode(DEFAULT_SETTINGS.viewMode);
+    setLeadDays(INITIAL_LEAD_DAYS);
+
+    pendingScrollAdjustRef.current = 0;
+    backwardExtendPendingRef.current = false;
+
+    const container = calendarRef.current;
+    if (container) {
+      container.scrollLeft =
+        INITIAL_LEAD_DAYS * DAY_WIDTH;
+    }
   };
 
   /*
@@ -1367,7 +1537,7 @@ export default function CalendarView() {
       <div
         className="booking-calendar"
         ref={calendarRef}
-        onScroll={updateVisibleRange}
+        onScroll={handleCalendarScroll}
         style={{
           "--calendar-days-width":
             `${dates.length * DAY_WIDTH}px`,
@@ -1378,8 +1548,12 @@ export default function CalendarView() {
 
         <div className="calendar-header">
 
-          <div className="calendar-room-header">
-          Room / Bed
+          <div
+            className="calendar-room-header"
+            title={`${activeLocationName} · ${activeFloorName}`}
+          >
+            <span>{activeLocationName}</span>
+            <small>{activeFloorName}</small>
           </div>
 
           <div
@@ -1454,7 +1628,11 @@ export default function CalendarView() {
                 : null;
               return (
                 <Fragment key={bed.id}>
-                {groupName !== previousGroupName && <div className="calendar-location-heading">{groupName}</div>}
+                {groupName !== previousGroupName && (
+                  <div className="calendar-location-heading">
+                    <span>{groupName}</span>
+                  </div>
+                )}
                 <div
                   className="calendar-row"
                 >

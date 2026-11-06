@@ -2752,7 +2752,7 @@ textarea,
 
 
 .booking-calendar {
-  --room-width: 64px;
+  --room-width: 84px;
 
   position: relative;
 
@@ -2767,6 +2767,7 @@ textarea,
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 
   overflow: auto;
+  overflow-anchor: none;
 }
 
 
@@ -2817,23 +2818,44 @@ textarea,
   z-index: 21;
 
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: stretch;
   justify-content: center;
+
+  gap: 1px;
 
   padding: 0 6px;
 
   box-sizing: border-box;
 
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
 
-  color: #64748b;
+  color: #334155;
 
-  text-align: center;
+  text-align: left;
 
   border-right: 1px solid #e2e8f0;
 
   background: #f8fafc;
+}
+
+.calendar-room-header span,
+.calendar-room-header small {
+  max-width: 100%;
+
+  overflow: hidden;
+
+  text-overflow: ellipsis;
+
+  white-space: nowrap;
+}
+
+.calendar-room-header small {
+  font-size: 9px;
+  font-weight: 600;
+
+  color: #64748b;
 }
 
 .calendar-dates {
@@ -2895,12 +2917,26 @@ textarea,
 
 .calendar-location-heading {
   width: max(100%, calc(var(--room-width) + var(--calendar-days-width, 0px)));
-  padding: 7px 10px;
+
+  position: sticky;
+  top: 43px;
+
+  z-index: 15;
+
   background: #f1f5f9;
   border-bottom: 1px solid #e2e8f0;
   color: #334155;
   font-size: 12px;
   font-weight: 700;
+}
+
+.calendar-location-heading span {
+  position: sticky;
+  left: 0;
+
+  display: inline-block;
+
+  padding: 7px 10px;
 }
 
 
@@ -3568,11 +3604,15 @@ textarea,
   }
 
   .booking-calendar {
-    --room-width: 56px;
+    --room-width: 68px;
   }
 
   .calendar-date {
     height: 44px;
+  }
+
+  .calendar-location-heading {
+    top: 45px;
   }
 
   .booking-tooltip {
