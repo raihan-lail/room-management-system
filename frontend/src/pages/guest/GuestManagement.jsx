@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
@@ -160,6 +161,7 @@ function toResidentFormValues(resident) {
 }
 
 export default function GuestManagement() {
+  const navigate = useNavigate();
   const [residents, setResidents] = useState([]);
   const [sites, setSites] = useState([]);
   const [pagination, setPagination] = useState({
@@ -605,6 +607,8 @@ export default function GuestManagement() {
                           label="resident"
                           rowLabel={resident.fullName}
                           permission="resident.manage"
+                          viewPermission="resident.read"
+                          onView={() => navigate(`/guests/${resident.id}`)}
                           onEdit={() => setEditingRow(resident)}
                           onDelete={() => setDeletingRow(resident)}
                         />
