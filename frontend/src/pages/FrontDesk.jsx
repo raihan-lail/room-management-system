@@ -870,7 +870,7 @@ aria-label={
                           className="table-sort"
                           onClick={() => handleSort("status")}
                         >
-                          Status
+                          Current Status
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
