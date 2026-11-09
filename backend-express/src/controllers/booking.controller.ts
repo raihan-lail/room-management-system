@@ -1530,9 +1530,22 @@ export async function listHomeLeaves(
     const startedAtFrom = typeof req.query.startedAtFrom === "string" ? req.query.startedAtFrom : "";
     const startedAtTo = typeof req.query.startedAtTo === "string" ? req.query.startedAtTo : "";
 
+    const siteBookingFilter = getSiteBookingFilter(actor);
     const where: Prisma.HomeLeaveWhereInput = {
-      booking: getSiteBookingFilter(actor),
+      booking: siteBookingFilter,
     };
+
+    if (req.query.residentId) {
+      if (typeof req.query.residentId !== "string") {
+        sendError(res, 400, "Invalid residentId.");
+        return;
+      }
+
+      where.booking = {
+        ...siteBookingFilter,
+        residentId: req.query.residentId,
+      };
+    }
 
     const fromRange = startedAtFrom ? getSiteDateRange(startedAtFrom) : null;
     const toRange = startedAtTo ? getSiteDateRange(startedAtTo) : null;
