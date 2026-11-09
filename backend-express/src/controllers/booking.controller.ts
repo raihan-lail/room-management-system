@@ -64,7 +64,22 @@ function getHistoricalFrontDeskTabFilter(
         ],
       };
     case "in-house":
-      return stayedDuringDate;
+      return {
+        AND: [
+          stayedDuringDate,
+          {
+            homeLeaves: {
+              none: {
+                status: {
+                  in: [HomeLeaveStatus.ACTIVE, HomeLeaveStatus.RETURNED],
+                },
+                startedAt: { lt: end },
+                OR: [{ returnedAt: null }, { returnedAt: { gte: start } }],
+              },
+            },
+          },
+        ],
+      };
     case "near-end": {
       const threeDaysLater = new Date(start);
       threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
@@ -172,7 +187,7 @@ export async function listBookings(
               getHistoricalFrontDeskTabFilter("in-house", start, end)!,
             ];
           } else {
-            where.status = { in: IN_HOUSE_STATUSES };
+            where.status = BookingStatus.IN_HOUSE;
           }
           break;
 
@@ -552,7 +567,7 @@ export async function exportBookingsToExcel(
         case "in-house":
           tabFilters.push(req.query.frontdeskHistory === "true"
             ? getHistoricalFrontDeskTabFilter("in-house", start, end)!
-            : { status: { in: IN_HOUSE_STATUSES } });
+            : { status: BookingStatus.IN_HOUSE });
           break;
         case "home_leave":
           if (req.query.frontdeskHistory === "true") {
