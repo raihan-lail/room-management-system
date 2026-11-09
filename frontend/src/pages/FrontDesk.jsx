@@ -19,6 +19,37 @@ const PAGE_SIZE = 10;
 const BOOKING_TABS = ["arrival", "in-house", "home_leave", "near-end", "departure"];
 const ALERT_SEGMENTS = new Set(["arrival", "near-end", "departure"]);
 
+const GENDER_LABELS = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+};
+
+const EXPORT_FILTER_FIELDS = [
+  { name: "search", label: "Search", type: "search", placeholder: "Resident, room, bed, company..." },
+  { name: "startedAtFrom", label: "Start From", type: "date" },
+  { name: "startedAtTo", label: "Start To", type: "date" },
+  { name: "checkedInAt", label: "Checked In At", type: "date" },
+  { name: "checkedOutAt", label: "Checked Out At", type: "date" },
+  { name: "bookedAtFrom", label: "Booked From", type: "date" },
+  { name: "bookedAtTo", label: "Booked To", type: "date" },
+  { name: "residentName", label: "Resident Name" },
+  { name: "country", label: "Country" },
+  {
+    name: "gender",
+    label: "Gender",
+    type: "select",
+    placeholderOption: "All genders",
+    options: Object.entries(GENDER_LABELS).map(([value, label]) => ({ value, label })),
+  },
+  { name: "company", label: "Company" },
+  { name: "title", label: "Title" },
+  { name: "department", label: "Department" },
+  { name: "mealType", label: "Meal Type" },
+  { name: "roomName", label: "Room" },
+  { name: "bedName", label: "Bed" },
+];
+
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
   { id: "in-house", label: "In House", icon: "bi-house-door", title: "Current In House" },
@@ -1309,6 +1340,8 @@ aria-label={
           endpoint="/api/booking/export"
           filename={exportFilename}
           entityLabel="bookings"
+          filterFields={EXPORT_FILTER_FIELDS}
+          initialFilters={{ search }}
           extraParams={{ frontdeskTab: segment, date: selectedDate, frontdeskHistory: isCurrentDate ? "false" : "true" }}
           onClose={() => setIsExportModalOpen(false)}
         />
