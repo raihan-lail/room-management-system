@@ -1321,6 +1321,12 @@ textarea,
   background-color: #f8fafc;
 }
 
+.office-table td.table-cell-note {
+  max-width: 260px;
+  white-space: normal;
+  word-break: break-word;
+}
+
 .side-nav-alert-dot {
   width: 7px;
   height: 7px;
@@ -2425,6 +2431,59 @@ textarea,
   line-height: 15px;
 
   color: #64748b;
+}
+
+.detail-card__head--tabs {
+  align-items: center;
+
+  padding-bottom: 12px;
+}
+
+.detail-tabs {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 4px;
+
+  padding: 3px;
+
+  background-color: #f4f6f8;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+}
+
+.detail-tab {
+  display: inline-flex;
+  align-items: center;
+
+  gap: 6px;
+
+  padding: 6px 12px;
+
+  border: 1px solid transparent;
+  border-radius: 7px;
+
+  background-color: transparent;
+  color: #64748b;
+
+  font-size: 12px;
+  line-height: 16px;
+  font-weight: 600;
+
+  white-space: nowrap;
+
+  cursor: pointer;
+}
+
+.detail-tab:hover {
+  background-color: #ffffff;
+  color: var(--brand-bold);
+}
+
+.detail-tab.is-active {
+  background-color: var(--brand-nav);
+  border-color: var(--brand-nav);
+  color: #ffffff;
 }
 
 .detail-grid {

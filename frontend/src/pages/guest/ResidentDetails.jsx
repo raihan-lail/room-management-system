@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
 import apiRequest from "../../api/client";
+import useAuth from "../../contexts/useAuth";
 
 const DAY_IN_MS = 86400000;
 
@@ -16,6 +17,16 @@ const MEAL_TYPE_LABELS = {
   VEGETARIAN: "Vegetarian",
   HALAL: "Halal",
   OTHER: "Other",
+};
+
+const HOME_LEAVE_STATUS_LABELS = {
+  ACTIVE: "Active",
+  RETURNED: "Returned",
+};
+
+const HOME_LEAVE_STATUS_CLASSES = {
+  ACTIVE: "in_house",
+  RETURNED: "checked_out",
 };
 
 const formatDate = (value) => {
@@ -42,47 +53,69 @@ const getNights = (startedAt, endedAt) => {
 };
 
 const getRoomName = (booking) => {
-  const room = booking.bed?.room?.name;
-  const bed = booking.bed?.name;
+  const room = booking?.bed?.room?.name;
+  const bed = booking?.bed?.name;
 
   if (room && bed) return `${room} · ${bed}`;
   return room || bed || "-";
 };
 
 const getLocation = (booking) => {
-  const location = booking.bed?.room?.floor?.location;
+  const location = booking?.bed?.room?.floor?.location;
   const site = location?.site;
 
   return (
-    [site?.name, location?.name, booking.bed?.room?.floor?.name]
+    [site?.name, location?.name, booking?.bed?.room?.floor?.name]
       .filter(Boolean)
       .join(" · ") || "-"
   );
 };
 
+const formatStatus = (status) =>
+  String(status || "UNKNOWN").replace(/_/g, " ");
+
 export default function ResidentDetails() {
   const navigate = useNavigate();
   const { residentId } = useParams();
+  const { hasPermission } = useAuth();
+
+  const canViewHomeLeaves = hasPermission("home.leaves");
 
   const [resident, setResident] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [totalBookings, setTotalBookings] = useState(0);
+  const [homeLeaves, setHomeLeaves] = useState([]);
+  const [totalHomeLeaves, setTotalHomeLeaves] = useState(0);
+  const [historyTab, setHistoryTab] = useState("bookings");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [bookingError, setBookingError] = useState("");
+  const [homeLeaveError, setHomeLeaveError] = useState("");
 
   const loadResidentDetails = useCallback(async () => {
     setIsLoading(true);
     setError("");
     setBookingError("");
+    setHomeLeaveError("");
 
     try {
-      const [residentResult, bookingsResult] = await Promise.allSettled([
+      const requests = [
         apiRequest(`/api/resident/${residentId}`),
         apiRequest(
           `/api/booking?residentId=${encodeURIComponent(residentId)}&page=1&limit=100`,
         ),
-      ]);
+      ];
+
+      if (canViewHomeLeaves) {
+        requests.push(
+          apiRequest(
+            `/api/booking/home-leaves?residentId=${encodeURIComponent(residentId)}&page=1&limit=100`,
+          ),
+        );
+      }
+
+      const [residentResult, bookingsResult, homeLeavesResult] =
+        await Promise.allSettled(requests);
 
       if (residentResult.status === "rejected") {
         throw residentResult.reason;
@@ -104,15 +137,40 @@ export default function ResidentDetails() {
           bookingsResult.reason?.message || "Failed to load booking history.",
         );
       }
+
+      if (canViewHomeLeaves) {
+        if (homeLeavesResult.status === "fulfilled") {
+          setHomeLeaves(
+            Array.isArray(homeLeavesResult.value?.data)
+              ? homeLeavesResult.value.data
+              : [],
+          );
+          setTotalHomeLeaves(
+            Number(homeLeavesResult.value?.pagination?.total ?? 0),
+          );
+        } else {
+          setHomeLeaves([]);
+          setTotalHomeLeaves(0);
+          setHomeLeaveError(
+            homeLeavesResult.reason?.message ||
+              "Failed to load home leave history.",
+          );
+        }
+      } else {
+        setHomeLeaves([]);
+        setTotalHomeLeaves(0);
+      }
     } catch (err) {
       setError(err.message || "Failed to load resident details.");
       setResident(null);
       setBookings([]);
       setTotalBookings(0);
+      setHomeLeaves([]);
+      setTotalHomeLeaves(0);
     } finally {
       setIsLoading(false);
     }
-  }, [residentId]);
+  }, [residentId, canViewHomeLeaves]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -143,6 +201,8 @@ export default function ResidentDetails() {
       ]
     : [];
 
+  const activeHistoryTab = canViewHomeLeaves ? historyTab : "bookings";
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -151,7 +211,8 @@ export default function ResidentDetails() {
             <h1 className="dashboard-header__title">Resident Details</h1>
 
             <p className="dashboard-header__subtitle">
-              View the resident profile and booking history
+              View the resident profile, booking history, and home leave
+              history
             </p>
           </div>
 
@@ -240,103 +301,180 @@ export default function ResidentDetails() {
             </section>
 
             <section className="table-card content">
-              <div className="detail-card__head">
-                <h2 className="detail-card__title">Booking History</h2>
+              <div className="detail-card__head detail-card__head--tabs">
+                <div
+                  className="detail-tabs"
+                  role="tablist"
+                  aria-label="Resident history"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={activeHistoryTab === "bookings"}
+                    className={`detail-tab ${activeHistoryTab === "bookings" ? "is-active" : ""}`}
+                    onClick={() => setHistoryTab("bookings")}
+                  >
+                    Booking History
+                  </button>
+
+                  {canViewHomeLeaves && (
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={activeHistoryTab === "home-leaves"}
+                      className={`detail-tab ${activeHistoryTab === "home-leaves" ? "is-active" : ""}`}
+                      onClick={() => setHistoryTab("home-leaves")}
+                    >
+                      Home Leave History
+                    </button>
+                  )}
+                </div>
+
                 <p className="detail-card__caption">
-                  {totalBookings} booking{totalBookings === 1 ? "" : "s"}
+                  {activeHistoryTab === "bookings"
+                    ? `${totalBookings} booking${totalBookings === 1 ? "" : "s"}`
+                    : `${totalHomeLeaves} home leave${totalHomeLeaves === 1 ? "" : "s"}`}
                 </p>
               </div>
 
-              {bookingError ? (
-                <p role="alert">{bookingError}</p>
-              ) : bookings.length === 0 ? (
-                <p className="table-empty">No bookings found.</p>
-              ) : (
-                <div className="history-list">
-                  {bookings.map((booking) => (
-                    <article className="history-card" key={booking.id}>
-                      <div className="history-card__head">
-                        <div className="history-card__text">
-                          <p className="history-card__label">Room</p>
+              {activeHistoryTab === "bookings" ? (
+                <>
+                  {bookingError ? (
+                    <p className="table-empty" role="alert">
+                      {bookingError}
+                    </p>
+                  ) : (
+                    <div className="office-table-wrapper">
+                      <table className="office-table">
+                        <thead>
+                          <tr>
+                            <th>Booking</th>
+                            <th>Room</th>
+                            <th>Location</th>
+                            <th>Booked On</th>
+                            <th>Check-in</th>
+                            <th>Check-out</th>
+                            <th>Nights</th>
+                            <th>Status</th>
+                            <th>Notes</th>
+                          </tr>
+                        </thead>
 
-                          <h3 className="history-card__name">
-                            {getRoomName(booking)}
-                          </h3>
-
-                          <p className="history-card__location">
-                            <i className="bi bi-geo-alt" aria-hidden="true" />
-                            {getLocation(booking)}
-
-                            <span className="history-card__divider-dot" />
-
-                            Booking {booking.bookingNumber || booking.id}
-                          </p>
-                        </div>
-
-                        <span
-                          className={`booking-status booking-status--${booking.status?.toLowerCase()}`}
-                        >
-                          {String(booking.status || "UNKNOWN").replace(
-                            /_/g,
-                            " ",
+                        <tbody>
+                          {bookings.length === 0 ? (
+                            <tr>
+                              <td className="muted" colSpan={9}>
+                                No bookings found.
+                              </td>
+                            </tr>
+                          ) : (
+                            bookings.map((booking) => (
+                              <tr key={booking.id}>
+                                <td>
+                                  <strong>
+                                    {booking.bookingNumber || booking.id}
+                                  </strong>
+                                </td>
+                                <td>{getRoomName(booking)}</td>
+                                <td>{getLocation(booking)}</td>
+                                <td>{formatDate(booking.createdAt)}</td>
+                                <td>{formatDate(booking.startedAt)}</td>
+                                <td>{formatDate(booking.endedAt)}</td>
+                                <td>
+                                  {getNights(
+                                    booking.startedAt,
+                                    booking.endedAt,
+                                  )}
+                                </td>
+                                <td>
+                                  <span
+                                    className={`booking-status booking-status--${booking.status?.toLowerCase()}`}
+                                  >
+                                    {formatStatus(booking.status)}
+                                  </span>
+                                </td>
+                                <td className="table-cell-note">
+                                  {booking.notes || "-"}
+                                </td>
+                              </tr>
+                            ))
                           )}
-                        </span>
-                      </div>
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
 
-                      <div className="history-card__group">
-                        <p className="history-card__group-label">
-                          Booking Details
-                        </p>
-
-                        <div className="detail-grid">
-                          <div className="detail-grid__item">
-                            <p className="detail-grid__label">Booked On</p>
-                            <p className="detail-grid__value">
-                              {formatDate(booking.createdAt)}
-                            </p>
-                          </div>
-
-                          <div className="detail-grid__item">
-                            <p className="detail-grid__label">Check-in</p>
-                            <p className="detail-grid__value">
-                              {formatDate(booking.startedAt)}
-                            </p>
-                          </div>
-
-                          <div className="detail-grid__item">
-                            <p className="detail-grid__label">Check-out</p>
-                            <p className="detail-grid__value">
-                              {formatDate(booking.endedAt)}
-                            </p>
-                          </div>
-
-                          <div className="detail-grid__item">
-                            <p className="detail-grid__label">Nights</p>
-                            <p className="detail-grid__value">
-                              {getNights(booking.startedAt, booking.endedAt)}
-                            </p>
-                          </div>
-                        </div>
-                      </div>
-
-                      {booking.notes && (
-                        <div className="history-card__notes">
-                          <p className="history-card__group-label">Notes</p>
-                          <p className="history-card__notes-text">
-                            {booking.notes}
-                          </p>
-                        </div>
-                      )}
-                    </article>
-                  ))}
-                </div>
-              )}
-
-              {!bookingError && totalBookings > bookings.length && (
-                <p className="muted">
-                  Showing the first {bookings.length} of {totalBookings}{" "}
-                  bookings.
+                  {!bookingError && totalBookings > bookings.length && (
+                    <p className="muted">
+                      Showing the first {bookings.length} of {totalBookings}{" "}
+                      bookings.
+                    </p>
+                  )}
+                </>
+              ) : homeLeaveError ? (
+                <p className="table-empty" role="alert">
+                  {homeLeaveError}
                 </p>
+              ) : (
+                <>
+                  <div className="office-table-wrapper">
+                    <table className="office-table">
+                      <thead>
+                        <tr>
+                          <th>Booking</th>
+                          <th>Room</th>
+                          <th>Start Date</th>
+                          <th>Expected Return</th>
+                          <th>Returned On</th>
+                          <th>Status</th>
+                          <th>Reason</th>
+                        </tr>
+                      </thead>
+
+                      <tbody>
+                        {homeLeaves.length === 0 ? (
+                          <tr>
+                            <td className="muted" colSpan={7}>
+                              No home leaves found.
+                            </td>
+                          </tr>
+                        ) : (
+                          homeLeaves.map((homeLeave) => (
+                            <tr key={homeLeave.id}>
+                              <td>
+                                <strong>
+                                  {homeLeave.booking?.bookingNumber || "-"}
+                                </strong>
+                              </td>
+                              <td>{getRoomName(homeLeave.booking)}</td>
+                              <td>{formatDate(homeLeave.startedAt)}</td>
+                              <td>{formatDate(homeLeave.expectedReturnAt)}</td>
+                              <td>{formatDate(homeLeave.returnedAt)}</td>
+                              <td>
+                                <span
+                                  className={`booking-status booking-status--${HOME_LEAVE_STATUS_CLASSES[homeLeave.status] || "checked_out"}`}
+                                >
+                                  {HOME_LEAVE_STATUS_LABELS[homeLeave.status] ||
+                                    formatStatus(homeLeave.status)}
+                                </span>
+                              </td>
+                              <td className="table-cell-note">
+                                {homeLeave.reason || "-"}
+                              </td>
+                            </tr>
+                          ))
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+
+                  {totalHomeLeaves > homeLeaves.length && (
+                    <p className="muted">
+                      Showing the first {homeLeaves.length} of {totalHomeLeaves}{" "}
+                      home leaves.
+                    </p>
+                  )}
+                </>
               )}
             </section>
           </>
