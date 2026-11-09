@@ -208,7 +208,7 @@ export default function FrontDesk() {
         limit: String(pageSize),
         startedAtFrom: selectedDate,
         startedAtTo: selectedDate,
-        status: "ACTIVE",
+        ...(isCurrentDate ? { status: "ACTIVE" } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       });
       const homeLeaveAlertParams = new URLSearchParams({
