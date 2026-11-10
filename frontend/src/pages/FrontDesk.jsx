@@ -13,6 +13,7 @@ import {
 import FlexibleButton from "../components/FlexibleButtons";
 import PageSizeSelect from "../components/PageSizeSelect";
 import useAuth from "../contexts/useAuth";
+import { COUNTRIES } from "../data/countries";
 
 
 const PAGE_SIZE = 10;
@@ -34,7 +35,7 @@ const EXPORT_FILTER_FIELDS = [
   { name: "bookedAtFrom", label: "Booked From", type: "date" },
   { name: "bookedAtTo", label: "Booked To", type: "date" },
   { name: "residentName", label: "Resident Name" },
-  { name: "country", label: "Country" },
+  { name: "country", label: "Nationality", type: "select", placeholderOption: "All nationalities", searchable: true, searchPlaceholder: "Search country...", options: COUNTRIES.map((country) => ({ value: country, label: country })) },
   {
     name: "gender",
     label: "Gender",
