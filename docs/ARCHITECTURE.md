@@ -206,6 +206,8 @@ stateDiagram-v2
 
 Each booking links a resident to a bed and stores the planned start/end dates, current status, and applicable lifecycle timestamps. Home leave is tracked in a separate `HomeLeave` record, while `BookingEvent` records actions and their actor. The bed's availability/status must remain consistent with the booking lifecycle; exact transitions are enforced by booking endpoints.
 
+Authorized staff can move confirmed and in-house bookings from the calendar by changing the bed, date range, or both. The update endpoint validates bed access and rejects overlapping active bookings; the calendar asks for confirmation before submitting the move.
+
 ### Complaint and stay feedback
 
 ```mermaid

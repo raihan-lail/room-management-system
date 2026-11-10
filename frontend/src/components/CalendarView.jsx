@@ -275,6 +275,7 @@ export default function CalendarView() {
 
   const [search, setSearch] =
     useState("");
+  const [filtersVisible, setFiltersVisible] = useState(true);
 
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
@@ -317,6 +318,12 @@ export default function CalendarView() {
   const [bookingDraft, setBookingDraft] =
     useState(null);
 
+  const [bookingMoveDraft, setBookingMoveDraft] = useState(null);
+  const [bookingMovePreview, setBookingMovePreview] = useState(null);
+  const [bookingMoveNotice, setBookingMoveNotice] = useState("");
+  const [bookingMoveError, setBookingMoveError] = useState("");
+  const [isSavingBookingMove, setIsSavingBookingMove] = useState(false);
+
   const [dragScrollDirection, setDragScrollDirection] =
     useState(0);
 
@@ -325,6 +332,7 @@ export default function CalendarView() {
 
   const dragRangeRef = useRef(null);
   const dragActiveRef = useRef(false);
+  const bookingMoveRef = useRef(null);
   const lastXRef = useRef(0);
   const tooltipRef = useRef(null);
   const tooltipAnchorRef = useRef(null);
@@ -1147,6 +1155,21 @@ export default function CalendarView() {
 
   const handleWindowMouseMove = useCallback(
     (event) => {
+      if (bookingMoveRef.current) {
+        const move = bookingMoveRef.current;
+        const target = document.elementFromPoint(event.clientX, event.clientY);
+        const row = target?.closest("[data-bed-id]");
+        if (row) move.destinationBedId = row.dataset.bedId;
+        move.dayOffset = Math.round((event.clientX - move.startX) / DAY_WIDTH);
+        setBookingMovePreview((previous) => previous
+          ? {
+              ...previous,
+              left: event.clientX - move.grabOffsetX,
+              top: event.clientY - move.grabOffsetY,
+            }
+          : previous);
+        return;
+      }
       if (!dragActiveRef.current) return;
 
       lastXRef.current = event.clientX;
@@ -1202,7 +1225,49 @@ export default function CalendarView() {
     );
   };
 
-  const endDrag = useCallback(() => {
+  const endDrag = useCallback(async () => {
+    if (bookingMoveRef.current) {
+      const move = bookingMoveRef.current;
+      bookingMoveRef.current = null;
+      setBookingMovePreview(null);
+      setDragScrollDirection(0);
+      const destinationBed = activeBeds.find((bed) => bed.id === move.destinationBedId);
+      const startedAt = addDays(move.booking.started_at, move.dayOffset);
+      const endedAt = addDays(move.booking.ended_at, move.dayOffset);
+      if (!destinationBed || !startedAt || !endedAt) return;
+      if (destinationBed.id === move.booking.bedId && move.dayOffset === 0) return;
+      setBookingMoveError("");
+      setBookingMoveNotice("");
+      try {
+        const conflicts = await loadAllPages("/api/booking", "page", "limit", {
+          bedId: destinationBed.id,
+          overlapStart: `${startedAt}T00:00:00.000Z`,
+          overlapEnd: `${endedAt}T00:00:00.000Z`,
+        });
+        const conflict = conflicts.find((booking) =>
+          booking.id !== move.booking.id &&
+          ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"].includes(String(booking.status).toUpperCase())
+        );
+        if (conflict) {
+          setBookingMoveNotice("This booking can't be moved because the destination bed is already booked for those dates.");
+          const conflictDate = conflict.startedAt?.slice(0, 10) ?? conflict.started_at;
+          const index = dayCount(rangeStart, conflictDate);
+          if (index >= 0 && index < dates.length) flashBlockedCell(destinationBed.id, index);
+          return;
+        }
+      } catch (error) {
+        setBookingMoveNotice(error.message || "Could not check the destination bed for conflicts.");
+        return;
+      }
+      setBookingMoveDraft({
+        booking: move.booking,
+        bed: destinationBed,
+        bedId: destinationBed.id,
+        startedAt,
+        endedAt,
+      });
+      return;
+    }
     setDragScrollDirection(0);
     dragActiveRef.current = false;
 
@@ -1254,7 +1319,52 @@ export default function CalendarView() {
       ended_at:
         addDays(endedAt.toISOString().slice(0, 10), 1),
     });
-  }, [dates, hasBookedDay, activeBeds]);
+  }, [dates, hasBookedDay, activeBeds, rangeStart]);
+
+  const confirmBookingMove = async () => {
+    if (!bookingMoveDraft || isSavingBookingMove) return;
+    setIsSavingBookingMove(true);
+    setBookingMoveError("");
+    try {
+      await apiRequest(`/api/booking/${encodeURIComponent(bookingMoveDraft.booking.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          bedId: bookingMoveDraft.bedId,
+          startedAt: bookingMoveDraft.startedAt,
+          endedAt: bookingMoveDraft.endedAt,
+        }),
+      });
+      setBookingMoveDraft(null);
+      setReloadKey((value) => value + 1);
+    } catch (error) {
+      setBookingMoveError(error.message || "Failed to move booking.");
+    } finally {
+      setIsSavingBookingMove(false);
+    }
+  };
+
+  const handleBookingMouseDown = (booking, event) => {
+    if (!canCreateBooking || event.button !== 0 || !["CONFIRMED", "IN_HOUSE"].includes(String(booking.status).toUpperCase())) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setHovered(null);
+    const rect = event.currentTarget.getBoundingClientRect();
+    bookingMoveRef.current = {
+      booking,
+      startX: event.clientX,
+      destinationBedId: booking.bedId,
+      dayOffset: 0,
+      grabOffsetX: event.clientX - rect.left,
+      grabOffsetY: event.clientY - rect.top,
+      width: rect.width,
+    };
+    setBookingMovePreview({
+      booking,
+      width: rect.width,
+      left: rect.left,
+      top: rect.top,
+    });
+  };
 
   useEffect(() => {
     window.addEventListener(
@@ -1324,7 +1434,7 @@ export default function CalendarView() {
   };
 
   return (
-    <div className="calendar-view">
+    <div className={`calendar-view${filtersVisible ? "" : " calendar-view--expanded"}`}>
 
       <div className="calendar-range">
        
@@ -1334,12 +1444,27 @@ export default function CalendarView() {
             ? `${formatVisibleDate(visibleStart)} - ${formatVisibleDate(visibleEnd)}`
             : "No dates to display"}
         </span>
+        <button
+          type="button"
+          className="btn btn-neutral calendar-range__toggle"
+          aria-expanded={filtersVisible}
+          aria-controls="calendar-filters"
+          onClick={() => setFiltersVisible((visible) => !visible)}
+        >
+          <i className={`bi ${filtersVisible ? "bi-eye-slash" : "bi-eye"}`} aria-hidden="true" />
+          {filtersVisible ? "Hide tools" : "Show tools"}
+        </button>
       </div>
+
+      {bookingMoveNotice && (
+        <p className="error-text" role="alert">{bookingMoveNotice}</p>
+      )}
 
       {/* =========================
           FILTERS
       ========================== */}
 
+      <div id="calendar-filters" hidden={!filtersVisible}>
       <div className="calendar-filters calendar-filters--primary form-actions bookings-toolbar">
 
         <div className="calendar-filters__search">
@@ -1529,6 +1654,7 @@ export default function CalendarView() {
         </div>
 
       </div>
+      </div>
 
       {/* =========================
           CALENDAR
@@ -1635,6 +1761,7 @@ export default function CalendarView() {
                 )}
                 <div
                   className="calendar-row"
+                  data-bed-id={bed.id}
                 >
 
                   <div className="calendar-room">
@@ -1724,7 +1851,8 @@ export default function CalendarView() {
                               booking.id ||
                               `${bed.id}-${booking.started_at}-${index}`
                             }
-                            className={`booking-block booking-${statusClass}`}
+                            className={`booking-block booking-${statusClass}${canCreateBooking && ["CONFIRMED", "IN_HOUSE"].includes(String(booking.status).toUpperCase()) ? " booking-block--movable" : ""}`}
+                            onMouseDown={(event) => handleBookingMouseDown(booking, event)}
                             style={{
                               left:
                                 style.left,
@@ -1781,6 +1909,21 @@ export default function CalendarView() {
         position={tooltipPosition}
       />
 
+      {bookingMovePreview && (
+        <div
+          className={`booking-block booking-${normalizeStatus(bookingMovePreview.booking.status)} booking-block--drag-preview`}
+          style={{
+            left: `${bookingMovePreview.left}px`,
+            top: `${bookingMovePreview.top}px`,
+            width: `${bookingMovePreview.width}px`,
+          }}
+          aria-hidden="true"
+        >
+          <div className="booking-block__name">{bookingMovePreview.booking.guest?.name || "Unknown Guest"}</div>
+          <div className="booking-block__status">{statusLabel(bookingMovePreview.booking.status)}</div>
+        </div>
+      )}
+
       {bookingDraft && (
         <BookingCreateModal
           initialValues={{
@@ -1792,6 +1935,24 @@ export default function CalendarView() {
           onClose={() => setBookingDraft(null)}
           onCreated={handleCreateBooking}
         />
+      )}
+      {bookingMoveDraft && (
+        <div className="modal-overlay" onMouseDown={() => !isSavingBookingMove && setBookingMoveDraft(null)}>
+          <div className="modal" role="dialog" aria-modal="true" aria-labelledby="calendar-move-title" onMouseDown={(event) => event.stopPropagation()}>
+            <div className="modal__header">
+              <h2 className="modal__title" id="calendar-move-title">Confirm booking move</h2>
+            </div>
+            <div className="modal__form">
+              <p>Move {bookingMoveDraft.booking.guest?.name || "this booking"} to {bookingMoveDraft.bed.room?.name} / {bookingMoveDraft.bed.name}?</p>
+              <p>{bookingMoveDraft.startedAt} to {addDays(bookingMoveDraft.endedAt, -1)}</p>
+              {bookingMoveError && <p className="error-text" role="alert">{bookingMoveError}</p>}
+              <div className="modal__actions">
+                <button type="button" className="btn btn-neutral" disabled={isSavingBookingMove} onClick={() => setBookingMoveDraft(null)}>Cancel</button>
+                <button type="button" className="btn btn-primary" disabled={isSavingBookingMove} onClick={confirmBookingMove}>{isSavingBookingMove ? "Saving..." : "Confirm move"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
