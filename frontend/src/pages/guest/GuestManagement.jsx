@@ -9,6 +9,7 @@ import ImportModal from "../../components/modals/ImportModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
 import PageSizeSelect from "../../components/PageSizeSelect";
+import { COUNTRIES } from "../../data/countries";
 
 const PAGE_SIZE = 10;
 
@@ -116,8 +117,18 @@ function buildResidentSchema({ isEdit, siteOptions }) {
       {
         name: "nationality",
         label: "Nationality",
-        type: "text",
-        placeholder: "Nationality",
+        type: "select",
+        defaultValue: "",
+        placeholderOption: "Select country",
+        searchable: true,
+        searchPlaceholder: "Search country...",
+        options: (values) => {
+          const current = values?.nationality;
+
+          return current && !COUNTRIES.includes(current)
+            ? [current, ...COUNTRIES]
+            : COUNTRIES;
+        },
       },
       {
         name: "mealType",

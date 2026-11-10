@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import apiRequest from "../../api/client";
 import useAuth from "../../contexts/useAuth";
+import { COUNTRIES } from "../../data/countries";
 import { ModalField } from "./AddModal";
 
 const GENDER_OPTIONS = [
@@ -477,8 +478,11 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                     field={{
                       name: "nationality",
                       label: "Nationality",
-                      type: "text",
-                      placeholder: "Nationality",
+                      type: "select",
+                      options: COUNTRIES,
+                      placeholderOption: "Select country",
+                      searchable: true,
+                      searchPlaceholder: "Search country...",
                     }}
                     value={newResident.nationality}
                     onChange={handleNewResidentChange}
