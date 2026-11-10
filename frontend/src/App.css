@@ -1565,10 +1565,30 @@ textarea,
   align-items: center;
 }
 
+.bookings-toolbar__filters {
+  display: flex;
+  align-items: center;
+
+  flex: 1 1 auto;
+  flex-wrap: wrap;
+
+  gap: 12px;
+
+  min-width: 0;
+}
+
+.bookings-toolbar__filters .history-search {
+  flex: 1 1 240px;
+
+  width: auto;
+  max-width: 420px;
+}
+
 .bookings-toolbar__actions {
   display: flex;
   align-items: center;
 
+  flex: 0 0 auto;
   flex-wrap: wrap;
 
   gap: 8px;

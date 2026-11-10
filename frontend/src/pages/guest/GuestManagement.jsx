@@ -267,6 +267,15 @@ export default function GuestManagement() {
         placeholder: "Name, email, phone, company, department...",
       },
       {
+        name: "nationality",
+        label: "Nationality",
+        type: "select",
+        placeholderOption: "All nationalities",
+        searchable: true,
+        searchPlaceholder: "Search country...",
+        options: COUNTRIES.map((country) => ({ value: country, label: country })),
+      },
+      {
         name: "siteId",
         label: "Site",
         type: "select",

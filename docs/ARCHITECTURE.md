@@ -264,7 +264,7 @@ sequenceDiagram
 
 ```mermaid
 flowchart LR
-  Staff[Authorized staff or resident] --> BookingAPI[Booking API]
+  Staff[Authorized staff] --> BookingAPI[Booking API]
   BookingAPI --> Check[Validate request and access]
   Check -->|valid| Booking[Create or update booking]
   Check -->|invalid| Error[Return error]
