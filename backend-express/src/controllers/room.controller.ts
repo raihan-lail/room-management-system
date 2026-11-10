@@ -251,6 +251,17 @@ export async function createRoom(req: AuthRequest, res: Response) {
       });
     }
 
+    const duplicateRoom = await prisma.room.findUnique({
+      where: { name: name.trim() },
+      select: { id: true },
+    });
+
+    if (duplicateRoom) {
+      return res.status(409).json({
+        message: "A room with this name already exists.",
+      });
+    }
+
     const room = await prisma.$transaction(async (tx) => {
       const created = await tx.room.create({
         data: {
@@ -295,7 +306,7 @@ export async function createRoom(req: AuthRequest, res: Response) {
     return res.status(201).json({ room });
   } catch (error) {
     return handlePrismaError(error, res, {
-      duplicate: "A room with this name already exists on this floor",
+      duplicate: "A room with this name already exists",
     });
   }
 }
@@ -359,7 +370,20 @@ export async function updateRoom(req: AuthRequest, res: Response) {
       if (typeof name !== "string" || !name.trim()) {
         return res.status(400).json({ message: "Invalid room name" });
       }
-      data.name = name.trim();
+
+      const trimmedName = name.trim();
+      const duplicateRoom = await prisma.room.findUnique({
+        where: { name: trimmedName },
+        select: { id: true },
+      });
+
+      if (duplicateRoom && duplicateRoom.id !== id) {
+        return res.status(409).json({
+          message: "A room with this name already exists.",
+        });
+      }
+
+      data.name = trimmedName;
     }
 
     if (description !== undefined) {
@@ -423,7 +447,7 @@ export async function updateRoom(req: AuthRequest, res: Response) {
     return res.json({ room });
   } catch (error) {
     return handlePrismaError(error, res, {
-      duplicate: "A room with this name already exists on this floor",
+      duplicate: "A room with this name already exists",
       notFound: "Room not found",
     });
   }
@@ -679,12 +703,7 @@ export async function importRoomsFromExcel(
         continue;
       }
 
-      const roomKey = [
-        siteName.toLowerCase(),
-        locationName.toLowerCase(),
-        String(floorNumber),
-        roomName.toLowerCase(),
-      ].join("|");
+      const roomKey = roomName;
 
       if (roomKeys.has(roomKey)) {
         addError("Duplicate room name in this Excel file.");
@@ -767,11 +786,8 @@ export async function importRoomsFromExcel(
         continue;
       }
 
-      const existingRoom = await prisma.room.findFirst({
-        where: {
-          floorId: floor.id,
-          name: { equals: row.roomName, mode: "insensitive" },
-        },
+      const existingRoom = await prisma.room.findUnique({
+        where: { name: row.roomName },
         select: { id: true },
       });
 
@@ -779,7 +795,7 @@ export async function importRoomsFromExcel(
         errors.push({
           row: row.excelRow,
           roomName: row.roomName,
-          message: "A room with this name already exists on this floor.",
+          message: "A room with this name already exists.",
         });
         continue;
       }
