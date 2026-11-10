@@ -685,7 +685,7 @@ export default function RoomManagement() {
               Bulk Import
             </FlexibleButton>
 
-            {viewMode === "bed" && (
+
               <FlexibleButton
                 permission="rooms.export"
                 className="btn btn-neutral"
@@ -695,7 +695,7 @@ export default function RoomManagement() {
                 <i className="bi bi-file-earmark-excel" aria-hidden="true" />
                 Export
               </FlexibleButton>
-            )}
+            
           </div>
         </div>
 
