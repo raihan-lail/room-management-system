@@ -1791,7 +1791,7 @@ export async function updateBooking(
       if (!before) {
         throw Object.assign(new Error("Booking not found."), { statusCode: 404 });
       }
-      if (![BookingStatus.CONFIRMED, BookingStatus.IN_HOUSE].includes(before.status)) {
+      if (before.status !== BookingStatus.CONFIRMED && before.status !== BookingStatus.IN_HOUSE) {
         throw Object.assign(new Error("Only confirmed or in-house bookings can be edited."), { statusCode: 409 });
       }
 
