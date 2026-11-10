@@ -166,7 +166,7 @@ model Floor {
 model Room {
   id          String   @id @default(cuid())
   floorId     String
-  name        String
+  name        String   @unique
   type        String   @default("Standard")
   description String?
   row         String?
