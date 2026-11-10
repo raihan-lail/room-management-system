@@ -227,6 +227,9 @@ export default function AddModal({
 
         if (field.name === name) return;
 
+        // Only remap a value that was actually selected.
+        if (!next[field.name]) return;
+
         const allowed = resolveOptions(field, next).map(
           (option) => normalizeOption(option).value,
         );
