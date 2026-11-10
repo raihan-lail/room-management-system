@@ -7,9 +7,11 @@ import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import ImportModal from "../../components/modals/ImportModal";
+import ExportModal from "../../components/modals/ExportModal";
 import { buildRoomSchema } from "../../components/modals/addFormSchemas";
 import FlexibleButton from "../../components/FlexibleButtons";
 import PageSizeSelect from "../../components/PageSizeSelect";
+import { COUNTRIES } from "../../data/countries";
 
 
 const PAGE_SIZE = 10;
@@ -130,6 +132,7 @@ export default function RoomManagement() {
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [isImportModalOpen, setIsImportModalOpen] = useState(false);
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
   const [expandedRooms, setExpandedRooms] = useState([]);
@@ -253,6 +256,42 @@ export default function RoomManagement() {
     () => buildRoomSchema(locations, { includeBeds: false }),
     [locations]
   );
+
+  const bedExportFilterFields = useMemo(() => {
+    const locationOptions = locations.map((location) => ({
+      value: location.id,
+      label: location.name,
+    }));
+
+    const floorOptions = locations.flatMap((location) =>
+      (location.floors ?? [])
+        .filter((floor) => floor.isActive !== false)
+        .map((floor) => ({
+          value: floor.id,
+          label: `${location.name} · ${floor.name}`,
+        }))
+    );
+
+    return [
+      { name: "search", label: "Search", type: "search", placeholder: "Bed, room, description..." },
+      { name: "status", label: "Bed Status", type: "select", placeholderOption: "All statuses", options: BED_STATUSES },
+      { name: "nationality", label: "Nationality", type: "select", placeholderOption: "All nationalities", searchable: true, searchPlaceholder: "Search country...", options: COUNTRIES.map((country) => ({ value: country, label: country })) },
+      { name: "locationId", label: "Location", type: "select", placeholderOption: "All locations", options: locationOptions },
+      { name: "floorId", label: "Floor", type: "select", placeholderOption: "All floors", options: floorOptions },
+      { name: "roomName", label: "Room Name" },
+      { name: "bedName", label: "Bed Name" },
+      {
+        name: "isActive",
+        label: "Active",
+        type: "select",
+        placeholderOption: "All beds",
+        options: [
+          { value: "true", label: "Active" },
+          { value: "false", label: "Inactive" },
+        ],
+      },
+    ];
+  }, [locations]);
 
   const handleAddRoom = async (values) => {
     setSaving(true);
@@ -557,51 +596,53 @@ export default function RoomManagement() {
         </div>
 
         <div className="bookings-toolbar form-actions">
-          <label className="history-search">
-            <i className="bi bi-search" aria-hidden="true" />
-            <input
-              type="search"
-              aria-label={viewMode === "bed" ? "Search beds" : "Search rooms"}
-              placeholder={
-                viewMode === "bed"
-                  ? "Search by bed, room, description..."
-                  : "Search by room number, location, description..."
-              }
-              value={search}
-              onChange={(event) => handleSearchChange(event.target.value)}
-            />
-          </label>
+          <div className="bookings-toolbar__filters">
+            <label className="history-search">
+              <i className="bi bi-search" aria-hidden="true" />
+              <input
+                type="search"
+                aria-label={viewMode === "bed" ? "Search beds" : "Search rooms"}
+                placeholder={
+                  viewMode === "bed"
+                    ? "Search by bed, room, description..."
+                    : "Search by room number, location, description..."
+                }
+                value={search}
+                onChange={(event) => handleSearchChange(event.target.value)}
+              />
+            </label>
 
-          {viewMode === "bed" && (
-            <>
-              <label className="calendar-date-filter">
-                <span>Date</span>
-                <input
-                  type="date"
-                  aria-label="View bed status for date"
-                  value={bedDate}
-                  onChange={(event) => handleBedDateChange(event.target.value)}
-                />
-              </label>
-              <label className="calendar-date-filter">
-                <span>Status</span>
-                <select
-                  aria-label="Filter beds by status"
-                  value={bedStatus}
-                  onChange={(event) =>
-                    handleBedStatusChange(event.target.value)
-                  }
-                >
-                  <option value="">All</option>
-                  {BED_STATUSES.map((status) => (
-                    <option key={status.value} value={status.value}>
-                      {status.label}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            </>
-          )}
+            {viewMode === "bed" && (
+              <>
+                <label className="calendar-date-filter">
+                  <span>Date</span>
+                  <input
+                    type="date"
+                    aria-label="View bed status for date"
+                    value={bedDate}
+                    onChange={(event) => handleBedDateChange(event.target.value)}
+                  />
+                </label>
+                <label className="calendar-date-filter">
+                  <span>Status</span>
+                  <select
+                    aria-label="Filter beds by status"
+                    value={bedStatus}
+                    onChange={(event) =>
+                      handleBedStatusChange(event.target.value)
+                    }
+                  >
+                    <option value="">All</option>
+                    {BED_STATUSES.map((status) => (
+                      <option key={status.value} value={status.value}>
+                        {status.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+          </div>
 
           <div className="bookings-toolbar__actions">
             <div
@@ -643,6 +684,18 @@ export default function RoomManagement() {
               <i className="bi bi-file-earmark-excel" aria-hidden="true" />
               Bulk Import
             </FlexibleButton>
+
+            {viewMode === "bed" && (
+              <FlexibleButton
+                permission="rooms.export"
+                className="btn btn-neutral"
+                onClick={() => setIsExportModalOpen(true)}
+                disabled={saving}
+              >
+                <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+                Export
+              </FlexibleButton>
+            )}
           </div>
         </div>
 
@@ -1034,6 +1087,18 @@ export default function RoomManagement() {
           }
           onClose={() => setIsImportModalOpen(false)}
           onImported={handleRoomsImported}
+        />
+      )}
+
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Beds"
+          endpoint="/api/bed/export"
+          filename="beds.xlsx"
+          entityLabel="beds"
+          filterFields={bedExportFilterFields}
+          initialFilters={{ search, status: bedStatus }}
+          onClose={() => setIsExportModalOpen(false)}
         />
       )}
 

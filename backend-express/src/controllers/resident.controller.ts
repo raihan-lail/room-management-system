@@ -862,6 +862,13 @@ export async function exportResidentsToExcel(
         ? req.query.siteId.trim()
         : "";
 
+    const nationality =
+      typeof req.query.nationality === "string"
+        ? req.query.nationality.trim()
+        : typeof req.query.country === "string"
+          ? req.query.country.trim()
+          : "";
+
     // Non-global employees cannot export another site's residents.
     if (
       requestedSiteId &&
@@ -876,6 +883,9 @@ export async function exportResidentsToExcel(
     const where: Prisma.ResidentWhereInput = {
       ...residentSiteFilter(actor),
       ...(requestedSiteId ? { siteId: requestedSiteId } : {}),
+      ...(nationality
+        ? { nationality: { equals: nationality, mode: "insensitive" } }
+        : {}),
       ...(search
         ? {
             OR: [

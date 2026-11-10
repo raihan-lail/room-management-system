@@ -31,6 +31,62 @@ function downloadBlob(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
+function SearchableFilterSelect({ field, value, onChange, disabled }) {
+  const [query, setQuery] = useState("");
+
+  const options = field.options ?? [];
+  const search = query.trim().toLowerCase();
+
+  const filteredOptions = search
+    ? options.filter(
+        (option) =>
+          option.label.toLowerCase().includes(search) ||
+          String(option.value).toLowerCase().includes(search),
+      )
+    : options;
+
+  const selectedOption = options.find((option) => option.value === value);
+
+  // Keep the current selection visible even when the search text filters every other option out.
+  const visibleOptions =
+    selectedOption && !filteredOptions.includes(selectedOption)
+      ? [selectedOption, ...filteredOptions]
+      : filteredOptions;
+
+  return (
+    <>
+      <div className="form-field__search">
+        <i className="bi bi-search" aria-hidden="true" />
+
+        <input
+          type="search"
+          value={query}
+          placeholder={field.searchPlaceholder ?? "Search..."}
+          aria-label={`Search ${field.label}`}
+          onChange={(event) => setQuery(event.target.value)}
+          disabled={disabled}
+        />
+      </div>
+
+      <select
+        value={value}
+        onChange={(event) => onChange(field.name, event.target.value)}
+        disabled={disabled}
+      >
+        {field.placeholderOption && (
+          <option value="">{field.placeholderOption}</option>
+        )}
+
+        {visibleOptions.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
+    </>
+  );
+}
+
 export default function ExportModal({
   title = "Export Data",
   endpoint,
@@ -189,41 +245,53 @@ export default function ExportModal({
             <div className="modal__section">
               <p className="modal__section-title">Filters</p>
 
-              {filterFields.map((field) => (
-                <label key={field.name} className="form-field">
-                  <span>{field.label}</span>
+              {filterFields.map((field) => {
+                const Wrapper =
+                  field.type === "select" && field.searchable ? "div" : "label";
 
-                  {field.type === "select" ? (
-                    <select
-                      value={filters[field.name] ?? ""}
-                      onChange={(event) =>
-                        handleFilterChange(field.name, event.target.value)
-                      }
-                      disabled={exporting}
-                    >
-                      {field.placeholderOption && (
-                        <option value="">{field.placeholderOption}</option>
-                      )}
+                return (
+                  <Wrapper key={field.name} className="form-field">
+                    <span>{field.label}</span>
 
-                      {(field.options ?? []).map((option) => (
-                        <option key={option.value} value={option.value}>
-                          {option.label}
-                        </option>
-                      ))}
-                    </select>
-                  ) : (
-                    <input
-                      type={field.type ?? "text"}
-                      value={filters[field.name] ?? ""}
-                      placeholder={field.placeholder}
-                      onChange={(event) =>
-                        handleFilterChange(field.name, event.target.value)
-                      }
-                      disabled={exporting}
-                    />
-                  )}
-                </label>
-              ))}
+                    {field.type === "select" && field.searchable ? (
+                      <SearchableFilterSelect
+                        field={field}
+                        value={filters[field.name] ?? ""}
+                        onChange={handleFilterChange}
+                        disabled={exporting}
+                      />
+                    ) : field.type === "select" ? (
+                      <select
+                        value={filters[field.name] ?? ""}
+                        onChange={(event) =>
+                          handleFilterChange(field.name, event.target.value)
+                        }
+                        disabled={exporting}
+                      >
+                        {field.placeholderOption && (
+                          <option value="">{field.placeholderOption}</option>
+                        )}
+
+                        {(field.options ?? []).map((option) => (
+                          <option key={option.value} value={option.value}>
+                            {option.label}
+                          </option>
+                        ))}
+                      </select>
+                    ) : (
+                      <input
+                        type={field.type ?? "text"}
+                        value={filters[field.name] ?? ""}
+                        placeholder={field.placeholder}
+                        onChange={(event) =>
+                          handleFilterChange(field.name, event.target.value)
+                        }
+                        disabled={exporting}
+                      />
+                    )}
+                  </Wrapper>
+                );
+              })}
             </div>
           )}
 
