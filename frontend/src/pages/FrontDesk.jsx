@@ -342,13 +342,13 @@ export default function FrontDesk() {
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       await loadBookings();
+      setExtendingRow(null);
       return true;
     } catch (err) {
       setActionError(err.message || "Booking action failed.");
       return false;
     } finally {
       setIsSavingAction(false);
-      setExtendingRow(null);
     }
   };
 
@@ -603,6 +603,40 @@ export default function FrontDesk() {
   const handleSearchChange = (value) => {
     setSearch(value);
     setCurrentPage(1);
+  };
+
+  const getInHouseActions = (booking) => {
+    const actions = [];
+
+    if (hasPermission("bookings.create")) {
+      actions.push({
+        label: "Extend Stay",
+        icon: "bi bi-calendar-plus",
+        onClick: () => {
+          setActionError("");
+          setExtensionDate("");
+          setExtendingRow(booking);
+        },
+      });
+    }
+
+    if (hasPermission("home.leaves")) {
+      actions.push({
+        label: "Home Leave",
+        icon: "bi bi-door-open",
+        onClick: () => openHomeLeaveModal(booking),
+      });
+    }
+
+    if (hasPermission("bookings.create")) {
+      actions.push({
+        label: "Check Out",
+        icon: "bi bi-box-arrow-right",
+        onClick: () => performBookingAction(booking, "check-out"),
+      });
+    }
+
+    return actions;
   };
 
   return (
@@ -1023,14 +1057,12 @@ aria-label={
                             ) : segment === "departure" ? (
                               <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-out")}>Check Out</FlexibleButton>
                             ) : segment === "in-house" ? (
-                              <FlexibleButton
-                                permission="home.leaves"
-                                className="btn btn-primary"
-                                disabled={isSavingAction}
-                                onClick={() => openHomeLeaveModal(booking)}
-                              >
-                                Home Leave
-                              </FlexibleButton>
+                              <TableRowActions
+                                label="booking"
+                                rowLabel={booking.guest?.name}
+                                actions={getInHouseActions(booking)}
+                                permission={null}
+                              />
                             ) : (
                               <TableRowActions label="booking" rowLabel={booking.guest?.name} onView={() => console.log("View booking:", booking)} onEdit={() => setEditingRow(booking)} onDelete={() => setDeletingRow(booking)} />
                             )}
