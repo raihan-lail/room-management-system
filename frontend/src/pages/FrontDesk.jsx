@@ -605,10 +605,32 @@ export default function FrontDesk() {
     setCurrentPage(1);
   };
 
-  const getInHouseActions = (booking) => {
+  const getBookingRowActions = (booking) => {
     const actions = [];
 
-    if (hasPermission("bookings.create")) {
+    if (segment === "arrival" && hasPermission("bookings.create")) {
+      actions.push({
+        label: "Check In",
+        icon: "bi bi-box-arrow-in-right",
+        onClick: () => {
+          setActionError("");
+          setCheckingInBooking(booking);
+        },
+      });
+
+      actions.push({
+        label: "Cancel Booking",
+        icon: "bi bi-x-circle",
+        danger: true,
+        onClick: () => {
+          setActionError("");
+          setCancelReason("");
+          setCancellingBooking(booking);
+        },
+      });
+    }
+
+    if (segment === "near-end" && hasPermission("bookings.create")) {
       actions.push({
         label: "Extend Stay",
         icon: "bi bi-calendar-plus",
@@ -620,15 +642,7 @@ export default function FrontDesk() {
       });
     }
 
-    if (hasPermission("home.leaves")) {
-      actions.push({
-        label: "Home Leave",
-        icon: "bi bi-door-open",
-        onClick: () => openHomeLeaveModal(booking),
-      });
-    }
-
-    if (hasPermission("bookings.create")) {
+    if (segment === "departure" && hasPermission("bookings.create")) {
       actions.push({
         label: "Check Out",
         icon: "bi bi-box-arrow-right",
@@ -636,7 +650,51 @@ export default function FrontDesk() {
       });
     }
 
+    if (segment === "in-house") {
+      if (hasPermission("bookings.create")) {
+        actions.push({
+          label: "Extend Stay",
+          icon: "bi bi-calendar-plus",
+          onClick: () => {
+            setActionError("");
+            setExtensionDate("");
+            setExtendingRow(booking);
+          },
+        });
+      }
+
+      if (hasPermission("home.leaves")) {
+        actions.push({
+          label: "Home Leave",
+          icon: "bi bi-door-open",
+          onClick: () => openHomeLeaveModal(booking),
+        });
+      }
+
+      if (hasPermission("bookings.create")) {
+        actions.push({
+          label: "Check Out",
+          icon: "bi bi-box-arrow-right",
+          onClick: () => performBookingAction(booking, "check-out"),
+        });
+      }
+    }
+
     return actions;
+  };
+
+  const getHomeLeaveRowActions = (booking) => {
+    if (booking.status !== "ACTIVE" || !hasPermission("home.leaves")) {
+      return [];
+    }
+
+    return [
+      {
+        label: "Return",
+        icon: "bi bi-box-arrow-in-left",
+        onClick: () => performBookingAction(booking, "return-from-leave"),
+      },
+    ];
   };
 
   return (
@@ -1003,14 +1061,12 @@ aria-label={
 
                           <td>
                             {isCurrentDate && booking.status === "ACTIVE" ? (
-                              <FlexibleButton
-                                permission="home.leaves"
-                                className="btn btn-primary"
-                                disabled={isSavingAction}
-                                onClick={() => performBookingAction(booking, "return-from-leave")}
-                              >
-                                Return
-                              </FlexibleButton>
+                              <TableRowActions
+                                label="home leave"
+                                rowLabel={booking.name}
+                                actions={getHomeLeaveRowActions(booking)}
+                                permission={null}
+                              />
                             ) : "-"}
                           </td>
                         </>
@@ -1047,24 +1103,15 @@ aria-label={
                          
 
                           <td>
-                            {!isCurrentDate ? "-" : segment === "arrival" ? (
-                              <div className="table-actions">
-                                <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setCheckingInBooking(booking); }}>Check In</FlexibleButton>
-                                <FlexibleButton permission="bookings.create" className="btn btn-neutral" disabled={isSavingAction} onClick={() => { setActionError(""); setCancelReason(""); setCancellingBooking(booking); }}>Cancel Booking</FlexibleButton>
-                              </div>
-                            ) : segment === "near-end" ? (
-                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => { setActionError(""); setExtendingRow(booking); setExtensionDate(""); }}>Extend</FlexibleButton>
-                            ) : segment === "departure" ? (
-                              <FlexibleButton permission="bookings.create" className="btn btn-primary" disabled={isSavingAction} onClick={() => performBookingAction(booking, "check-out")}>Check Out</FlexibleButton>
-                            ) : segment === "in-house" ? (
+                            {!isCurrentDate ? (
+                              "-"
+                            ) : (
                               <TableRowActions
                                 label="booking"
                                 rowLabel={booking.guest?.name}
-                                actions={getInHouseActions(booking)}
+                                actions={getBookingRowActions(booking)}
                                 permission={null}
                               />
-                            ) : (
-                              <TableRowActions label="booking" rowLabel={booking.guest?.name} onView={() => console.log("View booking:", booking)} onEdit={() => setEditingRow(booking)} onDelete={() => setDeletingRow(booking)} />
                             )}
                           </td>
                         </>
