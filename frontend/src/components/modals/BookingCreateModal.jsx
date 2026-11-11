@@ -91,10 +91,9 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   const hasValidStayDates = Boolean(
     values.startedAt && values.endedAt && values.startedAt < values.endedAt,
   );
-  const lockedBedAvailable = beds.some((bed) => bed.id === lockedBed?.id);
 
   useEffect(() => {
-  if (!hasValidStayDates) {
+  if (!hasValidStayDates || lockedBed) {
     // Defer the state updates to satisfy the linter
     queueMicrotask(() => {
       setBeds([]);
@@ -234,11 +233,6 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
 
     if (!values.bedId) {
       setError("Select a vacant bed.");
-      return;
-    }
-
-    if (lockedBed && !lockedBedAvailable) {
-      setError("This bed is no longer available for the selected dates.");
       return;
     }
 
