@@ -26,14 +26,13 @@ import {
   refreshBedStatus,
   sendError,
   validateBookingDates,
+  validateResidentBookingDates,
   type BookingTab,
 } from "../helpers/booking.helper.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
-
-// Booking confirmation emails are temporarily disabled.
-const BOOKING_EMAIL_ENABLED: boolean = true;
+import { isEmailEnabled } from "../services/setting.service.js";
 
 function getResidentPortalUrl(): string | undefined {
   const origin =
@@ -66,7 +65,22 @@ function getHistoricalFrontDeskTabFilter(
         ],
       };
     case "in-house":
-      return stayedDuringDate;
+      return {
+        AND: [
+          stayedDuringDate,
+          {
+            homeLeaves: {
+              none: {
+                status: {
+                  in: [HomeLeaveStatus.ACTIVE, HomeLeaveStatus.RETURNED],
+                },
+                startedAt: { lt: end },
+                OR: [{ returnedAt: null }, { returnedAt: { gte: start } }],
+              },
+            },
+          },
+        ],
+      };
     case "near-end": {
       const threeDaysLater = new Date(start);
       threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
@@ -174,7 +188,7 @@ export async function listBookings(
               getHistoricalFrontDeskTabFilter("in-house", start, end)!,
             ];
           } else {
-            where.status = { in: IN_HOUSE_STATUSES };
+            where.status = BookingStatus.IN_HOUSE;
           }
           break;
 
@@ -554,7 +568,7 @@ export async function exportBookingsToExcel(
         case "in-house":
           tabFilters.push(req.query.frontdeskHistory === "true"
             ? getHistoricalFrontDeskTabFilter("in-house", start, end)!
-            : { status: { in: IN_HOUSE_STATUSES } });
+            : { status: BookingStatus.IN_HOUSE });
           break;
         case "home_leave":
           if (req.query.frontdeskHistory === "true") {
@@ -708,8 +722,8 @@ export async function exportBookingsToExcel(
       Company: booking.resident.company ?? "",
       Department: booking.resident.department,
       Title: booking.resident.title ?? "",
-      "Started At": booking.startedAt.toDateString(),
-      "Ended At": booking.endedAt.toDateString(),
+      "Booking Started At": booking.startedAt.toDateString(),
+      "Booking Ended At": booking.endedAt.toDateString(),
       "Checked In At": booking.checkedInAt?.toDateString() ?? "",
       "Checked Out At": booking.checkedOutAt?.toDateString() ?? "",
     }));
@@ -907,6 +921,18 @@ export async function createBooking(
         });
       }
 
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId,
+        startedAt,
+        endedAt,
+      });
+
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), {
+          statusCode: 409,
+        });
+      }
+
       const booking = await tx.booking.create({
         data: {
           residentId,
@@ -948,7 +974,7 @@ export async function createBooking(
     const { booking, recipientEmail } = result;
     let emailSent = false;
 
-    if (BOOKING_EMAIL_ENABLED) {
+    if (await isEmailEnabled()) {
       try {
         const email = buildBookingCreatedEmail({
           residentName: booking.resident.fullName,
@@ -962,8 +988,21 @@ export async function createBooking(
         
         });
 
-        await sendEmail({ to: recipientEmail, ...email });
-        emailSent = true;
+        const emailResult = await sendEmail({
+          to: recipientEmail,
+          ...email,
+          type: "BOOKING_CREATED",
+          bookingId: booking.id,
+        });
+        emailSent = emailResult.success;
+
+        if (!emailSent && !emailResult.skipped) {
+          await notifyActor(req, {
+            title: "Booking created, email not sent",
+            message: `Booking ${booking.bookingNumber} was created, but the confirmation email to ${recipientEmail} could not be sent.`,
+            type: "WARNING",
+          });
+        }
       } catch (error) {
         console.error("Booking confirmation email error:", error);
 
@@ -1504,9 +1543,22 @@ export async function listHomeLeaves(
     const startedAtFrom = typeof req.query.startedAtFrom === "string" ? req.query.startedAtFrom : "";
     const startedAtTo = typeof req.query.startedAtTo === "string" ? req.query.startedAtTo : "";
 
+    const siteBookingFilter = getSiteBookingFilter(actor);
     const where: Prisma.HomeLeaveWhereInput = {
-      booking: getSiteBookingFilter(actor),
+      booking: siteBookingFilter,
     };
+
+    if (req.query.residentId) {
+      if (typeof req.query.residentId !== "string") {
+        sendError(res, 400, "Invalid residentId.");
+        return;
+      }
+
+      where.booking = {
+        ...siteBookingFilter,
+        residentId: req.query.residentId,
+      };
+    }
 
     const fromRange = startedAtFrom ? getSiteDateRange(startedAtFrom) : null;
     const toRange = startedAtTo ? getSiteDateRange(startedAtTo) : null;
@@ -1752,8 +1804,8 @@ export async function updateBooking(
       if (!before) {
         throw Object.assign(new Error("Booking not found."), { statusCode: 404 });
       }
-      if (before.status !== BookingStatus.CONFIRMED) {
-        throw Object.assign(new Error("Only confirmed bookings can be edited."), { statusCode: 409 });
+      if (before.status !== BookingStatus.CONFIRMED && before.status !== BookingStatus.IN_HOUSE) {
+        throw Object.assign(new Error("Only confirmed or in-house bookings can be edited."), { statusCode: 409 });
       }
 
       const targetResidentId = residentId ?? before.residentId;
@@ -1800,6 +1852,16 @@ export async function updateBooking(
       });
       if (conflict) {
         throw Object.assign(new Error(conflict), { statusCode: 409 });
+      }
+
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId: targetResidentId,
+        startedAt: targetStartedAt,
+        endedAt: targetEndedAt,
+        excludeBookingId: before.id,
+      });
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), { statusCode: 409 });
       }
 
       const after = await tx.booking.update({
@@ -1922,6 +1984,19 @@ export async function extendBooking(
 
       if (conflict) {
         throw Object.assign(new Error(conflict), {
+          statusCode: 409,
+        });
+      }
+
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId: booking.residentId,
+        startedAt: booking.startedAt,
+        endedAt: newEndedAt,
+        excludeBookingId: booking.id,
+      });
+
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), {
           statusCode: 409,
         });
       }

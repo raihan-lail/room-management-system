@@ -12,6 +12,7 @@ import type { AuthRequest } from "../middleware/auth.middleware.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { Prisma } from "../generated/prisma/client.js";
+import * as XLSX from "xlsx";
 import {
   BED_STATUSES,
   bedSiteFilter,
@@ -453,3 +454,229 @@ export async function deleteBed(req: AuthRequest, res: Response) {
     });
   }
 }
+
+const BOOKING_STATUS_BY_BED_STATUS = {
+  BOOKED: "CONFIRMED",
+  OCCUPIED: "IN_HOUSE",
+  HOME_LEAVE: "HOME_LEAVE",
+} as const;
+
+export async function exportBedsToExcel(req: AuthRequest, res: Response) {
+  try {
+    const actor = await getActorOrRespond(req, res);
+    if (!actor) return;
+
+    const getParam = (...names: string[]) => {
+      for (const name of names) {
+        const value = req.query[name];
+        if (typeof value === "string" && value.trim()) return value.trim();
+      }
+      return "";
+    };
+
+    const statusInput = getParam("status").toUpperCase();
+    if (statusInput && !BED_STATUSES.includes(statusInput as BedStatus)) {
+      return res.status(400).json({
+        message: "Invalid bed status filter",
+        allowedStatuses: BED_STATUSES,
+      });
+    }
+
+    const requestedSiteId = getParam("siteId", "site_id");
+    if (requestedSiteId && !isGlobalSuperadmin(actor) && requestedSiteId !== actor.siteId) {
+      return res.status(403).json({
+        message: "You cannot export beds from another site.",
+      });
+    }
+
+    const isActiveInput = getParam("isActive", "is_active").toLowerCase();
+    if (isActiveInput && isActiveInput !== "true" && isActiveInput !== "false") {
+      return res.status(400).json({
+        message: "Invalid active filter. Use true or false.",
+      });
+    }
+
+    const locationId = getParam("locationId", "location_id");
+    const floorId = getParam("floorId", "floor_id");
+    const roomId = getParam("roomId", "room_id");
+    const roomName = getParam("roomName", "room_name", "room");
+    const bedName = getParam("bedName", "bed_name", "bed");
+    const search = getParam("search");
+    const nationality = getParam("nationality", "country");
+
+    const where: Prisma.BedWhereInput = {
+      ...(statusInput ? { status: statusInput as BedStatus } : {}),
+      ...(roomId ? { roomId } : {}),
+      ...(isActiveInput ? { isActive: isActiveInput === "true" } : {}),
+      ...(bedName
+        ? { name: { contains: bedName, mode: "insensitive" } }
+        : {}),
+      ...(nationality
+        ? {
+            bookings: {
+              some: {
+                status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
+                resident: {
+                  nationality: { equals: nationality, mode: "insensitive" },
+                },
+              },
+            },
+          }
+        : {}),
+      room: {
+        ...(roomName
+          ? { name: { contains: roomName, mode: "insensitive" } }
+          : {}),
+        floor: {
+          ...(floorId ? { id: floorId } : {}),
+          location: {
+            ...(locationId ? { id: locationId } : {}),
+            ...(isGlobalSuperadmin(actor)
+              ? requestedSiteId
+                ? { siteId: requestedSiteId }
+                : {}
+              : { siteId: actor.siteId ?? NO_MATCHING_ID }),
+          },
+        },
+      },
+      ...(search
+        ? {
+            OR: [
+              { name: { contains: search, mode: "insensitive" } },
+              { description: { contains: search, mode: "insensitive" } },
+              {
+                room: {
+                  name: { contains: search, mode: "insensitive" },
+                },
+              },
+            ],
+          }
+        : {}),
+    };
+
+    const beds = await prisma.bed.findMany({
+      where,
+      include: {
+        room: {
+          include: {
+            allocation: true,
+            floor: {
+              include: {
+                location: {
+                  include: { site: true },
+                },
+              },
+            },
+          },
+        },
+        bookings: {
+          where: {
+            status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
+          },
+          orderBy: { startedAt: "desc" },
+          include: {
+            resident: {
+              include: { user: { select: { email: true } } },
+            },
+          },
+        },
+      },
+      orderBy: [{ room: { name: "asc" } }, { name: "asc" }],
+    });
+
+    if (beds.length === 0) {
+      return res.status(400).json({
+        message: "No beds match the selected filters. Nothing to export.",
+      });
+    }
+
+    const rows = beds.map((bed) => {
+      const expectedBookingStatus =
+        bed.status === "VACANT"
+          ? null
+          : BOOKING_STATUS_BY_BED_STATUS[bed.status];
+      const bookingCandidates = expectedBookingStatus
+        ? bed.bookings.filter(
+            (booking) => booking.status === expectedBookingStatus,
+          )
+        : [];
+      const booking =
+        expectedBookingStatus === "CONFIRMED"
+          ? bookingCandidates[bookingCandidates.length - 1]
+          : bookingCandidates[0];
+      const allocation = bed.room.allocation;
+      const exportedBedStatus = allocation ? "ALLOCATED" : bed.status;
+
+      return {
+        "Site": bed.room.floor.location.site.name,
+        "Location": bed.room.floor.location.name,
+        "Floor": bed.room.floor.name,
+        "Room": bed.room.name,
+        "Room Type": bed.room.type,
+        "Bed": bed.name,
+        "Bed Status": exportedBedStatus,
+        "Active": bed.isActive ? "Yes" : "No",
+        "Booking ID": booking?.bookingNumber ?? "",
+        "Booking Status": booking?.status ?? "",
+        "Resident Name": booking?.resident.fullName ?? "",
+        "Nationality": booking?.resident.nationality ?? "",
+        "Meal Type": booking?.resident.mealType ?? "",
+        "Gender": booking?.resident.gender ?? "",
+        "Company": booking?.resident.company ?? "",
+        "Department": booking?.resident.department ?? "",
+        "Title": booking?.resident.title ?? "",
+        "Email": booking?.resident.user.email ?? "",
+        "Phone": booking?.resident.phone ?? "",
+        "Booking Start Date": booking?.startedAt.toDateString() ?? "",
+        "Booking End Date": booking?.endedAt.toDateString() ?? "",
+        "Checked In At": booking?.checkedInAt?.toDateString() ?? "",
+        "Checked Out At": booking?.checkedOutAt?.toDateString() ?? "",
+        "Allocation Purpose": allocation?.purpose ?? "",
+        "Allocation Description": allocation?.description ?? "",
+        "Allocation Notes": allocation?.notes ?? "",
+        "Allocated At": allocation?.createdAt.toDateString() ?? "",
+      };
+    });
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 16 }, { wch: 14 }, { wch: 14 }, { wch: 24 }, { wch: 20 },
+      { wch: 20 }, { wch: 14 }, { wch: 12 }, { wch: 14 }, { wch: 10 },
+      { wch: 20 }, { wch: 16 }, { wch: 24 }, { wch: 18 }, { wch: 14 },
+      { wch: 12 }, { wch: 24 }, { wch: 20 }, { wch: 20 }, { wch: 28 },
+      { wch: 20 }, { wch: 16 }, { wch: 16 }, { wch: 16 }, { wch: 16 },
+      { wch: 24 }, { wch: 32 }, { wch: 32 }, { wch: 16 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Beds");
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const filename = `beds-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    await notifyActor(req, {
+      title: "Bed data export successfully",
+      message: `${beds.length} beds exported successfully`,
+      type: "SUCCESS",
+    });
+    await auditActor(req, actor, {
+      action: "Export",
+      resource: "bed",
+      description: `Exported ${beds.length} beds to an Excel file.`,
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    );
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "no-store");
+
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Export beds error:", error);
+
+    if (res.headersSent) return;
+
+    res.status(500).json({ message: "Failed to export beds." });
+  }
+}
+

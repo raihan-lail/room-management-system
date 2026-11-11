@@ -13,11 +13,43 @@ import {
 import FlexibleButton from "../components/FlexibleButtons";
 import PageSizeSelect from "../components/PageSizeSelect";
 import useAuth from "../contexts/useAuth";
+import { COUNTRIES } from "../data/countries";
 
 
 const PAGE_SIZE = 10;
 const BOOKING_TABS = ["arrival", "in-house", "home_leave", "near-end", "departure"];
 const ALERT_SEGMENTS = new Set(["arrival", "near-end", "departure"]);
+
+const GENDER_LABELS = {
+  MALE: "Male",
+  FEMALE: "Female",
+  OTHER: "Other",
+};
+
+const EXPORT_FILTER_FIELDS = [
+  { name: "search", label: "Search", type: "search", placeholder: "Resident, room, bed, company..." },
+  { name: "startedAtFrom", label: "Start From", type: "date" },
+  { name: "startedAtTo", label: "Start To", type: "date" },
+  { name: "checkedInAt", label: "Checked In At", type: "date" },
+  { name: "checkedOutAt", label: "Checked Out At", type: "date" },
+  { name: "bookedAtFrom", label: "Booked From", type: "date" },
+  { name: "bookedAtTo", label: "Booked To", type: "date" },
+  { name: "residentName", label: "Resident Name" },
+  { name: "country", label: "Nationality", type: "select", placeholderOption: "All nationalities", searchable: true, searchPlaceholder: "Search country...", options: COUNTRIES.map((country) => ({ value: country, label: country })) },
+  {
+    name: "gender",
+    label: "Gender",
+    type: "select",
+    placeholderOption: "All genders",
+    options: Object.entries(GENDER_LABELS).map(([value, label]) => ({ value, label })),
+  },
+  { name: "company", label: "Company" },
+  { name: "title", label: "Title" },
+  { name: "department", label: "Department" },
+  { name: "mealType", label: "Meal Type" },
+  { name: "roomName", label: "Room" },
+  { name: "bedName", label: "Bed" },
+];
 
 const SEGMENTS = [
   { id: "arrival", label: "Arrival", icon: "bi-box-arrow-in-down", title: "Arrival Schedule" },
@@ -134,6 +166,7 @@ export default function FrontDesk() {
   const [extendingRow, setExtendingRow] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
   const [homeLeaveList, setHomeLeaveList] = useState([]);
+  const [homeLeaveOverdueCount, setHomeLeaveOverdueCount] = useState(0);
   const [homeLeaveRow, setHomeLeaveRow] = useState(null);
   const [isHomeLeaveModalOpen, setIsHomeLeaveModalOpen] = useState(false);
   const [homeLeaveBookings, setHomeLeaveBookings] = useState([]);
@@ -207,12 +240,22 @@ export default function FrontDesk() {
         limit: String(pageSize),
         startedAtFrom: selectedDate,
         startedAtTo: selectedDate,
+        ...(isCurrentDate ? { status: "ACTIVE" } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       });
-      const [response, ...otherCounts] = await Promise.all([
+      const homeLeaveAlertParams = new URLSearchParams({
+        page: "1",
+        limit: "100",
+        startedAtFrom: selectedDate,
+        status: "ACTIVE",
+      });
+      const [response, homeLeaveAlertResponse, ...otherCounts] = await Promise.all([
         apiRequest(segment === "home_leave"
           ? `/api/booking/home-leaves?${homeLeaveParams}`
           : `/api/booking?${buildParams(segment).toString()}`),
+        isCurrentDate && hasPermission("home.leaves")
+          ? apiRequest(`/api/booking/home-leaves?${homeLeaveAlertParams}`)
+          : Promise.resolve(null),
         ...countRequests,
       ]);
       const pagination = response?.pagination ?? {};
@@ -221,6 +264,13 @@ export default function FrontDesk() {
         ...Object.fromEntries(otherCounts),
         [segment]: total,
       });
+      const todayKey = getTodayKey();
+      const overdueHomeLeaves = Array.isArray(homeLeaveAlertResponse?.data)
+        ? homeLeaveAlertResponse.data.filter(
+          (leave) => leave.status === "ACTIVE" && leave.expectedReturnAt && leave.expectedReturnAt.slice(0, 10) < todayKey,
+        )
+        : [];
+      setHomeLeaveOverdueCount(overdueHomeLeaves.length);
       const records = Array.isArray(response?.data) ? response.data : [];
       if (segment === "home_leave") {
         setHomeLeaveList(records.map(toHomeLeaveRow));
@@ -247,11 +297,12 @@ export default function FrontDesk() {
       setError(err.message || "Failed to load bookings.");
       setBookingList([]);
       setHomeLeaveList([]);
+      setHomeLeaveOverdueCount(0);
       setBookingPagination({ total: 0, totalPages: 1 });
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, isCurrentDate, search, segment, selectedDate]);
+  }, [currentPage, pageSize, hasPermission, isCurrentDate, search, segment, selectedDate]);
 
   useEffect(() => {
   const timer = window.setTimeout(() => {
@@ -542,10 +593,7 @@ export default function FrontDesk() {
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
   const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
-    ? homeLeaveList.filter((leave) => leave.status === "ACTIVE" && leave.expected_return_at && leave.expected_return_at < getTodayKey()).length
-    : 0;
-  const returnedHomeLeaveCount = segment === "home_leave" && isCurrentDate
-    ? homeLeaveList.filter((leave) => leave.returned_at === getTodayKey()).length
+    ? homeLeaveOverdueCount
     : 0;
 
   const startRow =
@@ -622,10 +670,11 @@ export default function FrontDesk() {
                 aria-label="Booking segment"
               >
                 {SEGMENTS.map((item) => {
-                  const needsAction =
-                    isCurrentDate &&
-                    ALERT_SEGMENTS.has(item.id) &&
-                    (segmentCounts[item.id] ?? 0) > 0;
+                  const needsAction = isCurrentDate && (
+                    item.id === "home_leave"
+                      ? homeLeaveOverdueCount > 0
+                      : ALERT_SEGMENTS.has(item.id) && (segmentCounts[item.id] ?? 0) > 0
+                  );
 
                   return (
                     <button
@@ -695,11 +744,6 @@ aria-label={
           {overdueArrivalCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
-            </div>
-          )}
-          {returnedHomeLeaveCount > 0 && (
-            <div className="frontdesk-overdue-alert" role="status">
-              {returnedHomeLeaveCount} home leave resident{returnedHomeLeaveCount === 1 ? " has" : "s have"} returned today
             </div>
           )}
           {overdueHomeLeaveCount > 0 && (
@@ -892,12 +936,12 @@ aria-label={
                           className="table-sort"
                           onClick={() => handleSort("status")}
                         >
-                          Status
+                          Current Status
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
 
-                      <th>Notes</th>
+                      
 
                       <th>Action</th>
                     </>
@@ -1000,7 +1044,7 @@ aria-label={
                             </span>
                           </td>
 
-                          <td>{booking.notes || "-"}</td>
+                         
 
                           <td>
                             {!isCurrentDate ? "-" : segment === "arrival" ? (
@@ -1329,6 +1373,8 @@ aria-label={
           endpoint="/api/booking/export"
           filename={exportFilename}
           entityLabel="bookings"
+          filterFields={EXPORT_FILTER_FIELDS}
+          initialFilters={{ search }}
           extraParams={{ frontdeskTab: segment, date: selectedDate, frontdeskHistory: isCurrentDate ? "false" : "true" }}
           onClose={() => setIsExportModalOpen(false)}
         />

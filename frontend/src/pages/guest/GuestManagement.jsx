@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
@@ -8,6 +9,7 @@ import ImportModal from "../../components/modals/ImportModal";
 import apiRequest from "../../api/client";
 import FlexibleButton from "../../components/FlexibleButtons";
 import PageSizeSelect from "../../components/PageSizeSelect";
+import { COUNTRIES } from "../../data/countries";
 
 const PAGE_SIZE = 10;
 
@@ -115,8 +117,18 @@ function buildResidentSchema({ isEdit, siteOptions }) {
       {
         name: "nationality",
         label: "Nationality",
-        type: "text",
-        placeholder: "Nationality",
+        type: "select",
+        defaultValue: "",
+        placeholderOption: "Select country",
+        searchable: true,
+        searchPlaceholder: "Search country...",
+        options: (values) => {
+          const current = values?.nationality;
+
+          return current && !COUNTRIES.includes(current)
+            ? [current, ...COUNTRIES]
+            : COUNTRIES;
+        },
       },
       {
         name: "mealType",
@@ -160,6 +172,7 @@ function toResidentFormValues(resident) {
 }
 
 export default function GuestManagement() {
+  const navigate = useNavigate();
   const [residents, setResidents] = useState([]);
   const [sites, setSites] = useState([]);
   const [pagination, setPagination] = useState({
@@ -252,6 +265,15 @@ export default function GuestManagement() {
         label: "Search",
         type: "search",
         placeholder: "Name, email, phone, company, department...",
+      },
+      {
+        name: "nationality",
+        label: "Nationality",
+        type: "select",
+        placeholderOption: "All nationalities",
+        searchable: true,
+        searchPlaceholder: "Search country...",
+        options: COUNTRIES.map((country) => ({ value: country, label: country })),
       },
       {
         name: "siteId",
@@ -605,6 +627,8 @@ export default function GuestManagement() {
                           label="resident"
                           rowLabel={resident.fullName}
                           permission="resident.manage"
+                          viewPermission="resident.read"
+                          onView={() => navigate(`/guests/${resident.id}`)}
                           onEdit={() => setEditingRow(resident)}
                           onDelete={() => setDeletingRow(resident)}
                         />
