@@ -599,9 +599,14 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
               )}
             </div>
 
-            {hasValidStayDates && !isLoadingBeds && beds.length === 0 && (
-              <p className="muted">No vacant beds are available for these dates.</p>
-            )}
+            {!lockedBed &&
+              hasValidStayDates &&
+              !isLoadingBeds &&
+              beds.length === 0 && (
+                <p className="muted">
+                  No vacant beds are available for these dates.
+                </p>
+              )}
 
             <ModalField
               field={{
