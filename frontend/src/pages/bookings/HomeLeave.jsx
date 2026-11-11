@@ -9,18 +9,20 @@ const PAGE_SIZE = 10;
 
 const STATUS_OPTIONS = [
   { value: "", label: "All" },
+  { value: "SCHEDULED", label: "Scheduled" },
   { value: "ACTIVE", label: "Active" },
   { value: "RETURNED", label: "Returned" },
+  { value: "CANCELLED", label: "Cancelled" },
 ];
 
 const formatDate = (value) =>
   value ? String(value).slice(0, 10) : "-";
 
 const formatStatus = (status) =>
-  status === "ACTIVE" ? "Active" : status === "RETURNED" ? "Returned" : "-";
+  status === "SCHEDULED" ? "Scheduled" : status === "ACTIVE" ? "Active" : status === "RETURNED" ? "Returned" : status === "CANCELLED" ? "Cancelled" : "-";
 
 const statusClass = (status) =>
-  status === "ACTIVE" ? "in_house" : "checked_out";
+  status === "ACTIVE" ? "in_house" : status === "SCHEDULED" ? "confirmed" : "checked_out";
 
 export default function HomeLeave() {
   const [homeLeaves, setHomeLeaves] = useState([]);
@@ -133,11 +135,6 @@ export default function HomeLeave() {
         case "started_at":
           aValue = a.startedAt;
           bValue = b.startedAt;
-          break;
-
-        case "expected_return":
-          aValue = a.expectedReturnAt;
-          bValue = b.expectedReturnAt;
           break;
 
         case "returned_at":
@@ -295,17 +292,7 @@ export default function HomeLeave() {
                       className="table-sort"
                       onClick={() => handleSort("started_at")}
                     >
-                      Leave Started
-                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
-                      onClick={() => handleSort("expected_return")}
-                    >
-                      Expected Return
+                      Leave At
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
@@ -345,19 +332,19 @@ export default function HomeLeave() {
               <tbody>
                 {error ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       {error}
                     </td>
                   </tr>
                 ) : isLoading ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       Loading home leaves...
                     </td>
                   </tr>
                 ) : sortedHomeLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       No home leaves found.
                     </td>
                   </tr>
@@ -379,8 +366,6 @@ export default function HomeLeave() {
                       <td>{homeLeave.booking?.bed?.room?.name || "-"}</td>
 
                       <td>{formatDate(homeLeave.startedAt)}</td>
-
-                      <td>{formatDate(homeLeave.expectedReturnAt)}</td>
 
                       <td>{formatDate(homeLeave.returnedAt)}</td>
 

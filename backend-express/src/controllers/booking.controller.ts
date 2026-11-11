@@ -1273,14 +1273,12 @@ export async function startHomeLeave(
   if (!actor) return;
 
   try {
-    const expectedReturnAt = parseDate(req.body.expectedReturnAt);
+    const startedAt = req.body.startedAt === undefined
+      ? new Date()
+      : parseDate(req.body.startedAt);
 
-    if (!expectedReturnAt || expectedReturnAt <= new Date()) {
-      sendError(
-        res,
-        400,
-        "expectedReturnAt must be a valid future date."
-      );
+    if (!startedAt) {
+      sendError(res, 400, "startedAt must be a valid date.");
       return;
     }
 
@@ -1305,72 +1303,94 @@ export async function startHomeLeave(
         );
       }
 
-      if (expectedReturnAt > booking.endedAt) {
+      const existingLeave = await tx.homeLeave.findFirst({
+        where: {
+          bookingId: booking.id,
+          status: { in: [HomeLeaveStatus.SCHEDULED, HomeLeaveStatus.ACTIVE] },
+        },
+        select: { id: true },
+      });
+
+      if (existingLeave) {
         throw Object.assign(
-          new Error("Expected return cannot be later than the booking end date."),
-          { statusCode: 400 }
+          new Error("This booking already has a scheduled or active home leave."),
+          { statusCode: 409 }
         );
       }
 
-      const updated = await tx.booking.updateMany({
-        where: {
-          id: booking.id,
-          status: BookingStatus.IN_HOUSE,
-        },
-        data: {
-          status: BookingStatus.HOME_LEAVE,
-        },
-      });
+      const startsImmediately = startedAt <= new Date();
+      if (startsImmediately) {
+        const updated = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: BookingStatus.IN_HOUSE,
+          },
+          data: {
+            status: BookingStatus.HOME_LEAVE,
+          },
+        });
 
-      if (updated.count !== 1) {
-        throw Object.assign(
-          new Error("The booking was changed by another request."),
-          { statusCode: 409 }
-        );
+        if (updated.count !== 1) {
+          throw Object.assign(
+            new Error("The booking was changed by another request."),
+            { statusCode: 409 }
+          );
+        }
       }
 
       const homeLeave = await tx.homeLeave.create({
         data: {
           bookingId: booking.id,
-          startedAt: new Date(),
-          expectedReturnAt,
+          startedAt,
           reason:
             typeof req.body.reason === "string"
               ? req.body.reason.trim() || null
               : null,
-          status: HomeLeaveStatus.ACTIVE,
+          status: startsImmediately
+            ? HomeLeaveStatus.ACTIVE
+            : HomeLeaveStatus.SCHEDULED,
         },
       });
 
-      await refreshBedStatus(tx, booking.bedId);
+      if (startsImmediately) {
+        await refreshBedStatus(tx, booking.bedId);
+      }
 
       await createBookingEvent(tx, {
         bookingId: booking.id,
         actorUserId: req.userId!,
-        action: "home_leave_started",
-        description: "Resident started home leave.",
+        action: startsImmediately ? "home_leave_started" : "home_leave_scheduled",
+        description: startsImmediately
+          ? "Resident started home leave."
+          : "Resident home leave scheduled.",
         metadata: {
           homeLeaveId: homeLeave.id,
-          expectedReturnAt: expectedReturnAt.toISOString(),
+          startedAt: startedAt.toISOString(),
         },
       });
 
-      return { bookingId: booking.id, homeLeave };
+      return { bookingId: booking.id, homeLeave, startsImmediately };
     });
 
     await auditBooking(req, actor, {
       bookingId: result.bookingId,
-      action: "home_leave_started",
-      description: "Resident started home leave.",
+      action: result.startsImmediately ? "home_leave_started" : "home_leave_scheduled",
+      description: result.startsImmediately
+        ? "Resident started home leave."
+        : "Resident home leave scheduled.",
     });
 
     await notifyActor(req, {
-      title:" Resident started home leave",
-      message: `Resident with booking id ${result.homeLeave.bookingId} started home leave`
+      title: result.startsImmediately ? "Resident started home leave" : "Home leave scheduled",
+      message: result.startsImmediately
+        ? `Resident with booking id ${result.homeLeave.bookingId} started home leave`
+        : `Home leave scheduled for ${startedAt.toISOString().slice(0, 10)}`,
     })
 
     res.status(201).json({
-      message: "Home leave recorded successfully.",
+      message: result.startsImmediately
+        ? "Home leave recorded successfully."
+        : "Home leave scheduled successfully.",
       data: result.homeLeave,
     });
   } catch (error) {
@@ -1731,15 +1751,14 @@ export async function exportHomeLeavesToExcel(
       "Resident Name": booking.resident.fullName,
       Room: booking.bed.room.name,
       Bed: booking.bed.name,
-      "Leave Started": leave.startedAt.toDateString(),
-      "Expected Return": leave.expectedReturnAt.toDateString(),
+      "Leave At": leave.startedAt.toDateString(),
       "Returned At": leave.returnedAt?.toDateString() ?? "",
       Reason: leave.reason ?? "",
       Status: leave.status,
     }));
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet["!cols"] = [20, 28, 20, 18, 20, 20, 20, 32, 16].map((wch) => ({ wch }));
+    worksheet["!cols"] = [20, 28, 20, 18, 20, 20, 32, 16].map((wch) => ({ wch }));
     XLSX.utils.book_append_sheet(workbook, worksheet, "Home Leaves");
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
     const filename = `home-leaves-${new Date().toISOString().slice(0, 10)}.xlsx`;
@@ -2082,6 +2101,24 @@ export async function checkOutBooking(
           new Error("Only in-house or home-leave bookings can be checked out."),
           { statusCode: 409 }
         );
+      }
+
+      const cancelledSchedules = await tx.homeLeave.updateMany({
+        where: {
+          bookingId: existing.id,
+          status: HomeLeaveStatus.SCHEDULED,
+        },
+        data: { status: HomeLeaveStatus.CANCELLED },
+      });
+
+      if (cancelledSchedules.count > 0) {
+        await createBookingEvent(tx, {
+          bookingId: existing.id,
+          actorUserId: req.userId!,
+          action: "home_leave_schedule_cancelled",
+          description: "Scheduled home leave cancelled when the booking was checked out.",
+          metadata: { cancelledSchedules: cancelledSchedules.count },
+        });
       }
 
       const updated = await tx.booking.updateMany({

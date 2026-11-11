@@ -1971,16 +1971,11 @@ const BookingTooltip = forwardRef(
 
     const statusClass =
       normalizeStatus(booking?.status);
-    const homeLeave = Array.isArray(booking?.homeLeaves)
-      ? booking.homeLeaves.find((leave) => leave.status === "ACTIVE") ?? booking.homeLeaves[0]
-      : null;
     const countdown = statusClass === "confirmed"
       ? countdownLabel("Arriving in", booking?.started_at)
       : statusClass === "in_house"
         ? countdownLabel("Leaving in", booking?.ended_at)
-        : statusClass === "home_leave"
-          ? countdownLabel("Expected return in", homeLeave?.expectedReturnAt?.slice(0, 10))
-          : null;
+        : null;
 
     /*
      * The node mounts before it is measured, so it

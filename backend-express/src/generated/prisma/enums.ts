@@ -41,6 +41,7 @@ export type BookingStatus = (typeof BookingStatus)[keyof typeof BookingStatus]
 
 
 export const HomeLeaveStatus = {
+  SCHEDULED: 'SCHEDULED',
   ACTIVE: 'ACTIVE',
   RETURNED: 'RETURNED',
   CANCELLED: 'CANCELLED'

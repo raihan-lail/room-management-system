@@ -20,13 +20,17 @@ const MEAL_TYPE_LABELS = {
 };
 
 const HOME_LEAVE_STATUS_LABELS = {
+  SCHEDULED: "Scheduled",
   ACTIVE: "Active",
   RETURNED: "Returned",
+  CANCELLED: "Cancelled",
 };
 
 const HOME_LEAVE_STATUS_CLASSES = {
+  SCHEDULED: "confirmed",
   ACTIVE: "in_house",
   RETURNED: "checked_out",
+  CANCELLED: "checked_out",
 };
 
 const formatDate = (value) => {
@@ -423,8 +427,7 @@ export default function ResidentDetails() {
                         <tr>
                           <th>Booking</th>
                           <th>Room</th>
-                          <th>Start Date</th>
-                          <th>Expected Return</th>
+                          <th>Leave At</th>
                           <th>Returned On</th>
                           <th>Status</th>
                           <th>Reason</th>
@@ -434,7 +437,7 @@ export default function ResidentDetails() {
                       <tbody>
                         {homeLeaves.length === 0 ? (
                           <tr>
-                            <td className="muted" colSpan={7}>
+                            <td className="muted" colSpan={6}>
                               No home leaves found.
                             </td>
                           </tr>
@@ -448,7 +451,6 @@ export default function ResidentDetails() {
                               </td>
                               <td>{getRoomName(homeLeave.booking)}</td>
                               <td>{formatDate(homeLeave.startedAt)}</td>
-                              <td>{formatDate(homeLeave.expectedReturnAt)}</td>
                               <td>{formatDate(homeLeave.returnedAt)}</td>
                               <td>
                                 <span

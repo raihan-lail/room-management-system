@@ -264,6 +264,7 @@ enum BookingStatus {
 }
 
 enum HomeLeaveStatus {
+  SCHEDULED
   ACTIVE
   RETURNED
   CANCELLED
@@ -314,7 +315,7 @@ model HomeLeave {
   id          String           @id @default(cuid())
   bookingId   String
   startedAt   DateTime
-  expectedReturnAt DateTime
+  expectedReturnAt DateTime?
   returnedAt  DateTime?
   status      HomeLeaveStatus  @default(ACTIVE)
   reason      String?
@@ -326,7 +327,6 @@ model HomeLeave {
   booking     Booking @relation(fields: [bookingId], references: [id])
 
   @@index([bookingId, status])
-  @@index([expectedReturnAt, status])
 }
 
 model BookingEvent {

@@ -73,50 +73,7 @@ const getTodayKey = () => {
   return `${now.getFullYear()}-${month}-${day}`;
 };
 
-const getTomorrowKey = () => {
-  const tomorrow = new Date();
-  tomorrow.setDate(tomorrow.getDate() + 1);
-
-  const month = `${tomorrow.getMonth() + 1}`.padStart(2, "0");
-  const day = `${tomorrow.getDate()}`.padStart(2, "0");
-
-  return `${tomorrow.getFullYear()}-${month}-${day}`;
-};
-
 const toApiTab = (tab) => (tab === "home_leave" ? "home-leave" : tab);
-
-const parseDay = (dateStr) => {
-  const [year, month, day] = (dateStr || "").split("-").map(Number);
-
-  if (!year || !month || !day) return null;
-
-  return Date.UTC(year, month - 1, day);
-};
-
-const getDaysLeft = (endedAt, today) => {
-  const end = parseDay(endedAt);
-  const current = parseDay(today);
-
-  if (end === null || current === null) return null;
-
-  return Math.round((end - current) / 86400000);
-};
-
-const formatDaysLeft = (endedAt, today) => {
-  const days = getDaysLeft(endedAt, today);
-
-  if (days === null) return "-";
-
-  if (days === 0) return "Returns today";
-
-  if (days < 0) {
-    const overdue = Math.abs(days);
-
-    return `Overdue ${overdue} ${overdue === 1 ? "day" : "days"}`;
-  }
-
-  return `${days} ${days === 1 ? "day" : "days"} left`;
-};
 
 const toHomeLeaveRow = (booking) => {
   const leave = booking?.booking ? booking : null;
@@ -130,7 +87,6 @@ const toHomeLeaveRow = (booking) => {
     name: bookingRecord?.resident?.fullName ?? "",
     room: bookingRecord?.bed?.room?.name ?? "",
     started_at: selectedLeave.startedAt?.slice(0, 10) ?? "",
-    expected_return_at: selectedLeave.expectedReturnAt?.slice(0, 10) ?? "",
     returned_at: selectedLeave.returnedAt?.slice(0, 10) ?? "",
     reason: selectedLeave.reason ?? "",
     status: selectedLeave.status ?? "",
@@ -166,13 +122,12 @@ export default function FrontDesk() {
   const [extendingRow, setExtendingRow] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
   const [homeLeaveList, setHomeLeaveList] = useState([]);
-  const [homeLeaveOverdueCount, setHomeLeaveOverdueCount] = useState(0);
   const [homeLeaveRow, setHomeLeaveRow] = useState(null);
   const [isHomeLeaveModalOpen, setIsHomeLeaveModalOpen] = useState(false);
   const [homeLeaveBookings, setHomeLeaveBookings] = useState([]);
   const [homeLeaveBookingId, setHomeLeaveBookingId] = useState("");
   const [isLoadingHomeLeaveBookings, setIsLoadingHomeLeaveBookings] = useState(false);
-  const [homeLeaveExpectedReturn, setHomeLeaveExpectedReturn] = useState("");
+  const [homeLeaveStartedAt, setHomeLeaveStartedAt] = useState(getTodayKey);
   const [homeLeaveReason, setHomeLeaveReason] = useState("");
   const [editingRow, setEditingRow] = useState(null);
   const [deletingRow, setDeletingRow] = useState(null);
@@ -182,7 +137,6 @@ export default function FrontDesk() {
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
-  const today = selectedDate;
   const isCurrentDate = selectedDate === getTodayKey();
   const selectedDateLabel = useMemo(
     () => selectedDateFormatter.format(new Date(`${selectedDate}T00:00:00`)),
@@ -211,8 +165,8 @@ export default function FrontDesk() {
   const isHomeLeave = segment === "home_leave";
   const activeSegment = SEGMENTS.find((item) => item.id === segment);
 
-  const loadBookings = useCallback(async () => {
-    setIsLoading(true);
+  const loadBookings = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) setIsLoading(true);
     setError("");
     try {
       const buildParams = (tab) => {
@@ -243,19 +197,10 @@ export default function FrontDesk() {
         ...(isCurrentDate ? { status: "ACTIVE" } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       });
-      const homeLeaveAlertParams = new URLSearchParams({
-        page: "1",
-        limit: "100",
-        startedAtFrom: selectedDate,
-        status: "ACTIVE",
-      });
-      const [response, homeLeaveAlertResponse, ...otherCounts] = await Promise.all([
+      const [response, ...otherCounts] = await Promise.all([
         apiRequest(segment === "home_leave"
           ? `/api/booking/home-leaves?${homeLeaveParams}`
           : `/api/booking?${buildParams(segment).toString()}`),
-        isCurrentDate && hasPermission("home.leaves")
-          ? apiRequest(`/api/booking/home-leaves?${homeLeaveAlertParams}`)
-          : Promise.resolve(null),
         ...countRequests,
       ]);
       const pagination = response?.pagination ?? {};
@@ -264,13 +209,6 @@ export default function FrontDesk() {
         ...Object.fromEntries(otherCounts),
         [segment]: total,
       });
-      const todayKey = getTodayKey();
-      const overdueHomeLeaves = Array.isArray(homeLeaveAlertResponse?.data)
-        ? homeLeaveAlertResponse.data.filter(
-          (leave) => leave.status === "ACTIVE" && leave.expectedReturnAt && leave.expectedReturnAt.slice(0, 10) < todayKey,
-        )
-        : [];
-      setHomeLeaveOverdueCount(overdueHomeLeaves.length);
       const records = Array.isArray(response?.data) ? response.data : [];
       if (segment === "home_leave") {
         setHomeLeaveList(records.map(toHomeLeaveRow));
@@ -297,10 +235,9 @@ export default function FrontDesk() {
       setError(err.message || "Failed to load bookings.");
       setBookingList([]);
       setHomeLeaveList([]);
-      setHomeLeaveOverdueCount(0);
       setBookingPagination({ total: 0, totalPages: 1 });
     } finally {
-      setIsLoading(false);
+      if (!silent) setIsLoading(false);
     }
   }, [currentPage, pageSize, hasPermission, isCurrentDate, search, segment, selectedDate]);
 
@@ -311,6 +248,16 @@ export default function FrontDesk() {
 
   return () => window.clearTimeout(timer);
 }, [loadBookings]);
+
+  useEffect(() => {
+    if (!isHomeLeave || !isCurrentDate) return undefined;
+
+    const interval = window.setInterval(() => {
+      loadBookings({ silent: true });
+    }, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, [isHomeLeave, isCurrentDate, loadBookings]);
 
   const segmentCounts = bookingCounts;
   const segmentBookings = isHomeLeave ? homeLeaveList : bookingList;
@@ -385,7 +332,7 @@ export default function FrontDesk() {
     setHomeLeaveRow(booking);
     setHomeLeaveBookingId(booking.id);
     setIsHomeLeaveModalOpen(true);
-    setHomeLeaveExpectedReturn("");
+    setHomeLeaveStartedAt(getTodayKey());
     setHomeLeaveReason("");
   };
 
@@ -395,7 +342,7 @@ export default function FrontDesk() {
     setHomeLeaveBookings([]);
     setHomeLeaveBookingId("");
     setIsHomeLeaveModalOpen(true);
-    setHomeLeaveExpectedReturn("");
+    setHomeLeaveStartedAt(getTodayKey());
     setHomeLeaveReason("");
     setIsLoadingHomeLeaveBookings(true);
 
@@ -445,21 +392,8 @@ export default function FrontDesk() {
       return;
     }
 
-    if (!homeLeaveExpectedReturn) {
-      setActionError("Choose an expected return date.");
-      return;
-    }
-
-    if (
-      selectedHomeLeaveBooking.ended_at &&
-      homeLeaveExpectedReturn > selectedHomeLeaveBooking.ended_at
-    ) {
-      setActionError("Expected return cannot be later than the booking end date.");
-      return;
-    }
-
     const succeeded = await performBookingAction(selectedHomeLeaveBooking, "home-leaves", {
-      expectedReturnAt: new Date(`${homeLeaveExpectedReturn}T00:00:00.000Z`).toISOString(),
+      startedAt: new Date(`${homeLeaveStartedAt}T00:00:00.000Z`).toISOString(),
       reason: homeLeaveReason.trim(),
     });
 
@@ -467,7 +401,7 @@ export default function FrontDesk() {
       setIsHomeLeaveModalOpen(false);
       setHomeLeaveRow(null);
       setHomeLeaveBookingId("");
-      setHomeLeaveExpectedReturn("");
+      setHomeLeaveStartedAt(getTodayKey());
       setHomeLeaveReason("");
     }
   };
@@ -542,11 +476,6 @@ export default function FrontDesk() {
           bValue = b.ended_at;
           break;
 
-        case "expected_return":
-          aValue = a.expected_return_at;
-          bValue = b.expected_return_at;
-          break;
-
         case "status":
           aValue = a.status;
           bValue = b.status;
@@ -592,10 +521,6 @@ export default function FrontDesk() {
   const overdueArrivalCount = segment === "arrival" && isCurrentDate
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
-  const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
-    ? homeLeaveOverdueCount
-    : 0;
-
   const startRow =
     bookingPagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1;
   const endRow = Math.min(safePage * pageSize, bookingPagination.total);
@@ -637,9 +562,7 @@ export default function FrontDesk() {
               >
                 {SEGMENTS.map((item) => {
                   const needsAction = isCurrentDate && (
-                    item.id === "home_leave"
-                      ? homeLeaveOverdueCount > 0
-                      : ALERT_SEGMENTS.has(item.id) && (segmentCounts[item.id] ?? 0) > 0
+                    ALERT_SEGMENTS.has(item.id) && (segmentCounts[item.id] ?? 0) > 0
                   );
 
                   return (
@@ -712,11 +635,6 @@ aria-label={
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
             </div>
           )}
-          {overdueHomeLeaveCount > 0 && (
-            <div className="frontdesk-overdue-alert" role="alert">
-              {overdueHomeLeaveCount} home leave resident{overdueHomeLeaveCount === 1 ? " is" : "s are"} overdue for return
-            </div>
-          )}
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
@@ -764,21 +682,12 @@ aria-label={
                           className="table-sort"
                           onClick={() => handleSort("started_at")}
                         >
-                          Leave Started
+                          Leave At
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
 
-                      <th>
-                        <button
-                          type="button"
-                          className="table-sort"
-                          onClick={() => handleSort("expected_return")}
-                        >
-                          Expected Return
-                          <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                        </button>
-                      </th>
+                      <th>Returned At</th>
 
                       <th>
                         <button
@@ -935,8 +844,7 @@ aria-label={
                           : booking.id
                       }
                       className={
-                        (segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey()) ||
-                        (segment === "home_leave" && isCurrentDate && booking.status === "ACTIVE" && booking.expected_return_at && booking.expected_return_at < getTodayKey())
+                        segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey()
                           ? "frontdesk-row--overdue"
                           : ""
                       }
@@ -957,11 +865,7 @@ aria-label={
 
                           <td>{booking.started_at || "-"}</td>
 
-                          <td>
-                            {booking.expected_return_at
-                              ? `${booking.expected_return_at} (${formatDaysLeft(booking.expected_return_at, today)})`
-                              : "-"}
-                          </td>
+                          <td>{booking.returned_at || "-"}</td>
 
                           <td>{booking.reason || "-"}</td>
 
@@ -1297,14 +1201,13 @@ aria-label={
                 </label>
               )}
               <label className="form-field">
-                <span>Expected return date</span>
+                <span>Leave On</span>
                 <input
                   type="date"
                   required
-                  min={getTomorrowKey()}
-                  max={selectedHomeLeaveBooking?.ended_at || undefined}
-                  value={homeLeaveExpectedReturn}
-                  onChange={(event) => setHomeLeaveExpectedReturn(event.target.value)}
+                  value={homeLeaveStartedAt}
+                  onChange={(event) => setHomeLeaveStartedAt(event.target.value)}
+                  disabled={isSavingAction}
                 />
               </label>
               <label className="form-field">

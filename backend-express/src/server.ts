@@ -19,6 +19,7 @@ import residentRouter from "./routes/resident.route";
 import bookingRouter from "./routes/booking.route";
 import dashboardRouter from "./routes/dashboard.route";
 import emailLogRouter from "./routes/email-log.route";
+import { startHomeLeaveScheduler } from "./services/home-leave-scheduler.service";
 
 
 const app = express();
@@ -64,4 +65,5 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  startHomeLeaveScheduler();
 });

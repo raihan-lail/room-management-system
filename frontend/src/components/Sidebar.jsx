@@ -96,10 +96,7 @@ export default function Sidebar({
           const params = new URLSearchParams({ page: "1", limit: "100", startedAtFrom: date });
           const response = await apiRequest(`/api/booking/home-leaves?${params}`);
           const leaves = Array.isArray(response?.data) ? response.data : [];
-          hasHomeLeaveAlert = leaves.some((leave) =>
-            (leave.status === "ACTIVE" && leave.expectedReturnAt?.slice(0, 10) < date) ||
-            leave.returnedAt?.slice(0, 10) === date
-          );
+          hasHomeLeaveAlert = leaves.some((leave) => leave.returnedAt?.slice(0, 10) === date);
         }
         if (isMounted) setHasFrontdeskAlerts(counts.some((count) => count > 0) || hasHomeLeaveAlert);
       } catch {

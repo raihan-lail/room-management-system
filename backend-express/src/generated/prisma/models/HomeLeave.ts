@@ -181,7 +181,7 @@ export type HomeLeaveGroupByOutputType = {
   id: string
   bookingId: string
   startedAt: Date
-  expectedReturnAt: Date
+  expectedReturnAt: Date | null
   returnedAt: Date | null
   status: $Enums.HomeLeaveStatus
   reason: string | null
@@ -215,7 +215,7 @@ export type HomeLeaveWhereInput = {
   id?: Prisma.StringFilter<"HomeLeave"> | string
   bookingId?: Prisma.StringFilter<"HomeLeave"> | string
   startedAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
-  expectedReturnAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
+  expectedReturnAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   returnedAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFilter<"HomeLeave"> | $Enums.HomeLeaveStatus
   reason?: Prisma.StringNullableFilter<"HomeLeave"> | string | null
@@ -229,7 +229,7 @@ export type HomeLeaveOrderByWithRelationInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
-  expectedReturnAt?: Prisma.SortOrder
+  expectedReturnAt?: Prisma.SortOrderInput | Prisma.SortOrder
   returnedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -246,7 +246,7 @@ export type HomeLeaveWhereUniqueInput = Prisma.AtLeast<{
   NOT?: Prisma.HomeLeaveWhereInput | Prisma.HomeLeaveWhereInput[]
   bookingId?: Prisma.StringFilter<"HomeLeave"> | string
   startedAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
-  expectedReturnAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
+  expectedReturnAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   returnedAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFilter<"HomeLeave"> | $Enums.HomeLeaveStatus
   reason?: Prisma.StringNullableFilter<"HomeLeave"> | string | null
@@ -260,7 +260,7 @@ export type HomeLeaveOrderByWithAggregationInput = {
   id?: Prisma.SortOrder
   bookingId?: Prisma.SortOrder
   startedAt?: Prisma.SortOrder
-  expectedReturnAt?: Prisma.SortOrder
+  expectedReturnAt?: Prisma.SortOrderInput | Prisma.SortOrder
   returnedAt?: Prisma.SortOrderInput | Prisma.SortOrder
   status?: Prisma.SortOrder
   reason?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -279,7 +279,7 @@ export type HomeLeaveScalarWhereWithAggregatesInput = {
   id?: Prisma.StringWithAggregatesFilter<"HomeLeave"> | string
   bookingId?: Prisma.StringWithAggregatesFilter<"HomeLeave"> | string
   startedAt?: Prisma.DateTimeWithAggregatesFilter<"HomeLeave"> | Date | string
-  expectedReturnAt?: Prisma.DateTimeWithAggregatesFilter<"HomeLeave"> | Date | string
+  expectedReturnAt?: Prisma.DateTimeNullableWithAggregatesFilter<"HomeLeave"> | Date | string | null
   returnedAt?: Prisma.DateTimeNullableWithAggregatesFilter<"HomeLeave"> | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusWithAggregatesFilter<"HomeLeave"> | $Enums.HomeLeaveStatus
   reason?: Prisma.StringNullableWithAggregatesFilter<"HomeLeave"> | string | null
@@ -291,7 +291,7 @@ export type HomeLeaveScalarWhereWithAggregatesInput = {
 export type HomeLeaveCreateInput = {
   id?: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -305,7 +305,7 @@ export type HomeLeaveUncheckedCreateInput = {
   id?: string
   bookingId: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -317,7 +317,7 @@ export type HomeLeaveUncheckedCreateInput = {
 export type HomeLeaveUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -331,7 +331,7 @@ export type HomeLeaveUncheckedUpdateInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -344,7 +344,7 @@ export type HomeLeaveCreateManyInput = {
   id?: string
   bookingId: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -356,7 +356,7 @@ export type HomeLeaveCreateManyInput = {
 export type HomeLeaveUpdateManyMutationInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -369,7 +369,7 @@ export type HomeLeaveUncheckedUpdateManyInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   bookingId?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -476,7 +476,7 @@ export type EnumHomeLeaveStatusFieldUpdateOperationsInput = {
 export type HomeLeaveCreateWithoutBookingInput = {
   id?: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -488,7 +488,7 @@ export type HomeLeaveCreateWithoutBookingInput = {
 export type HomeLeaveUncheckedCreateWithoutBookingInput = {
   id?: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -530,7 +530,7 @@ export type HomeLeaveScalarWhereInput = {
   id?: Prisma.StringFilter<"HomeLeave"> | string
   bookingId?: Prisma.StringFilter<"HomeLeave"> | string
   startedAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
-  expectedReturnAt?: Prisma.DateTimeFilter<"HomeLeave"> | Date | string
+  expectedReturnAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   returnedAt?: Prisma.DateTimeNullableFilter<"HomeLeave"> | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFilter<"HomeLeave"> | $Enums.HomeLeaveStatus
   reason?: Prisma.StringNullableFilter<"HomeLeave"> | string | null
@@ -542,7 +542,7 @@ export type HomeLeaveScalarWhereInput = {
 export type HomeLeaveCreateManyBookingInput = {
   id?: string
   startedAt: Date | string
-  expectedReturnAt: Date | string
+  expectedReturnAt?: Date | string | null
   returnedAt?: Date | string | null
   status?: $Enums.HomeLeaveStatus
   reason?: string | null
@@ -554,7 +554,7 @@ export type HomeLeaveCreateManyBookingInput = {
 export type HomeLeaveUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -566,7 +566,7 @@ export type HomeLeaveUpdateWithoutBookingInput = {
 export type HomeLeaveUncheckedUpdateWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -578,7 +578,7 @@ export type HomeLeaveUncheckedUpdateWithoutBookingInput = {
 export type HomeLeaveUncheckedUpdateManyWithoutBookingInput = {
   id?: Prisma.StringFieldUpdateOperationsInput | string
   startedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  expectedReturnAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  expectedReturnAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   returnedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   status?: Prisma.EnumHomeLeaveStatusFieldUpdateOperationsInput | $Enums.HomeLeaveStatus
   reason?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -664,7 +664,7 @@ export type $HomeLeavePayload<ExtArgs extends runtime.Types.Extensions.InternalA
     id: string
     bookingId: string
     startedAt: Date
-    expectedReturnAt: Date
+    expectedReturnAt: Date | null
     returnedAt: Date | null
     status: $Enums.HomeLeaveStatus
     reason: string | null

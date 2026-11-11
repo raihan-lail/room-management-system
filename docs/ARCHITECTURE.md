@@ -204,7 +204,7 @@ stateDiagram-v2
   ARCHIVED --> [*]
 ```
 
-Each booking links a resident to a bed and stores the planned start/end dates, current status, and applicable lifecycle timestamps. Home leave is tracked in a separate `HomeLeave` record, while `BookingEvent` records actions and their actor. The bed's availability/status must remain consistent with the booking lifecycle; exact transitions are enforced by booking endpoints.
+Each booking links a resident to a bed and stores the planned start/end dates, current status, and applicable lifecycle timestamps. Home leave is tracked in a separate `HomeLeave` record with its scheduled or actual start and actual return timestamps; expected return dates are not recorded. Future leaves remain scheduled while the booking stays in house, then a backend scheduler moves the booking and bed to home leave on the start date. `BookingEvent` records actions and their actor. The bed's availability/status must remain consistent with the booking lifecycle; exact transitions are enforced by booking endpoints.
 
 A resident cannot hold overlapping active bookings. Booking creation, updates, and extensions reject any date range that overlaps the resident's existing `CONFIRMED`, `IN_HOUSE`, or `HOME_LEAVE` bookings, preventing double-booking across beds.
 
@@ -406,8 +406,9 @@ erDiagram
     string id PK
     string bookingId FK
     datetime startedAt
-    datetime expectedReturnAt
-    enum status
+    datetime returnedAt "nullable"
+    datetime expectedReturnAt "nullable; retained for historical records"
+    enum status "SCHEDULED, ACTIVE, RETURNED, CANCELLED"
   }
   BOOKING_EVENT {
     string id PK
