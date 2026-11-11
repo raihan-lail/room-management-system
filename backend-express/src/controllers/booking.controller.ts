@@ -26,6 +26,7 @@ import {
   refreshBedStatus,
   sendError,
   validateBookingDates,
+  validateResidentBookingDates,
   type BookingTab,
 } from "../helpers/booking.helper.js";
 import { notifyActor } from "../services/notification.service.js";
@@ -916,6 +917,18 @@ export async function createBooking(
 
       if (conflict) {
         throw Object.assign(new Error(conflict), {
+          statusCode: 409,
+        });
+      }
+
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId,
+        startedAt,
+        endedAt,
+      });
+
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), {
           statusCode: 409,
         });
       }
@@ -1841,6 +1854,16 @@ export async function updateBooking(
         throw Object.assign(new Error(conflict), { statusCode: 409 });
       }
 
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId: targetResidentId,
+        startedAt: targetStartedAt,
+        endedAt: targetEndedAt,
+        excludeBookingId: before.id,
+      });
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), { statusCode: 409 });
+      }
+
       const after = await tx.booking.update({
         where: { id: before.id },
         data: {
@@ -1961,6 +1984,19 @@ export async function extendBooking(
 
       if (conflict) {
         throw Object.assign(new Error(conflict), {
+          statusCode: 409,
+        });
+      }
+
+      const residentConflict = await validateResidentBookingDates(tx, {
+        residentId: booking.residentId,
+        startedAt: booking.startedAt,
+        endedAt: newEndedAt,
+        excludeBookingId: booking.id,
+      });
+
+      if (residentConflict) {
+        throw Object.assign(new Error(residentConflict), {
           statusCode: 409,
         });
       }
