@@ -605,16 +605,16 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
           ? bookingCandidates[bookingCandidates.length - 1]
           : bookingCandidates[0];
       const allocation = bed.room.allocation;
+      const exportedBedStatus = allocation ? "ALLOCATED" : bed.status;
 
       return {
-        "Location": bed.room.floor.location.name,
         "Site": bed.room.floor.location.site.name,
+        "Location": bed.room.floor.location.name,
         "Floor": bed.room.floor.name,
-        "Floor Number": bed.room.floor.floorNumber,
         "Room": bed.room.name,
         "Room Type": bed.room.type,
         "Bed": bed.name,
-        "Bed Status": bed.status,
+        "Bed Status": exportedBedStatus,
         "Active": bed.isActive ? "Yes" : "No",
         "Booking ID": booking?.bookingNumber ?? "",
         "Booking Status": booking?.status ?? "",
