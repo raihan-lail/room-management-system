@@ -265,6 +265,48 @@ export async function validateBookingDates(
   return null;
 }
 
+export async function validateResidentBookingDates(
+  tx: Prisma.TransactionClient,
+  input: {
+    residentId: string;
+    startedAt: Date;
+    endedAt: Date;
+    excludeBookingId?: string;
+  }
+): Promise<string | null> {
+  if (input.startedAt >= input.endedAt) {
+    return "The end date must be after the start date.";
+  }
+
+  const conflict = await tx.booking.findFirst({
+    where: {
+      residentId: input.residentId,
+      status: {
+        in: ACTIVE_BOOKING_STATUSES,
+      },
+      startedAt: {
+        lt: input.endedAt,
+      },
+      endedAt: {
+        gt: input.startedAt,
+      },
+      ...(input.excludeBookingId
+        ? { id: { not: input.excludeBookingId } }
+        : {}),
+    },
+    select: {
+      id: true,
+      bookingNumber: true,
+    },
+  });
+
+  if (conflict) {
+    return `This resident already has booking ${conflict.bookingNumber} for some or all of the requested dates.`;
+  }
+
+  return null;
+}
+
 export async function auditBooking(
   req: AuthRequest,
   actor: Actor,
