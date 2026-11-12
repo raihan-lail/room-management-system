@@ -722,8 +722,8 @@ export async function exportBookingsToExcel(
       Company: booking.resident.company ?? "",
       Department: booking.resident.department,
       Title: booking.resident.title ?? "",
-      "Booking Started At": booking.startedAt.toDateString(),
-      "Booking Ended At": booking.endedAt.toDateString(),
+      "Start Date": booking.startedAt.toDateString(),
+      "End Date": booking.endedAt.toDateString(),
       "Checked In At": booking.checkedInAt?.toDateString() ?? "",
       "Checked Out At": booking.checkedOutAt?.toDateString() ?? "",
     }));
