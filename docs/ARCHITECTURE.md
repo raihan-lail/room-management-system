@@ -210,6 +210,8 @@ A resident cannot hold overlapping active bookings. Booking creation, updates, a
 
 Authorized staff can move confirmed and in-house bookings from the calendar by changing the bed, date range, or both. The update endpoint validates bed access and rejects overlapping active bookings; the calendar asks for confirmation before submitting the move.
 
+The Front Desk views support a start-to-end date range filter. Arrival and departure use the booking start/end dates, near-end uses the booking end date, home leave uses the leave start date, and historical ranges use stay-overlap rules so records active during the range remain visible. The selected range is applied consistently to tab counts and Excel exports; only the current range exposes row actions.
+
 ### Complaint and stay feedback
 
 ```mermaid

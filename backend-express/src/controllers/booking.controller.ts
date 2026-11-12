@@ -61,7 +61,7 @@ function getHistoricalFrontDeskTabFilter(
     case "arrival":
       return {
         OR: [
-          { status: BookingStatus.CONFIRMED, startedAt: { lt: end } },
+          { status: BookingStatus.CONFIRMED, startedAt: { gte: start, lt: end } },
           { checkedInAt: { gte: start, lt: end } },
         ],
       };
@@ -83,10 +83,8 @@ function getHistoricalFrontDeskTabFilter(
         ],
       };
     case "near-end": {
-      const threeDaysLater = new Date(start);
-      threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
       return {
-        AND: [stayedDuringDate, { endedAt: { gte: start, lt: threeDaysLater } }],
+        AND: [stayedDuringDate, { endedAt: { gte: start, lt: end } }],
       };
     }
     case "departure":
@@ -155,19 +153,43 @@ export async function listBookings(
         return;
       }
 
-      const todayString =
-        typeof req.query.date === "string"
-          ? req.query.date
-          : new Date().toISOString().slice(0, 10);
+      const startDateParam =
+        typeof req.query.startDate === "string" ? req.query.startDate : "";
+      const endDateParam =
+        typeof req.query.endDate === "string" ? req.query.endDate : "";
+      const dateParam =
+        typeof req.query.date === "string" ? req.query.date : "";
 
-      const today = getSiteDateRange(todayString);
+      let start: Date;
+      let end: Date;
 
-      if (!today) {
-        sendError(res, 400, "Invalid date. Use YYYY-MM-DD.");
-        return;
+      if (startDateParam || endDateParam) {
+        const startRange = startDateParam
+          ? getSiteDateRange(startDateParam)
+          : null;
+        const endRange = endDateParam
+          ? getSiteDateRange(endDateParam)
+          : null;
+
+        if (!startRange || !endRange || startRange.start > endRange.start) {
+          sendError(res, 400, "Invalid date range. Use YYYY-MM-DD and ensure start is on or before end.");
+          return;
+        }
+
+        start = startRange.start;
+        end = endRange.end;
+      } else {
+        const todayString = dateParam || new Date().toISOString().slice(0, 10);
+        const today = getSiteDateRange(todayString);
+
+        if (!today) {
+          sendError(res, 400, "Invalid date. Use YYYY-MM-DD.");
+          return;
+        }
+
+        start = today.start;
+        end = today.end;
       }
-
-      const { start, end } = today;
 
       switch (tab as BookingTab) {
         case "arrival":
@@ -178,7 +200,7 @@ export async function listBookings(
             ];
           } else {
             where.status = BookingStatus.CONFIRMED;
-            where.startedAt = { lt: end };
+            where.startedAt = { gte: start, lt: end };
           }
           break;
 
@@ -195,6 +217,8 @@ export async function listBookings(
 
         case "home-leave":
           where.status = BookingStatus.HOME_LEAVE;
+          where.startedAt = { lt: end };
+          where.endedAt = { gte: start };
           break;
 
         case "near-end": {
@@ -204,11 +228,14 @@ export async function listBookings(
               getHistoricalFrontDeskTabFilter("near-end", start, end)!,
             ];
           } else {
-            const twoDaysLater = new Date(start);
-            twoDaysLater.setUTCDate(twoDaysLater.getUTCDate() + 3);
+            const todayStart = getSiteDateRange(
+              new Date().toISOString().slice(0, 10),
+            )!.start;
+            const threeDaysLater = new Date(todayStart);
+            threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
 
             where.status = { in: IN_HOUSE_STATUSES };
-            where.endedAt = { gte: start, lt: twoDaysLater };
+            where.endedAt = { gte: start, lt: threeDaysLater };
           }
           break;
         }
@@ -546,7 +573,29 @@ export async function exportBookingsToExcel(
     const search = getParam("search");
     const frontdeskTab = getParam("frontdeskTab");
     const frontdeskDate = getParam("date");
-    const frontdeskRange = frontdeskDate ? getSiteDateRange(frontdeskDate) : null;
+    const frontdeskStartDate = getParam("startDate");
+    const frontdeskEndDate = getParam("endDate");
+
+    let frontdeskRange: { start: Date; end: Date } | null = null;
+
+    if (frontdeskStartDate || frontdeskEndDate) {
+      const startRange = frontdeskStartDate
+        ? getSiteDateRange(frontdeskStartDate)
+        : null;
+      const endRange = frontdeskEndDate
+        ? getSiteDateRange(frontdeskEndDate)
+        : null;
+
+      if (!startRange || !endRange || startRange.start > endRange.start) {
+        sendError(res, 400, "Invalid frontdesk date range. Use YYYY-MM-DD and ensure start is on or before end.");
+        return;
+      }
+
+      frontdeskRange = { start: startRange.start, end: endRange.end };
+    } else if (frontdeskDate) {
+      frontdeskRange = getSiteDateRange(frontdeskDate);
+    }
+
     if (frontdeskTab && !["arrival", "in-house", "home_leave", "near-end", "departure"].includes(frontdeskTab)) {
       sendError(res, 400, "Invalid frontdesk tab.");
       return;
@@ -563,7 +612,7 @@ export async function exportBookingsToExcel(
           if (req.query.frontdeskHistory === "true") {
             tabFilters.push(getHistoricalFrontDeskTabFilter("arrival", start, end)!);
           } else {
-            tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { lt: end } });
+            tabFilters.push({ status: BookingStatus.CONFIRMED }, { startedAt: { gte: start, lt: end } });
           }
           break;
         case "in-house":
@@ -577,7 +626,7 @@ export async function exportBookingsToExcel(
           } else {
             tabFilters.push(
               { status: BookingStatus.HOME_LEAVE },
-              { startedAt: { lte: end } },
+              { startedAt: { lt: end } },
               { endedAt: { gte: start } },
             );
           }
@@ -586,7 +635,10 @@ export async function exportBookingsToExcel(
           if (req.query.frontdeskHistory === "true") {
             tabFilters.push(getHistoricalFrontDeskTabFilter("near-end", start, end)!);
           } else {
-            const threeDaysLater = new Date(start);
+            const todayStart = getSiteDateRange(
+              new Date().toISOString().slice(0, 10),
+            )!.start;
+            const threeDaysLater = new Date(todayStart);
             threeDaysLater.setUTCDate(threeDaysLater.getUTCDate() + 3);
             tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: threeDaysLater } });
           }
