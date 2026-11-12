@@ -75,6 +75,13 @@ const STATUS_ORDER = [
   "archived",
 ];
 
+const STATUS_FILTER_OPTIONS = [
+  "CONFIRMED",
+  "IN_HOUSE",
+  "HOME_LEAVE",
+  "CHECKED_OUT",
+];
+
 function normalizeStatus(status) {
   const key = String(
     status || ""
@@ -244,6 +251,14 @@ function toCalendarBooking(booking) {
   };
 }
 
+function mergeBookings(current, incoming) {
+  const bookingMap = new Map(current.map((booking) => [booking.id, booking]));
+  incoming.forEach((booking) => {
+    bookingMap.set(booking.id, booking);
+  });
+  return [...bookingMap.values()];
+}
+
 async function loadAllPages(path, pageParam, pageSizeParam, baseParams = {}) {
   const firstParams = new URLSearchParams(baseParams);
   firstParams.set(pageParam, "1");
@@ -279,6 +294,7 @@ export default function CalendarView() {
 
   const [selectedLocation, setSelectedLocation] = useState("");
   const [selectedFloor, setSelectedFloor] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
 
   const [startDate, setStartDate] =
     useState("");
@@ -307,6 +323,7 @@ export default function CalendarView() {
     useState(null);
 
   const [bookings, setBookings] = useState([]);
+  const [occupancyBookings, setOccupancyBookings] = useState([]);
   const [beds, setBeds] = useState([]);
   const [isLoadingCalendar, setIsLoadingCalendar] = useState(true);
   const [calendarError, setCalendarError] = useState("");
@@ -432,11 +449,13 @@ export default function CalendarView() {
     const isForwardExtension =
       Boolean(previous?.loaded) &&
       previous.search === search &&
+      previous.status === statusFilter &&
       previous.start === rangeStart &&
       windowEnd > previous.end;
     const isBackwardExtension =
       Boolean(previous?.loaded) &&
       previous.search === search &&
+      previous.status === statusFilter &&
       previous.end === windowEnd &&
       rangeStart < previous.start;
     const isExtension =
@@ -459,6 +478,7 @@ export default function CalendarView() {
         const searchParams = search.trim() ? { search: search.trim() } : {};
         const bookingParams = {
           ...searchParams,
+          ...(statusFilter ? { status: statusFilter } : {}),
           overlapStart: `${
             isExtension ? extensionStart : rangeStart
           }T00:00:00.000Z`,
@@ -466,28 +486,37 @@ export default function CalendarView() {
             isExtension ? extensionEnd : addDays(windowEnd, 1)
           }T00:00:00.000Z`,
         };
+        const occupancyParams = { ...bookingParams };
+        delete occupancyParams.status;
         const bedParams = { ...searchParams };
 
         if (isExtension) {
-          const bookingRecords = await loadAllPages("/api/booking", "page", "limit", bookingParams);
-          if (!isCurrentRequest) return;
-
-          const normalizedBookings = bookingRecords.map(toCalendarBooking);
-          setBookings((current) => {
-            const bookingMap = new Map(current.map((booking) => [booking.id, booking]));
-            normalizedBookings.forEach((booking) => {
-              bookingMap.set(booking.id, booking);
-            });
-            return [...bookingMap.values()];
-          });
-        } else {
-          const [bedRecords, bookingRecords] = await Promise.all([
-            loadAllPages("/api/bed", "page", "pageSize", bedParams),
+          const [bookingRecords, occupancyRecords] = await Promise.all([
             loadAllPages("/api/booking", "page", "limit", bookingParams),
+            statusFilter
+              ? loadAllPages("/api/booking", "page", "limit", occupancyParams)
+              : null,
           ]);
           if (!isCurrentRequest) return;
 
           const normalizedBookings = bookingRecords.map(toCalendarBooking);
+          const normalizedOccupancy = (occupancyRecords ?? bookingRecords).map(toCalendarBooking);
+          setBookings((current) => mergeBookings(current, normalizedBookings));
+          setOccupancyBookings((current) => mergeBookings(current, normalizedOccupancy));
+        } else {
+          const [bedRecords, bookingRecords, occupancyRecords] = await Promise.all([
+            loadAllPages("/api/bed", "page", "pageSize", bedParams),
+            loadAllPages("/api/booking", "page", "limit", bookingParams),
+            statusFilter
+              ? loadAllPages("/api/booking", "page", "limit", occupancyParams)
+              : null,
+          ]);
+          if (!isCurrentRequest) return;
+
+          const normalizedBookings = bookingRecords.map(toCalendarBooking);
+          const normalizedOccupancy = occupancyRecords
+            ? occupancyRecords.map(toCalendarBooking)
+            : normalizedBookings;
           const bedMap = new Map(bedRecords.map((bed) => [bed.id, bed]));
           normalizedBookings.forEach((booking) => {
             if (booking.bed?.id && !bedMap.has(booking.bed.id)) {
@@ -498,11 +527,13 @@ export default function CalendarView() {
             (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
           ));
           setBookings(normalizedBookings);
+          setOccupancyBookings(normalizedOccupancy);
         }
 
         loadedRangeRef.current = {
           loaded: true,
           search,
+          status: statusFilter,
           start: rangeStart,
           end: windowEnd,
         };
@@ -513,6 +544,7 @@ export default function CalendarView() {
             loadedRangeRef.current = null;
             setBeds([]);
             setBookings([]);
+            setOccupancyBookings([]);
           }
         }
       } finally {
@@ -523,12 +555,13 @@ export default function CalendarView() {
     return () => {
       isCurrentRequest = false;
     };
-  }, [search, rangeStart, windowEnd, reloadKey]);
+  }, [search, statusFilter, rangeStart, windowEnd, reloadKey]);
 
   /*
-   * Booked days per room (all bookings, not the
-   * filtered ones, so text filters can never
-   * unlock an already occupied date)
+   * Booked days per room (unfiltered occupancy
+   * bookings, not the status-filtered ones, so
+   * the status filter can never unlock an
+   * already occupied date)
    */
   const blockedDays = useMemo(() => {
     const map = new Map();
@@ -539,7 +572,7 @@ export default function CalendarView() {
 
     const lastIndex = dates.length - 1;
 
-    bookings.forEach((booking) => {
+    occupancyBookings.forEach((booking) => {
       const roomName = booking?.bedId;
 
       if (
@@ -584,7 +617,7 @@ export default function CalendarView() {
     });
 
     return map;
-  }, [bookings, rangeStart, windowEnd, dates]);
+  }, [occupancyBookings, rangeStart, windowEnd, dates]);
 
   const isDayBooked = useCallback(
     (roomName, index) => {
@@ -1009,7 +1042,7 @@ export default function CalendarView() {
   };
 
   const hasActiveFilters = Boolean(
-      search.trim() || selectedLocation || selectedFloor ||
+      search.trim() || selectedLocation || selectedFloor || statusFilter ||
       startDate ||
       endDate ||
       calendarStart !== DEFAULT_SETTINGS.calendarStart ||
@@ -1021,6 +1054,7 @@ export default function CalendarView() {
     setSearch("");
     setSelectedLocation("");
     setSelectedFloor("");
+    setStatusFilter("");
     setStartDate("");
     setEndDate("");
     setCalendarStart(
@@ -1501,6 +1535,15 @@ export default function CalendarView() {
             <select value={selectedFloor} onChange={(event) => setSelectedFloor(event.target.value)}>
               <option value="">All floors</option>
               {floors.map((floor) => <option key={floor.id} value={floor.id}>{floor.name}</option>)}
+            </select>
+          </label>
+          <label className="calendar-date-filter">
+            <span>Status</span>
+            <select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
+              <option value="">All statuses</option>
+              {STATUS_FILTER_OPTIONS.map((status) => (
+                <option key={status} value={status}>{statusLabel(status)}</option>
+              ))}
             </select>
           </label>
         </div>
