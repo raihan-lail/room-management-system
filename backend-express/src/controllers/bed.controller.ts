@@ -214,6 +214,14 @@ export async function listBeds(req: AuthRequest, res: Response) {
           },
           room: {
             include: {
+              allocation: {
+                select: {
+                  id: true,
+                  purpose: true,
+                  description: true,
+                  notes: true,
+                },
+              },
               floor: {
                 include: {
                   location: {

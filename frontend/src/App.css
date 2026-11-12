@@ -35,6 +35,10 @@
   --status-unknown-fg: #64748b;
   --status-unknown-border: #94a3b8;
 
+  --status-allocated-bg: #f1f5f9;
+  --status-allocated-fg: #334155;
+  --status-allocated-border: #64748b;
+
   --status-home_leave-border: #FFFF00;
 }
 
@@ -2830,6 +2834,12 @@ textarea,
   border-color: var(--status-home_leave-border);
 }
 
+.calendar-legend__dot--allocated {
+  background-color: var(--status-allocated-bg);
+  border-color: var(--status-allocated-border);
+  border-style: dashed;
+}
+
 .calendar-view {
   position: relative;
 }
@@ -3331,6 +3341,52 @@ textarea,
 
 .booking-cancelled::before {
   background: var(--status-archived-border);
+}
+
+.booking-allocated {
+  background: var(--status-allocated-bg);
+  color: var(--status-allocated-fg);
+
+  border-color: var(--status-allocated-border);
+  border-style: dashed;
+
+  padding: 0;
+
+  overflow: visible;
+
+  cursor: default;
+}
+
+.booking-allocated__label {
+  position: sticky;
+  left: calc(var(--room-width) + 9px);
+
+  z-index: 5;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+
+  width: max-content;
+  max-width: 260px;
+
+  padding: 0 6px;
+
+  background: var(--status-allocated-bg);
+
+  box-sizing: border-box;
+}
+
+.booking-allocated::before {
+  background: var(--status-allocated-border);
+}
+
+.booking-allocated:hover {
+  transform: none;
+
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+
+  z-index: auto;
 }
 
 
