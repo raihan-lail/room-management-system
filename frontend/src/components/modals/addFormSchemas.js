@@ -76,7 +76,7 @@ export const addFormSchemas = {
     fields: [
       { name: "name", label: "Name", type: "text", placeholder: "Full name", required: true },
       { name: "email", label: "Email", type: "email", placeholder: "Email address", required: true },
-      { name: "phone", label: "Phone", type: "tel", placeholder: "Phone number", required: true },
+      { name: "phone", label: "Phone", type: "tel", placeholder: "+6281234567890", required: true, pattern: "\\+[1-9][0-9]{6,14}", title: "Enter an international number starting with +, followed by 7 to 15 digits.", helpText: "Must be started with +62 (or other countries format)" },
       { name: "gender", label: "Gender", type: "select", options: GENDERS },
       { name: "country", label: "Country", type: "select", options: COUNTRIES },
       { name: "site", label: "Site", type: "select", options: SITES },
