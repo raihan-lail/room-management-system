@@ -117,7 +117,7 @@ function App() {
               <Route
                 path="/bookings/approval"
                 element={
-                  <RequirePermission permission="bookings.approval">
+                  <RequirePermission permission="bookings.approve">
                     <BookingApproval />
                   </RequirePermission>
                 }
