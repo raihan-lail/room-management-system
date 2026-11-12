@@ -475,8 +475,11 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                       name: "phone",
                       label: "Phone",
                       type: "tel",
-                      placeholder: "Phone number",
+                      placeholder: "+6281234567890",
                       required: true,
+                      pattern: "\\+[1-9][0-9]{6,14}",
+                      title: "Enter an international number starting with +, followed by 7 to 15 digits.",
+                      helpText: "Must be started with +62 (or other countries format)",
                     }}
                     value={newResident.phone}
                     onChange={handleNewResidentChange}
