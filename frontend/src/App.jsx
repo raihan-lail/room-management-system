@@ -37,6 +37,7 @@ import ChangePassword from "./pages/ChangePassword";
 import LocationManagement from "./pages/rooms/LocationManagement";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import EmailLog from "./pages/settings/EmailLogs";
+import BookingApproval from "./pages/bookings/BookingApproval";
 
 function DefaultRedirect() {
   const { status, user } = useAuth();
@@ -110,6 +111,14 @@ function App() {
                 element={
                   <RequirePermission permission="bookings.read">
                     <BookingTableView />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/approval"
+                element={
+                  <RequirePermission permission="bookings.approval">
+                    <BookingApproval />
                   </RequirePermission>
                 }
               />

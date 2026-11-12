@@ -24,6 +24,8 @@ export const sidebarMenu = [
      
        { label: 'Table View', path: '/bookings/table', icon: 'bi-table', permission:"bookings.read" },
        { label: 'Home Leaves', path: '/bookings/home-leave', icon: 'bi-house-door', permission:"home.leaves" },
+       { label: 'Booking Approvals', path: '/bookings/approval', icon: 'bi-check2-square', permission:"bookings.approve" },
+
     ],
   },
   {
@@ -43,7 +45,7 @@ export const sidebarMenu = [
     icon: "bi-people",
      items: [
       { label: 'Residents Management', path: '/guests/management', icon: 'bi-person', permission: "resident.view" },
-      { label: 'Meal Type', path: '/guests/meal-type', icon: 'bi-fork-knife', permission: "meal-type.read" },
+     
       
        
     ],
