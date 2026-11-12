@@ -177,6 +177,8 @@ export function ModalField({ field, value, values = {}, onChange }) {
         min={field.min}
         max={field.max}
         step={field.step}
+        pattern={field.pattern}
+        title={field.title}
       />
     );
   }
@@ -186,6 +188,7 @@ export function ModalField({ field, value, values = {}, onChange }) {
       <span>{field.label}</span>
 
       {control}
+      {field.helpText && <small className="muted">{field.helpText}</small>}
     </>
   );
 
