@@ -181,24 +181,43 @@ export default function FrontDesk() {
   const [checkingInBooking, setCheckingInBooking] = useState(null);
   const [viewingBookingId, setViewingBookingId] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
-  const [selectedDate, setSelectedDate] = useState(getTodayKey);
+  const [startDate, setStartDate] = useState(getTodayKey);
+  const [endDate, setEndDate] = useState(getTodayKey);
 
-  const today = selectedDate;
-  const isCurrentDate = selectedDate === getTodayKey();
-  const selectedDateLabel = useMemo(
-    () => selectedDateFormatter.format(new Date(`${selectedDate}T00:00:00`)),
-    [selectedDate],
-  );
+  const today = getTodayKey();
+  const isCurrentRange = startDate === today && endDate === today;
+  const selectedRangeLabel = useMemo(() => {
+    const format = (value) =>
+      selectedDateFormatter.format(new Date(`${value}T00:00:00`));
+
+    return startDate === endDate
+      ? format(startDate)
+      : `${format(startDate)} - ${format(endDate)}`;
+  }, [startDate, endDate]);
   const exportFilename = useMemo(() => {
-    const date = new Date(`${selectedDate}T00:00:00`);
-    const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(date).toLowerCase();
-    return `${segment.replaceAll("_", "-")}-${date.getDate()}-${month}-${date.getFullYear()}.xlsx`;
-  }, [segment, selectedDate]);
+    const format = (value) => {
+      const date = new Date(`${value}T00:00:00`);
+      const month = new Intl.DateTimeFormat("en-US", { month: "long" }).format(date).toLowerCase();
 
-  const handleDateChange = (value) => {
+      return `${date.getDate()}-${month}-${date.getFullYear()}`;
+    };
+
+    return `${segment.replaceAll("_", "-")}-${format(startDate)}${startDate === endDate ? "" : `-to-${format(endDate)}`}.xlsx`;
+  }, [segment, startDate, endDate]);
+
+  const handleStartDateChange = (value) => {
     if (!value) return;
 
-    setSelectedDate(value);
+    setStartDate(value);
+    if (value > endDate) setEndDate(value);
+    setCurrentPage(1);
+  };
+
+  const handleEndDateChange = (value) => {
+    if (!value) return;
+
+    setEndDate(value);
+    if (value < startDate) setStartDate(value);
     setCurrentPage(1);
   };
 
@@ -221,10 +240,11 @@ export default function FrontDesk() {
           tab: toApiTab(tab),
           page: tab === segment ? String(currentPage) : "1",
           limit: tab === segment ? String(pageSize) : "1",
-          date: selectedDate,
-          ...(isCurrentDate ? {} : { history: "true" }),
+          startDate,
+          endDate,
+          ...(isCurrentRange ? {} : { history: "true" }),
         });
-        if (tab === "in-house" && isCurrentDate) params.set("status", "IN_HOUSE");
+        if (tab === "in-house" && isCurrentRange) params.set("status", "IN_HOUSE");
         if (search.trim()) params.set("search", search.trim());
         return params;
       };
@@ -232,29 +252,43 @@ export default function FrontDesk() {
       const countRequests = BOOKING_TABS
         .filter((tab) => tab !== segment)
         .map(async (tab) => {
-          const countResponse = await apiRequest(`/api/booking?${buildParams(tab).toString()}`);
+          const params = tab === "home_leave"
+            ? new URLSearchParams({
+              page: "1",
+              limit: "1",
+              startedAtFrom: startDate,
+              startedAtTo: endDate,
+              ...(isCurrentRange ? { status: "ACTIVE" } : {}),
+              ...(search.trim() ? { search: search.trim() } : {}),
+            })
+            : buildParams(tab);
+          const countResponse = await apiRequest(
+            tab === "home_leave"
+              ? `/api/booking/home-leaves?${params.toString()}`
+              : `/api/booking?${params.toString()}`,
+          );
           return [tab, Number(countResponse?.pagination?.total ?? 0)];
         });
 
       const homeLeaveParams = new URLSearchParams({
         page: String(currentPage),
         limit: String(pageSize),
-        startedAtFrom: selectedDate,
-        startedAtTo: selectedDate,
-        ...(isCurrentDate ? { status: "ACTIVE" } : {}),
+        startedAtFrom: startDate,
+        startedAtTo: endDate,
+        ...(isCurrentRange ? { status: "ACTIVE" } : {}),
         ...(search.trim() ? { search: search.trim() } : {}),
       });
       const homeLeaveAlertParams = new URLSearchParams({
         page: "1",
         limit: "100",
-        startedAtFrom: selectedDate,
+        startedAtFrom: startDate,
         status: "ACTIVE",
       });
       const [response, homeLeaveAlertResponse, ...otherCounts] = await Promise.all([
         apiRequest(segment === "home_leave"
           ? `/api/booking/home-leaves?${homeLeaveParams}`
           : `/api/booking?${buildParams(segment).toString()}`),
-        isCurrentDate && hasPermission("home.leaves")
+        isCurrentRange && hasPermission("home.leaves")
           ? apiRequest(`/api/booking/home-leaves?${homeLeaveAlertParams}`)
           : Promise.resolve(null),
         ...countRequests,
@@ -303,7 +337,7 @@ export default function FrontDesk() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, hasPermission, isCurrentDate, search, segment, selectedDate]);
+  }, [currentPage, pageSize, hasPermission, isCurrentRange, search, segment, startDate, endDate]);
 
   useEffect(() => {
   const timer = window.setTimeout(() => {
@@ -590,10 +624,10 @@ export default function FrontDesk() {
   const safePage = Math.min(currentPage, totalPages);
 
   const pagedBookings = sortedBookings;
-  const overdueArrivalCount = segment === "arrival" && isCurrentDate
+  const overdueArrivalCount = segment === "arrival" && isCurrentRange
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
-  const overdueHomeLeaveCount = segment === "home_leave" && isCurrentDate
+  const overdueHomeLeaveCount = segment === "home_leave" && isCurrentRange
     ? homeLeaveOverdueCount
     : 0;
 
@@ -706,7 +740,7 @@ export default function FrontDesk() {
           <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">
               {activeSegment?.title || "Arrival Schedule"}
-              {!isCurrentDate ? ` - ${selectedDateLabel}` : ""}
+              {!(startDate === today && endDate === today) ? ` - ${selectedRangeLabel}` : ""}
             </h1>
 
            
@@ -714,12 +748,25 @@ export default function FrontDesk() {
 <div className="frontdesk-filters">
               <label className="frontdesk-date">
                 <i className="bi bi-calendar3" aria-hidden="true" />
+                <span>From</span>
                 <input
                   type="date"
-                  aria-label="Filter by date"
-                  value={selectedDate}
+                  aria-label="Filter start date"
+                  value={startDate}
+                  max={endDate}
+                  onChange={(event) => handleStartDateChange(event.target.value)}
+                />
+              </label>
+              <label className="frontdesk-date">
+                <i className="bi bi-calendar3" aria-hidden="true" />
+                <span>To</span>
+                <input
+                  type="date"
+                  aria-label="Filter end date"
+                  value={endDate}
+                  min={startDate}
                   max={getTodayKey()}
-                  onChange={(event) => handleDateChange(event.target.value)}
+                  onChange={(event) => handleEndDateChange(event.target.value)}
                 />
               </label>
 
@@ -729,7 +776,7 @@ export default function FrontDesk() {
                 aria-label="Booking segment"
               >
                 {SEGMENTS.map((item) => {
-                  const needsAction = isCurrentDate && (
+                  const needsAction = isCurrentRange && (
                     item.id === "home_leave"
                       ? homeLeaveOverdueCount > 0
                       : ALERT_SEGMENTS.has(item.id) && (segmentCounts[item.id] ?? 0) > 0
@@ -1028,8 +1075,8 @@ aria-label={
                           : booking.id
                       }
                       className={
-                        (segment === "arrival" && isCurrentDate && booking.started_at && booking.started_at < getTodayKey()) ||
-                        (segment === "home_leave" && isCurrentDate && booking.status === "ACTIVE" && booking.expected_return_at && booking.expected_return_at < getTodayKey())
+                        (segment === "arrival" && isCurrentRange && booking.started_at && booking.started_at < getTodayKey()) ||
+                        (segment === "home_leave" && isCurrentRange && booking.status === "ACTIVE" && booking.expected_return_at && booking.expected_return_at < getTodayKey())
                           ? "frontdesk-row--overdue"
                           : ""
                       }
@@ -1065,7 +1112,7 @@ aria-label={
                               label="home leave"
                               rowLabel={booking.name}
                               onView={() => setViewingBookingId(booking.id)}
-                              actions={isCurrentDate ? getHomeLeaveRowActions(booking) : []}
+                              actions={isCurrentRange ? getHomeLeaveRowActions(booking) : []}
                               permission={null}
                             />
                           </td>
@@ -1107,7 +1154,7 @@ aria-label={
                               label="booking"
                               rowLabel={booking.guest?.name}
                               onView={() => setViewingBookingId(booking.id)}
-                              actions={isCurrentDate ? getBookingRowActions(booking) : []}
+                              actions={isCurrentRange ? getBookingRowActions(booking) : []}
                               permission={null}
                             />
                           </td>
@@ -1426,7 +1473,7 @@ aria-label={
           entityLabel="bookings"
           filterFields={EXPORT_FILTER_FIELDS}
           initialFilters={{ search }}
-          extraParams={{ frontdeskTab: segment, date: selectedDate, frontdeskHistory: isCurrentDate ? "false" : "true" }}
+          extraParams={{ frontdeskTab: segment, startDate, endDate, frontdeskHistory: isCurrentRange ? "false" : "true" }}
           onClose={() => setIsExportModalOpen(false)}
         />
       )}
