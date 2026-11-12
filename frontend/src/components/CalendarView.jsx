@@ -62,6 +62,7 @@ const STATUS_META = {
   archived: { label: "Archived" },
   home_leave: { label: "Home leave" },
   cancelled: { label: "Cancelled" },
+  allocated: { label: "Allocated" },
   unknown: { label: "Unknown" },
 };
 
@@ -73,6 +74,7 @@ const STATUS_ORDER = [
   "no_show",
   "home_leave",
   "archived",
+  "allocated",
 ];
 
 const STATUS_FILTER_OPTIONS = [
@@ -80,6 +82,7 @@ const STATUS_FILTER_OPTIONS = [
   "IN_HOUSE",
   "HOME_LEAVE",
   "CHECKED_OUT",
+  "ALLOCATED",
 ];
 
 function normalizeStatus(status) {
@@ -476,9 +479,11 @@ export default function CalendarView() {
       }
       try {
         const searchParams = search.trim() ? { search: search.trim() } : {};
+        const bookingStatusFilter =
+          statusFilter && statusFilter !== "ALLOCATED" ? statusFilter : "";
         const bookingParams = {
           ...searchParams,
-          ...(statusFilter ? { status: statusFilter } : {}),
+          ...(bookingStatusFilter ? { status: bookingStatusFilter } : {}),
           overlapStart: `${
             isExtension ? extensionStart : rangeStart
           }T00:00:00.000Z`,
@@ -493,7 +498,7 @@ export default function CalendarView() {
         if (isExtension) {
           const [bookingRecords, occupancyRecords] = await Promise.all([
             loadAllPages("/api/booking", "page", "limit", bookingParams),
-            statusFilter
+            bookingStatusFilter
               ? loadAllPages("/api/booking", "page", "limit", occupancyParams)
               : null,
           ]);
@@ -507,7 +512,7 @@ export default function CalendarView() {
           const [bedRecords, bookingRecords, occupancyRecords] = await Promise.all([
             loadAllPages("/api/bed", "page", "pageSize", bedParams),
             loadAllPages("/api/booking", "page", "limit", bookingParams),
-            statusFilter
+            bookingStatusFilter
               ? loadAllPages("/api/booking", "page", "limit", occupancyParams)
               : null,
           ]);
@@ -524,7 +529,8 @@ export default function CalendarView() {
             }
           });
           setBeds([...bedMap.values()].filter(
-            (bed) => bed.isActive !== false && bed.room?.isBookable !== false,
+            (bed) => bed.isActive !== false &&
+              (bed.room?.isBookable !== false || Boolean(bed.room?.allocation)),
           ));
           setBookings(normalizedBookings);
           setOccupancyBookings(normalizedOccupancy);
@@ -558,10 +564,10 @@ export default function CalendarView() {
   }, [search, statusFilter, rangeStart, windowEnd, reloadKey]);
 
   /*
-   * Booked days per room (unfiltered occupancy
-   * bookings, not the status-filtered ones, so
-   * the status filter can never unlock an
-   * already occupied date)
+   * Blocked days per room: unfiltered occupancy
+   * bookings plus fully allocated beds, so filters
+   * can never unlock an already occupied or
+   * allocated date
    */
   const blockedDays = useMemo(() => {
     const map = new Map();
@@ -571,6 +577,18 @@ export default function CalendarView() {
     }
 
     const lastIndex = dates.length - 1;
+
+    beds.forEach((bed) => {
+      if (!bed.room?.allocation) return;
+
+      const days = new Set();
+
+      for (let i = 0; i <= lastIndex; i += 1) {
+        days.add(i);
+      }
+
+      map.set(bed.id, days);
+    });
 
     occupancyBookings.forEach((booking) => {
       const roomName = booking?.bedId;
@@ -617,7 +635,7 @@ export default function CalendarView() {
     });
 
     return map;
-  }, [occupancyBookings, rangeStart, windowEnd, dates]);
+  }, [beds, occupancyBookings, rangeStart, windowEnd, dates]);
 
   const isDayBooked = useCallback(
     (roomName, index) => {
@@ -971,14 +989,15 @@ export default function CalendarView() {
   const activeFloorName = floors.find((floor) => floor.id === selectedFloor)?.name ?? "All floors";
   const activeBeds = useMemo(() => beds.filter((bed) =>
     (!selectedLocation || bed.room?.floor?.location?.id === selectedLocation) &&
-    (!selectedFloor || bed.room?.floor?.id === selectedFloor)
+    (!selectedFloor || bed.room?.floor?.id === selectedFloor) &&
+    (statusFilter !== "ALLOCATED" || Boolean(bed.room?.allocation))
   ).sort((a, b) => {
     const locationOrder = (a.room?.floor?.location?.name ?? "").localeCompare(b.room?.floor?.location?.name ?? "");
     if (locationOrder) return locationOrder;
     const floorOrder = (a.room?.floor?.floorNumber ?? 0) - (b.room?.floor?.floorNumber ?? 0);
     if (floorOrder) return floorOrder;
     return (a.room?.name ?? "").localeCompare(b.room?.name ?? "") || (a.name ?? "").localeCompare(b.name ?? "");
-  }), [beds, selectedLocation, selectedFloor]);
+  }), [beds, selectedLocation, selectedFloor, statusFilter]);
 
   /*
    * Calculate booking position
@@ -1791,6 +1810,10 @@ export default function CalendarView() {
                 );
 
               const groupName = `${bed.room?.floor?.location?.name ?? "Unassigned location"} · ${bed.room?.floor?.name ?? "Unassigned floor"}`;
+              const allocation = bed.room?.allocation;
+              const allocationDetails = allocation
+                ? [allocation.purpose, allocation.description, allocation.notes].filter(Boolean).join(" · ")
+                : "";
               const previousBed = activeBeds[bedIndex - 1];
               const previousGroupName = previousBed
                 ? `${previousBed.room?.floor?.location?.name ?? "Unassigned location"} · ${previousBed.room?.floor?.name ?? "Unassigned floor"}`
@@ -1872,6 +1895,25 @@ export default function CalendarView() {
                         />
                       );
                     })}
+
+                    {/* ALLOCATION */}
+
+                    {allocation && (
+                      <div
+                        className="booking-block booking-allocated"
+                        style={{
+                          left: 0,
+                          width: dates.length * DAY_WIDTH,
+                        }}
+                        title={allocationDetails}
+                        aria-label={`Allocated: ${allocationDetails}`}
+                      >
+                        <div className="booking-allocated__label">
+                          <div className="booking-block__name">ALLOCATED</div>
+                          <div className="booking-block__status">{allocation.purpose}</div>
+                        </div>
+                      </div>
+                    )}
 
                     {/* BOOKINGS */}
 
