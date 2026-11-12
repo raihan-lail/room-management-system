@@ -233,7 +233,7 @@ model Resident {
   phone       String
   gender      Gender
   nationality String?
-  mealType    String
+  mealType    String?
   company     String?
   department  String?
   title       String?
