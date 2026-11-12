@@ -209,7 +209,7 @@ export type ResidentGroupByOutputType = {
   phone: string
   gender: $Enums.Gender
   nationality: string | null
-  mealType: string
+  mealType: string | null
   company: string | null
   department: string | null
   title: string | null
@@ -247,7 +247,7 @@ export type ResidentWhereInput = {
   phone?: Prisma.StringFilter<"Resident"> | string
   gender?: Prisma.EnumGenderFilter<"Resident"> | $Enums.Gender
   nationality?: Prisma.StringNullableFilter<"Resident"> | string | null
-  mealType?: Prisma.StringFilter<"Resident"> | string
+  mealType?: Prisma.StringNullableFilter<"Resident"> | string | null
   company?: Prisma.StringNullableFilter<"Resident"> | string | null
   department?: Prisma.StringNullableFilter<"Resident"> | string | null
   title?: Prisma.StringNullableFilter<"Resident"> | string | null
@@ -267,7 +267,7 @@ export type ResidentOrderByWithRelationInput = {
   phone?: Prisma.SortOrder
   gender?: Prisma.SortOrder
   nationality?: Prisma.SortOrderInput | Prisma.SortOrder
-  mealType?: Prisma.SortOrder
+  mealType?: Prisma.SortOrderInput | Prisma.SortOrder
   company?: Prisma.SortOrderInput | Prisma.SortOrder
   department?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -290,7 +290,7 @@ export type ResidentWhereUniqueInput = Prisma.AtLeast<{
   phone?: Prisma.StringFilter<"Resident"> | string
   gender?: Prisma.EnumGenderFilter<"Resident"> | $Enums.Gender
   nationality?: Prisma.StringNullableFilter<"Resident"> | string | null
-  mealType?: Prisma.StringFilter<"Resident"> | string
+  mealType?: Prisma.StringNullableFilter<"Resident"> | string | null
   company?: Prisma.StringNullableFilter<"Resident"> | string | null
   department?: Prisma.StringNullableFilter<"Resident"> | string | null
   title?: Prisma.StringNullableFilter<"Resident"> | string | null
@@ -310,7 +310,7 @@ export type ResidentOrderByWithAggregationInput = {
   phone?: Prisma.SortOrder
   gender?: Prisma.SortOrder
   nationality?: Prisma.SortOrderInput | Prisma.SortOrder
-  mealType?: Prisma.SortOrder
+  mealType?: Prisma.SortOrderInput | Prisma.SortOrder
   company?: Prisma.SortOrderInput | Prisma.SortOrder
   department?: Prisma.SortOrderInput | Prisma.SortOrder
   title?: Prisma.SortOrderInput | Prisma.SortOrder
@@ -333,7 +333,7 @@ export type ResidentScalarWhereWithAggregatesInput = {
   phone?: Prisma.StringWithAggregatesFilter<"Resident"> | string
   gender?: Prisma.EnumGenderWithAggregatesFilter<"Resident"> | $Enums.Gender
   nationality?: Prisma.StringNullableWithAggregatesFilter<"Resident"> | string | null
-  mealType?: Prisma.StringWithAggregatesFilter<"Resident"> | string
+  mealType?: Prisma.StringNullableWithAggregatesFilter<"Resident"> | string | null
   company?: Prisma.StringNullableWithAggregatesFilter<"Resident"> | string | null
   department?: Prisma.StringNullableWithAggregatesFilter<"Resident"> | string | null
   title?: Prisma.StringNullableWithAggregatesFilter<"Resident"> | string | null
@@ -348,7 +348,7 @@ export type ResidentCreateInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -368,7 +368,7 @@ export type ResidentUncheckedCreateInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -384,7 +384,7 @@ export type ResidentUpdateInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -404,7 +404,7 @@ export type ResidentUncheckedUpdateInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -422,7 +422,7 @@ export type ResidentCreateManyInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -437,7 +437,7 @@ export type ResidentUpdateManyMutationInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -454,7 +454,7 @@ export type ResidentUncheckedUpdateManyInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -632,7 +632,7 @@ export type ResidentCreateWithoutUserInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -650,7 +650,7 @@ export type ResidentUncheckedCreateWithoutUserInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -682,7 +682,7 @@ export type ResidentUpdateWithoutUserInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -700,7 +700,7 @@ export type ResidentUncheckedUpdateWithoutUserInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -716,7 +716,7 @@ export type ResidentCreateWithoutSiteInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -734,7 +734,7 @@ export type ResidentUncheckedCreateWithoutSiteInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -781,7 +781,7 @@ export type ResidentScalarWhereInput = {
   phone?: Prisma.StringFilter<"Resident"> | string
   gender?: Prisma.EnumGenderFilter<"Resident"> | $Enums.Gender
   nationality?: Prisma.StringNullableFilter<"Resident"> | string | null
-  mealType?: Prisma.StringFilter<"Resident"> | string
+  mealType?: Prisma.StringNullableFilter<"Resident"> | string | null
   company?: Prisma.StringNullableFilter<"Resident"> | string | null
   department?: Prisma.StringNullableFilter<"Resident"> | string | null
   title?: Prisma.StringNullableFilter<"Resident"> | string | null
@@ -796,7 +796,7 @@ export type ResidentCreateWithoutBookingsInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -815,7 +815,7 @@ export type ResidentUncheckedCreateWithoutBookingsInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -846,7 +846,7 @@ export type ResidentUpdateWithoutBookingsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -865,7 +865,7 @@ export type ResidentUncheckedUpdateWithoutBookingsInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -881,7 +881,7 @@ export type ResidentCreateManySiteInput = {
   phone: string
   gender: $Enums.Gender
   nationality?: string | null
-  mealType: string
+  mealType?: string | null
   company?: string | null
   department?: string | null
   title?: string | null
@@ -896,7 +896,7 @@ export type ResidentUpdateWithoutSiteInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -914,7 +914,7 @@ export type ResidentUncheckedUpdateWithoutSiteInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -931,7 +931,7 @@ export type ResidentUncheckedUpdateManyWithoutSiteInput = {
   phone?: Prisma.StringFieldUpdateOperationsInput | string
   gender?: Prisma.EnumGenderFieldUpdateOperationsInput | $Enums.Gender
   nationality?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  mealType?: Prisma.StringFieldUpdateOperationsInput | string
+  mealType?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   company?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   department?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
   title?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
@@ -1078,7 +1078,7 @@ export type $ResidentPayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     phone: string
     gender: $Enums.Gender
     nationality: string | null
-    mealType: string
+    mealType: string | null
     company: string | null
     department: string | null
     title: string | null

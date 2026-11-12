@@ -24,10 +24,6 @@ import {
   residentSiteScope,
 } from "../helpers/resident.helper.js";
 
-
-
-
-
 export async function listResidents(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
@@ -241,7 +237,7 @@ export async function createResident(req: AuthRequest, res: Response) {
           phone,
           
           nationality: optionalString(nationality) ?? null,
-          mealType: mealType ?? "REGULAR",
+          mealType: mealType ?? null,
           company: optionalString(company) ?? null,
           department: optionalString(department) ?? null,
           title: optionalString(title) ?? null,
