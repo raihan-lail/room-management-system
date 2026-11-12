@@ -33,6 +33,7 @@ import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
 import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
+import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 
 function getResidentPortalUrl(): string | undefined {
   const origin =
@@ -722,10 +723,10 @@ export async function exportBookingsToExcel(
       Company: booking.resident.company ?? "",
       Department: booking.resident.department,
       Title: booking.resident.title ?? "",
-      "Start Date": booking.startedAt.toDateString(),
-      "End Date": booking.endedAt.toDateString(),
-      "Checked In At": booking.checkedInAt?.toDateString() ?? "",
-      "Checked Out At": booking.checkedOutAt?.toDateString() ?? "",
+      "Start Date": formatTimestapWithoutHours(booking.startedAt),
+      "End Date": formatTimestapWithoutHours(booking.endedAt),
+      "Checked In At": formatTimestamp(booking.checkedInAt),
+      "Checked Out At": formatTimestamp(booking.checkedOutAt),
     }));
 
     const workbook = XLSX.utils.book_new();
