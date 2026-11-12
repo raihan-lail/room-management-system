@@ -179,6 +179,7 @@ export default function FrontDesk() {
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [checkingInBooking, setCheckingInBooking] = useState(null);
+  const [viewingBookingId, setViewingBookingId] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [selectedDate, setSelectedDate] = useState(getTodayKey);
 
@@ -1060,14 +1061,13 @@ aria-label={
                           <td>{booking.status || "-"}</td>
 
                           <td>
-                            {isCurrentDate && booking.status === "ACTIVE" ? (
-                              <TableRowActions
-                                label="home leave"
-                                rowLabel={booking.name}
-                                actions={getHomeLeaveRowActions(booking)}
-                                permission={null}
-                              />
-                            ) : "-"}
+                            <TableRowActions
+                              label="home leave"
+                              rowLabel={booking.name}
+                              onView={() => setViewingBookingId(booking.id)}
+                              actions={isCurrentDate ? getHomeLeaveRowActions(booking) : []}
+                              permission={null}
+                            />
                           </td>
                         </>
                       ) : (
@@ -1103,16 +1103,13 @@ aria-label={
                          
 
                           <td>
-                            {!isCurrentDate ? (
-                              "-"
-                            ) : (
-                              <TableRowActions
-                                label="booking"
-                                rowLabel={booking.guest?.name}
-                                actions={getBookingRowActions(booking)}
-                                permission={null}
-                              />
-                            )}
+                            <TableRowActions
+                              label="booking"
+                              rowLabel={booking.guest?.name}
+                              onView={() => setViewingBookingId(booking.id)}
+                              actions={isCurrentDate ? getBookingRowActions(booking) : []}
+                              permission={null}
+                            />
                           </td>
                         </>
                       )}
@@ -1249,6 +1246,13 @@ aria-label={
             </div>
           </form>
         </div>
+      )}
+
+      {viewingBookingId && (
+        <BookingDetailsModal
+          bookingId={viewingBookingId}
+          onClose={() => setViewingBookingId(null)}
+        />
       )}
 
       {checkingInBooking && (

@@ -24,6 +24,18 @@ function formatDate(value) {
   return date.toISOString().slice(0, 10);
 }
 
+function formatTimestamp(value) {
+  if (!value) return "-";
+
+  const date = new Date(value);
+
+  if (Number.isNaN(date.getTime())) return String(value);
+
+  const pad = (part) => String(part).padStart(2, "0");
+
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+}
+
 function formatStatus(status) {
   if (!status) return "-";
 
@@ -104,11 +116,11 @@ export default function BookingDetailsModal({
           value: booking.bed?.room?.floor?.location?.name,
         },
         { label: "Floor", value: booking.bed?.room?.floor?.name },
-        { label: "Started At", value: formatDate(booking.startedAt) },
-        { label: "Ended At", value: formatDate(booking.endedAt) },
-        { label: "Booked At", value: formatDate(booking.createdAt) },
-        { label: "Checked In At", value: formatDate(booking.checkedInAt) },
-        { label: "Checked Out At", value: formatDate(booking.checkedOutAt) },
+        { label: "Start Date", value: formatDate(booking.startedAt) },
+        { label: "End Date", value: formatDate(booking.endedAt) },
+        { label: "Created At", value: formatDate(booking.createdAt) },
+        { label: "Checked In At", value: formatTimestamp(booking.checkedInAt) },
+        { label: "Checked Out At", value: formatTimestamp(booking.checkedOutAt) },
         { label: "Cancelled At", value: formatDate(booking.cancelledAt) },
         {
           label: "Cancellation Reason",
