@@ -32,6 +32,29 @@ const EMPTY_NEW_RESIDENT = {
   title: "",
 };
 
+/*
+ * Open ended bookings are stored with a one year
+ * end date. Feb 29 is clamped to Feb 28 so the
+ * result always stays a valid date.
+ */
+function addOneYear(isoDate) {
+  if (!isoDate) return "";
+
+  const date = new Date(`${isoDate}T00:00:00.000Z`);
+
+  if (Number.isNaN(date.getTime())) return "";
+
+  const month = date.getUTCMonth();
+
+  date.setUTCFullYear(date.getUTCFullYear() + 1);
+
+  if (date.getUTCMonth() !== month) {
+    date.setUTCDate(0);
+  }
+
+  return date.toISOString().slice(0, 10);
+}
+
 
 
 export default function BookingCreateModal({ onClose, onCreated, initialValues, lockedBed }) {
@@ -44,6 +67,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   const [values, setValues] = useState(() => ({ ...EMPTY_VALUES, ...initialValues }));
   const [residentMode, setResidentMode] = useState("existing");
   const [newResident, setNewResident] = useState(EMPTY_NEW_RESIDENT);
+  const [noEndDate, setNoEndDate] = useState(false);
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBeds, setIsLoadingBeds] = useState(false);
@@ -88,8 +112,11 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     }
   }, [canManageResidents, user]);
 
+  const autoEndedAt = noEndDate ? addOneYear(values.startedAt) : "";
+  const effectiveEndedAt = noEndDate ? autoEndedAt : values.endedAt;
+
   const hasValidStayDates = Boolean(
-    values.startedAt && values.endedAt && values.startedAt < values.endedAt,
+    values.startedAt && effectiveEndedAt && values.startedAt < effectiveEndedAt,
   );
 
   useEffect(() => {
@@ -114,7 +141,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         status: "VACANT",
         pageSize: "100",
         startDate: values.startedAt,
-        endDate: values.endedAt,
+        endDate: effectiveEndedAt,
       });
       const response = await apiRequest(`/api/bed?${params.toString()}`);
       if (!isCurrentRequest) return;
@@ -136,7 +163,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   return () => {
     isCurrentRequest = false;
   };
-}, [hasValidStayDates, values.startedAt, values.endedAt, lockedBed]);
+}, [hasValidStayDates, values.startedAt, effectiveEndedAt, lockedBed]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -202,6 +229,20 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     setNewResident((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleNoEndDateChange = (checked) => {
+    setNoEndDate(checked);
+    setError("");
+
+    /*
+     * The effective stay dates change, so the
+     * previously chosen bed may no longer be free.
+     */
+    setValues((prev) => ({
+      ...prev,
+      bedId: lockedBed ? prev.bedId : "",
+    }));
+  };
+
   const handleResidentModeChange = (mode) => {
     setResidentMode(mode);
     setError("");
@@ -237,7 +278,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     }
 
     const startedAt = new Date(`${values.startedAt}T00:00:00.000Z`);
-    const endedAt = new Date(`${values.endedAt}T00:00:00.000Z`);
+    const endedAt = new Date(`${effectiveEndedAt}T00:00:00.000Z`);
 
     if (
       Number.isNaN(startedAt.getTime()) ||
@@ -569,12 +610,26 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                 field={{
                   name: "endedAt",
                   label: "End Date",
-                  type: "date",
+                  type: noEndDate ? "text" : "date",
                   required: true,
+                  readOnly: noEndDate,
                 }}
-                value={values.endedAt}
+                value={noEndDate ? autoEndedAt : values.endedAt}
                 onChange={handleChange}
               />
+
+              <label className="modal__checkbox">
+                <input
+                  type="checkbox"
+                  checked={noEndDate}
+                  onChange={(event) =>
+                    handleNoEndDateChange(event.target.checked)
+                  }
+                />
+                <span>
+                  No end booking (ends one year after the start date)
+                </span>
+              </label>
 
               {!lockedBed && (
                 <ModalField

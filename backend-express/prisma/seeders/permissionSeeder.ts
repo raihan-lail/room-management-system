@@ -115,6 +115,10 @@ const permissions = [
     description: "Update bookings",
   },
   {
+    name: "bookings.approve",
+    description: "approve booking changes",
+  },
+  {
     name: "home.leaves",
     description: "manage home leaves",
   },
