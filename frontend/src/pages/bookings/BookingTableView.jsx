@@ -358,6 +358,11 @@ export default function BookingTableView() {
     if (booking.status === "IN_HOUSE") {
       return [
         {
+          label: "Edit",
+          icon: "bi bi-pencil-square",
+          onClick: () => setEditingBooking(booking),
+        },
+        {
           label: "Extend Stay",
           icon: "bi bi-calendar-plus",
           onClick: () => {
@@ -379,6 +384,11 @@ export default function BookingTableView() {
 
     if (["CHECKED_OUT", "CANCELLED"].includes(booking.status)) {
       return [
+        {
+          label: "Edit",
+          icon: "bi bi-pencil-square",
+          onClick: () => setEditingBooking(booking),
+        },
         {
           label: "Archive",
           icon: "bi bi-archive",
