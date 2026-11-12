@@ -221,8 +221,8 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         !newResident.email.trim() ||
         !newResident.phone.trim() ||
         !newResident.gender ||
-        !newResident.siteId ||
-        !newResident.mealType
+        !newResident.siteId 
+       
       ) {
         setError(
           "Fill in the required resident fields.",
@@ -266,7 +266,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
             phone: newResident.phone.trim(),
             gender: newResident.gender,
             nationality: newResident.nationality.trim() || undefined,
-            mealType: newResident.mealType,
+            mealType: newResident.mealType || undefined,
             company: newResident.company.trim() || undefined,
             department: newResident.department.trim() || undefined,
             title: newResident.title.trim() || undefined,
@@ -488,7 +488,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                       label: "Meal Type",
                       type: "text",
                       
-                      required: true,
+                      
                     }}
                     value={newResident.mealType}
                     onChange={handleNewResidentChange}
