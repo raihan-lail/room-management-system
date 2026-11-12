@@ -570,7 +570,7 @@ export default function BookingTableView() {
                       className="table-sort"
                       onClick={() => handleSort("booked_at")}
                     >
-                      Booked At
+                      Created At
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
@@ -580,7 +580,7 @@ export default function BookingTableView() {
                       className="table-sort"
                       onClick={() => handleSort("started_at")}
                     >
-                      Started At
+                      Start Date
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>
@@ -590,7 +590,7 @@ export default function BookingTableView() {
                       className="table-sort"
                       onClick={() => handleSort("ended_at")}
                     >
-                      Ended At
+                      End Date
                       <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                     </button>
                   </th>

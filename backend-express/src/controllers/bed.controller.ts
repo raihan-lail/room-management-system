@@ -19,6 +19,7 @@ import {
   singleParam,
   type BedStatus,
 } from "../helpers/bed.helper.js";
+import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 
 export async function listBeds(req: AuthRequest, res: Response) {
   try {
@@ -627,10 +628,10 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
         "Title": booking?.resident.title ?? "",
         "Email": booking?.resident.user.email ?? "",
         "Phone": booking?.resident.phone ?? "",
-        "Start Date": booking?.startedAt.toDateString() ?? "",
-        "End Date": booking?.endedAt.toDateString() ?? "",
-        "Checked In At": booking?.checkedInAt?.toDateString() ?? "",
-        "Checked Out At": booking?.checkedOutAt?.toDateString() ?? "",
+        "Start Date": formatTimestapWithoutHours(booking?.startedAt) ?? "",
+        "End Date": formatTimestapWithoutHours(booking?.endedAt) ?? "",
+        "Checked In At": formatTimestamp(booking?.checkedInAt),
+        "Checked Out At": formatTimestamp(booking?.checkedOutAt),
         "Allocation Purpose": allocation?.purpose ?? "",
         "Allocation Description": allocation?.description ?? "",
         "Allocation Notes": allocation?.notes ?? "",
