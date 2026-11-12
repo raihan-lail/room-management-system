@@ -4409,6 +4409,29 @@ textarea,
   gap: 16px;
 }
 
+.modal__checkbox {
+  display: flex;
+  align-items: center;
+
+  grid-column: 1 / -1;
+
+  gap: 8px;
+
+  font-size: 13px;
+  line-height: 20px;
+
+  color: var(--brand-bold);
+
+  cursor: pointer;
+}
+
+.modal__checkbox input {
+  width: 16px;
+  height: 16px;
+
+  cursor: pointer;
+}
+
 .modal__actions {
   display: flex;
   align-items: center;
