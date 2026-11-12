@@ -964,7 +964,7 @@ aria-label={
                         </button>
                       </th>
 
-                      <th>Booked At</th>
+                      <th>Created At</th>
 
                       <th>
                         <button
@@ -972,7 +972,7 @@ aria-label={
                           className="table-sort"
                           onClick={() => handleSort("started_at")}
                         >
-                          Started At
+                          Start Date
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
@@ -983,7 +983,7 @@ aria-label={
                           className="table-sort"
                           onClick={() => handleSort("ended_at")}
                         >
-                          Ended At
+                          End Date
                           <i className="bi bi-sort-alpha-down" aria-hidden="true" />
                         </button>
                       </th>
