@@ -1,7 +1,7 @@
 
 import MainLayout from "../../components/MainLayout";
 import { Fragment, useCallback, useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+
 import apiRequest from "../../api/client";
 import TableRowActions from "../../components/TableRowActions";
 import AddModal from "../../components/modals/AddModal";
@@ -95,7 +95,7 @@ function getRoomBedCount(room) {
 }
 
 export default function RoomManagement() {
-  const navigate = useNavigate();
+  
 
   const [roomList, setRoomList] = useState([]);
   const [locations, setLocations] = useState([]);
@@ -806,9 +806,6 @@ export default function RoomManagement() {
                             <TableRowActions
                               label="room"
                               rowLabel={room.name}
-                              onView={() =>
-                                navigate(`/rooms/${room.id}/booking-details`)
-                              }
                               onEdit={() => setEditingRow(mapRoomToForm(room))}
                               onDelete={() => setDeletingRow(room)}
                             />

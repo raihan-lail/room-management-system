@@ -57,6 +57,7 @@ function formatDate(value) {
 }
 
 export default function BookingApproval() {
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [requests, setRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
@@ -78,9 +79,9 @@ export default function BookingApproval() {
     setError("");
 
     try {
-      const response = await apiRequest(
-        "/api/booking-approval?status=PENDING"
-      );
+      const response = await apiRequest(activeTab === "history"
+        ? "/api/booking-approval/history"
+        : "/api/booking-approval?status=PENDING");
 
       setRequests(Array.isArray(response?.data) ? response.data : []);
     } catch (err) {
@@ -88,7 +89,14 @@ export default function BookingApproval() {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeTab]);
+
+  const selectTab = (tab) => {
+    setActiveTab(tab);
+    setCurrentPage(1);
+    setSearch("");
+    setSortConfig({ key: null, direction: "asc" });
+  };
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -246,7 +254,7 @@ export default function BookingApproval() {
             </h1>
 
             <p className="dashboard-header__subtitle">
-              Review requested booking updates before they are applied.
+              Review requested booking updates and see completed decisions.
             </p>
           </div>
         </div>
@@ -258,7 +266,7 @@ export default function BookingApproval() {
 
             <input
               type="search"
-              aria-label="Search booking change requests"
+              aria-label={`Search ${activeTab === "history" ? "booking request history" : "upcoming booking requests"}`}
               placeholder="Search by booking ID, resident, requested by..."
               value={search}
               onChange={(event) =>
@@ -276,6 +284,16 @@ export default function BookingApproval() {
 
         {/* TABLE CARD */}
         <section className="table-card content">
+          <div className="detail-card__head detail-card__head--tabs">
+            <div className="detail-tabs" role="tablist" aria-label="Booking approval requests">
+              <button type="button" role="tab" aria-selected={activeTab === "upcoming"} className={`detail-tab ${activeTab === "upcoming" ? "is-active" : ""}`} onClick={() => selectTab("upcoming")}>
+                Upcoming Requests
+              </button>
+              <button type="button" role="tab" aria-selected={activeTab === "history"} className={`detail-tab ${activeTab === "history" ? "is-active" : ""}`} onClick={() => selectTab("history")}>
+                Request History
+              </button>
+            </div>
+          </div>
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
@@ -319,7 +337,7 @@ export default function BookingApproval() {
                     </button>
                   </th>
 
-                  <th>Action</th>
+                  <th>{activeTab === "history" ? "Review" : "Action"}</th>
                 </tr>
               </thead>
 
@@ -333,7 +351,7 @@ export default function BookingApproval() {
                 ) : pagedRequests.length === 0 ? (
                   <tr>
                     <td colSpan={7} className="muted">
-                      There are no pending booking change requests.
+                      {activeTab === "history" ? "There is no booking request history." : "There are no pending booking change requests."}
                     </td>
                   </tr>
                 ) : (
@@ -393,7 +411,14 @@ export default function BookingApproval() {
                         <td>{formatDate(request.requestedAt)}</td>
 
                         <td>
-                          {busyId === request.id ? (
+                          {activeTab === "history" ? (
+                            <>
+                              <strong>{request.status === "APPROVED" ? "Approved" : "Rejected"}</strong>
+                              <br />
+                              <span className="muted">{request.reviewedBy?.name || "-"} · {formatDate(request.reviewedAt)}</span>
+                              {request.rejectionReason && <><br /><span className="muted">{request.rejectionReason}</span></>}
+                            </>
+                          ) : busyId === request.id ? (
                             <span className="muted">Processing...</span>
                           ) : (
                             <TableRowActions
@@ -428,8 +453,7 @@ export default function BookingApproval() {
           {/* PAGINATION */}
           <div className="office-pagination">
             <span className="office-page-info">
-              Showing {startRow}–{endRow} of {filteredRequests.length} change
-              requests
+              Showing {startRow}–{endRow} of {filteredRequests.length} {activeTab === "history" ? "historical" : "pending"} change requests
             </span>
 
             <div className="office-page-nav">
