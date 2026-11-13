@@ -70,6 +70,27 @@ export const ComplaintPriority = {
 export type ComplaintPriority = (typeof ComplaintPriority)[keyof typeof ComplaintPriority]
 
 
+export const BookingChangeType = {
+  EXTEND: 'EXTEND',
+  CHANGE_DATES: 'CHANGE_DATES',
+  CANCEL: 'CANCEL',
+  OTHER: 'OTHER'
+} as const
+
+export type BookingChangeType = (typeof BookingChangeType)[keyof typeof BookingChangeType]
+
+
+export const BookingChangeStatus = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REJECTED: 'REJECTED',
+  CANCELLED: 'CANCELLED',
+  EXPIRED: 'EXPIRED'
+} as const
+
+export type BookingChangeStatus = (typeof BookingChangeStatus)[keyof typeof BookingChangeStatus]
+
+
 export const EmailStatus = {
   PENDING: 'PENDING',
   SENT: 'SENT',

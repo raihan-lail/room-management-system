@@ -85,20 +85,25 @@ export default function BookingEditModal({ booking, onClose, onUpdated }) {
     setIsSaving(true);
     setError("");
     try {
-      await apiRequest(`/api/booking/${booking.id}`, {
-        method: "PATCH",
+      await apiRequest("/api/booking-approval", {
+        method: "POST",
         body: JSON.stringify({
-          residentId: values.residentId,
-          bedId: values.bedId,
-          startedAt: new Date(`${values.startedAt}T00:00:00.000Z`).toISOString(),
-          endedAt: new Date(`${values.endedAt}T00:00:00.000Z`).toISOString(),
-          notes: values.notes,
+          bookingId: booking.id,
+          type: "CHANGE_DATES",
+          reason: "Booking details update",
+          requestedData: {
+            residentId: values.residentId,
+            bedId: values.bedId,
+            startedAt: new Date(`${values.startedAt}T00:00:00.000Z`).toISOString(),
+            endedAt: new Date(`${values.endedAt}T00:00:00.000Z`).toISOString(),
+            notes: values.notes,
+          },
         }),
       });
       await onUpdated();
       onClose();
     } catch (err) {
-      setError(err.message || "Failed to update booking.");
+      setError(err.message || "Failed to submit booking change request.");
     } finally {
       setIsSaving(false);
     }
@@ -142,7 +147,7 @@ export default function BookingEditModal({ booking, onClose, onUpdated }) {
           {error && <p className="error-message" role="alert">{error}</p>}
           <div className="modal__actions">
             <button type="button" className="btn btn-neutral" onClick={onClose} disabled={isSaving}>Cancel</button>
-            <button type="submit" className="btn btn-primary" disabled={isLoading || isSaving}>{isSaving ? "Saving..." : "Save Changes"}</button>
+            <button type="submit" className="btn btn-primary" disabled={isLoading || isSaving}>{isSaving ? "Submitting..." : "Request Changes"}</button>
           </div>
         </form>
       </div>

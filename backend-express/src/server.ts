@@ -17,6 +17,7 @@ import bedRouter from "./routes/bed.route";
 import roomAllocationRouter from "./routes/room-allocation.route";
 import residentRouter from "./routes/resident.route";
 import bookingRouter from "./routes/booking.route";
+import bookingApprovalRouter from "./routes/booking-approval.route";
 import dashboardRouter from "./routes/dashboard.route";
 import emailLogRouter from "./routes/email-log.route";
 
@@ -49,6 +50,7 @@ app.use("/api/audit", auditRouter);
 app.use("/api/room-allocation", roomAllocationRouter);
 app.use("/api/resident", residentRouter);
 app.use("/api/booking", bookingRouter);
+app.use("/api/booking-approval", bookingApprovalRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/email-log", emailLogRouter);
 

@@ -417,6 +417,7 @@ export const ModelName = {
   Complaint: 'Complaint',
   ComplaintMessage: 'ComplaintMessage',
   BookingRating: 'BookingRating',
+  BookingChangeRequest: 'BookingChangeRequest',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
   EmailLog: 'EmailLog',
@@ -436,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "bookingRating" | "notification" | "auditLog" | "emailLog" | "systemSetting"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "bookingRating" | "bookingChangeRequest" | "notification" | "auditLog" | "emailLog" | "systemSetting"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1920,6 +1921,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
+    BookingChangeRequest: {
+      payload: Prisma.$BookingChangeRequestPayload<ExtArgs>
+      fields: Prisma.BookingChangeRequestFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.BookingChangeRequestFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.BookingChangeRequestFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        findFirst: {
+          args: Prisma.BookingChangeRequestFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.BookingChangeRequestFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        findMany: {
+          args: Prisma.BookingChangeRequestFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>[]
+        }
+        create: {
+          args: Prisma.BookingChangeRequestCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        createMany: {
+          args: Prisma.BookingChangeRequestCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.BookingChangeRequestCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>[]
+        }
+        delete: {
+          args: Prisma.BookingChangeRequestDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        update: {
+          args: Prisma.BookingChangeRequestUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        deleteMany: {
+          args: Prisma.BookingChangeRequestDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.BookingChangeRequestUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.BookingChangeRequestUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>[]
+        }
+        upsert: {
+          args: Prisma.BookingChangeRequestUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$BookingChangeRequestPayload>
+        }
+        aggregate: {
+          args: Prisma.BookingChangeRequestAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateBookingChangeRequest>
+        }
+        groupBy: {
+          args: Prisma.BookingChangeRequestGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookingChangeRequestGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.BookingChangeRequestCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.BookingChangeRequestCountAggregateOutputType> | number
+        }
+      }
+    }
     Notification: {
       payload: Prisma.$NotificationPayload<ExtArgs>
       fields: Prisma.NotificationFieldRefs
@@ -2522,6 +2597,26 @@ export const BookingRatingScalarFieldEnum = {
 export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
 
 
+export const BookingChangeRequestScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  requestedById: 'requestedById',
+  reviewedById: 'reviewedById',
+  type: 'type',
+  status: 'status',
+  reason: 'reason',
+  oldData: 'oldData',
+  requestedData: 'requestedData',
+  rejectionReason: 'rejectionReason',
+  requestedAt: 'requestedAt',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookingChangeRequestScalarFieldEnum = (typeof BookingChangeRequestScalarFieldEnum)[keyof typeof BookingChangeRequestScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -2598,6 +2693,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
@@ -2775,6 +2877,34 @@ export type EnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType
  * Reference to a field of type 'ComplaintPriority[]'
  */
 export type ListEnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'ComplaintPriority[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BookingChangeType'
+ */
+export type EnumBookingChangeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingChangeType'>
+    
+
+
+/**
+ * Reference to a field of type 'BookingChangeType[]'
+ */
+export type ListEnumBookingChangeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingChangeType[]'>
+    
+
+
+/**
+ * Reference to a field of type 'BookingChangeStatus'
+ */
+export type EnumBookingChangeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingChangeStatus'>
+    
+
+
+/**
+ * Reference to a field of type 'BookingChangeStatus[]'
+ */
+export type ListEnumBookingChangeStatusFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingChangeStatus[]'>
     
 
 
@@ -2976,6 +3106,7 @@ export type GlobalOmitConfig = {
   complaint?: Prisma.ComplaintOmit
   complaintMessage?: Prisma.ComplaintMessageOmit
   bookingRating?: Prisma.BookingRatingOmit
+  bookingChangeRequest?: Prisma.BookingChangeRequestOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
   emailLog?: Prisma.EmailLogOmit

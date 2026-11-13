@@ -66,7 +66,7 @@ flowchart TB
   Services --> Mail
 ```
 
-The API mounts routers under `/api`: auth, employees, roles, sites, permissions, locations, rooms, beds, notifications, audit logs, room allocations, residents, bookings, dashboard, and email logs. Authentication and authorization middleware protect routes according to account type and permissions. The frontend applies matching route guards for employee pages. The schema also contains complaint and rating data models.
+The API mounts routers under `/api`: auth, employees, roles, sites, permissions, locations, rooms, beds, notifications, audit logs, room allocations, residents, bookings, booking approvals, dashboard, and email logs. Authentication and authorization middleware protect routes according to account type and permissions. The frontend applies matching route guards for employee pages. The schema also contains complaint and rating data models.
 
 ## Use cases
 
@@ -208,7 +208,7 @@ Each booking links a resident to a bed and stores the planned start/end dates, c
 
 A resident cannot hold overlapping active bookings. Booking creation, updates, and extensions reject any date range that overlaps the resident's existing `CONFIRMED`, `IN_HOUSE`, or `HOME_LEAVE` bookings, preventing double-booking across beds.
 
-Authorized staff can move confirmed and in-house bookings from the calendar by changing the bed, date range, or both. The update endpoint validates bed access and rejects overlapping active bookings; the calendar asks for confirmation before submitting the move. The calendar also lists beds belonging to allocated rooms as full-range `ALLOCATED` blocks labeled with the allocation purpose, and those beds cannot be booked.
+Booking edits, date extensions, cancellations, archiving, and calendar moves are recorded as `BookingChangeRequest` records. The booking stays unchanged while a request is pending. Staff with `bookings.approve` can approve or reject requests; approval revalidates resident and bed availability before applying edits and refreshing affected bed statuses. Check-in, check-out, and home-leave actions remain immediate lifecycle operations. The calendar also lists beds belonging to allocated rooms as full-range `ALLOCATED` blocks labeled with the allocation purpose, and those beds cannot be booked.
 
 The Front Desk views support a start-to-end date range filter. Arrival and departure use the booking start/end dates, near-end uses the booking end date, home leave uses the leave start date, and historical ranges use stay-overlap rules so records active during the range remain visible. The selected range is applied consistently to tab counts and Excel exports; only the current range exposes row actions.
 
