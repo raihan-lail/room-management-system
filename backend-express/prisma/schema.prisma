@@ -62,6 +62,10 @@ model Employee {
   roles       EmployeeRole[]
   permissions EmployeePermission[]
 
+  requestedBookingChanges BookingChangeRequest[] @relation("RequestedBookingChanges")
+
+  reviewedBookingChanges BookingChangeRequest[] @relation("ReviewedBookingChanges")
+
   user User @relation(fields: [userId], references: [id])
   complaintsAssigned Complaint[] @relation("ComplaintAssignee")
 }
@@ -298,6 +302,9 @@ model Booking {
   bed         Bed      @relation(fields: [bedId], references: [id])
   homeLeaves  HomeLeave[]
   complaints  Complaint[]
+
+  changeRequests BookingChangeRequest[]
+
   events      BookingEvent[]
   rating      BookingRating?
   emailLogs EmailLog[]
@@ -418,6 +425,53 @@ model BookingRating {
 
   @@index([score])
   @@index([createdAt])
+}
+
+
+enum BookingChangeType {
+  EXTEND
+  CHANGE_DATES
+  CANCEL
+  OTHER
+}
+
+enum BookingChangeStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CANCELLED
+  EXPIRED
+}
+model BookingChangeRequest {
+  id          String   @id @default(cuid())
+  bookingId   String
+
+  requestedById String
+  reviewedById  String?
+
+  type        BookingChangeType
+  status      BookingChangeStatus @default(PENDING)
+
+  reason      String?
+
+  oldData     Json
+  requestedData Json
+
+  rejectionReason String?
+
+  requestedAt DateTime @default(now())
+  reviewedAt  DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  booking     Booking  @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+  requestedBy Employee @relation("RequestedBookingChanges", fields: [requestedById], references: [id], onDelete: Restrict)
+  reviewedBy  Employee? @relation("ReviewedBookingChanges", fields: [reviewedById], references: [id], onDelete: SetNull)
+
+  @@index([bookingId, status])
+  @@index([status, createdAt])
+  @@index([requestedById, createdAt])
 }
 
 

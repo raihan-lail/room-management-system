@@ -193,6 +193,8 @@ export type EmployeeWhereInput = {
   site?: Prisma.XOR<Prisma.SiteNullableScalarRelationFilter, Prisma.SiteWhereInput> | null
   roles?: Prisma.EmployeeRoleListRelationFilter
   permissions?: Prisma.EmployeePermissionListRelationFilter
+  requestedBookingChanges?: Prisma.BookingChangeRequestListRelationFilter
+  reviewedBookingChanges?: Prisma.BookingChangeRequestListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   complaintsAssigned?: Prisma.ComplaintListRelationFilter
 }
@@ -207,6 +209,8 @@ export type EmployeeOrderByWithRelationInput = {
   site?: Prisma.SiteOrderByWithRelationInput
   roles?: Prisma.EmployeeRoleOrderByRelationAggregateInput
   permissions?: Prisma.EmployeePermissionOrderByRelationAggregateInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestOrderByRelationAggregateInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestOrderByRelationAggregateInput
   user?: Prisma.UserOrderByWithRelationInput
   complaintsAssigned?: Prisma.ComplaintOrderByRelationAggregateInput
 }
@@ -224,6 +228,8 @@ export type EmployeeWhereUniqueInput = Prisma.AtLeast<{
   site?: Prisma.XOR<Prisma.SiteNullableScalarRelationFilter, Prisma.SiteWhereInput> | null
   roles?: Prisma.EmployeeRoleListRelationFilter
   permissions?: Prisma.EmployeePermissionListRelationFilter
+  requestedBookingChanges?: Prisma.BookingChangeRequestListRelationFilter
+  reviewedBookingChanges?: Prisma.BookingChangeRequestListRelationFilter
   user?: Prisma.XOR<Prisma.UserScalarRelationFilter, Prisma.UserWhereInput>
   complaintsAssigned?: Prisma.ComplaintListRelationFilter
 }, "id" | "userId">
@@ -260,6 +266,8 @@ export type EmployeeCreateInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
   complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
@@ -273,6 +281,8 @@ export type EmployeeUncheckedCreateInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
@@ -284,6 +294,8 @@ export type EmployeeUpdateInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
   complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
@@ -297,6 +309,8 @@ export type EmployeeUncheckedUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -490,6 +504,36 @@ export type EmployeeUpdateOneWithoutComplaintsAssignedNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.EmployeeUpdateToOneWithWhereWithoutComplaintsAssignedInput, Prisma.EmployeeUpdateWithoutComplaintsAssignedInput>, Prisma.EmployeeUncheckedUpdateWithoutComplaintsAssignedInput>
 }
 
+export type EmployeeCreateNestedOneWithoutRequestedBookingChangesInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutRequestedBookingChangesInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutRequestedBookingChangesInput
+  connect?: Prisma.EmployeeWhereUniqueInput
+}
+
+export type EmployeeCreateNestedOneWithoutReviewedBookingChangesInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutReviewedBookingChangesInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutReviewedBookingChangesInput
+  connect?: Prisma.EmployeeWhereUniqueInput
+}
+
+export type EmployeeUpdateOneRequiredWithoutRequestedBookingChangesNestedInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutRequestedBookingChangesInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutRequestedBookingChangesInput
+  upsert?: Prisma.EmployeeUpsertWithoutRequestedBookingChangesInput
+  connect?: Prisma.EmployeeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmployeeUpdateToOneWithWhereWithoutRequestedBookingChangesInput, Prisma.EmployeeUpdateWithoutRequestedBookingChangesInput>, Prisma.EmployeeUncheckedUpdateWithoutRequestedBookingChangesInput>
+}
+
+export type EmployeeUpdateOneWithoutReviewedBookingChangesNestedInput = {
+  create?: Prisma.XOR<Prisma.EmployeeCreateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutReviewedBookingChangesInput>
+  connectOrCreate?: Prisma.EmployeeCreateOrConnectWithoutReviewedBookingChangesInput
+  upsert?: Prisma.EmployeeUpsertWithoutReviewedBookingChangesInput
+  disconnect?: Prisma.EmployeeWhereInput | boolean
+  delete?: Prisma.EmployeeWhereInput | boolean
+  connect?: Prisma.EmployeeWhereUniqueInput
+  update?: Prisma.XOR<Prisma.XOR<Prisma.EmployeeUpdateToOneWithWhereWithoutReviewedBookingChangesInput, Prisma.EmployeeUpdateWithoutReviewedBookingChangesInput>, Prisma.EmployeeUncheckedUpdateWithoutReviewedBookingChangesInput>
+}
+
 export type EmployeeCreateWithoutUserInput = {
   id?: string
   name: string
@@ -498,6 +542,8 @@ export type EmployeeCreateWithoutUserInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
 
@@ -509,6 +555,8 @@ export type EmployeeUncheckedCreateWithoutUserInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
@@ -536,6 +584,8 @@ export type EmployeeUpdateWithoutUserInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -547,6 +597,8 @@ export type EmployeeUncheckedUpdateWithoutUserInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -557,6 +609,8 @@ export type EmployeeCreateWithoutSiteInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
   complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
@@ -569,6 +623,8 @@ export type EmployeeUncheckedCreateWithoutSiteInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
@@ -617,6 +673,8 @@ export type EmployeeCreateWithoutRolesInput = {
   updatedAt?: Date | string
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
   complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
@@ -629,6 +687,8 @@ export type EmployeeUncheckedCreateWithoutRolesInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
@@ -655,6 +715,8 @@ export type EmployeeUpdateWithoutRolesInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
   complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
@@ -667,6 +729,8 @@ export type EmployeeUncheckedUpdateWithoutRolesInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -677,6 +741,8 @@ export type EmployeeCreateWithoutPermissionsInput = {
   updatedAt?: Date | string
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
   complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
 }
@@ -689,6 +755,8 @@ export type EmployeeUncheckedCreateWithoutPermissionsInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
   complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
 }
 
@@ -715,6 +783,8 @@ export type EmployeeUpdateWithoutPermissionsInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
   complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
@@ -727,6 +797,8 @@ export type EmployeeUncheckedUpdateWithoutPermissionsInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -738,6 +810,8 @@ export type EmployeeCreateWithoutComplaintsAssignedInput = {
   site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
   roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
   user: Prisma.UserCreateNestedOneWithoutEmployeeInput
 }
 
@@ -750,6 +824,8 @@ export type EmployeeUncheckedCreateWithoutComplaintsAssignedInput = {
   updatedAt?: Date | string
   roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
   permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
 }
 
 export type EmployeeCreateOrConnectWithoutComplaintsAssignedInput = {
@@ -776,6 +852,8 @@ export type EmployeeUpdateWithoutComplaintsAssignedInput = {
   site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
 }
 
@@ -788,6 +866,144 @@ export type EmployeeUncheckedUpdateWithoutComplaintsAssignedInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+}
+
+export type EmployeeCreateWithoutRequestedBookingChangesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
+  roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutReviewedByInput
+  user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
+}
+
+export type EmployeeUncheckedCreateWithoutRequestedBookingChangesInput = {
+  id?: string
+  userId: string
+  name: string
+  siteId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutReviewedByInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
+}
+
+export type EmployeeCreateOrConnectWithoutRequestedBookingChangesInput = {
+  where: Prisma.EmployeeWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutRequestedBookingChangesInput>
+}
+
+export type EmployeeCreateWithoutReviewedBookingChangesInput = {
+  id?: string
+  name: string
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  site?: Prisma.SiteCreateNestedOneWithoutEmployeesInput
+  roles?: Prisma.EmployeeRoleCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestCreateNestedManyWithoutRequestedByInput
+  user: Prisma.UserCreateNestedOneWithoutEmployeeInput
+  complaintsAssigned?: Prisma.ComplaintCreateNestedManyWithoutAssignedToInput
+}
+
+export type EmployeeUncheckedCreateWithoutReviewedBookingChangesInput = {
+  id?: string
+  userId: string
+  name: string
+  siteId?: string | null
+  createdAt?: Date | string
+  updatedAt?: Date | string
+  roles?: Prisma.EmployeeRoleUncheckedCreateNestedManyWithoutEmployeeInput
+  permissions?: Prisma.EmployeePermissionUncheckedCreateNestedManyWithoutEmployeeInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedCreateNestedManyWithoutRequestedByInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedCreateNestedManyWithoutAssignedToInput
+}
+
+export type EmployeeCreateOrConnectWithoutReviewedBookingChangesInput = {
+  where: Prisma.EmployeeWhereUniqueInput
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutReviewedBookingChangesInput>
+}
+
+export type EmployeeUpsertWithoutRequestedBookingChangesInput = {
+  update: Prisma.XOR<Prisma.EmployeeUpdateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedUpdateWithoutRequestedBookingChangesInput>
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutRequestedBookingChangesInput>
+  where?: Prisma.EmployeeWhereInput
+}
+
+export type EmployeeUpdateToOneWithWhereWithoutRequestedBookingChangesInput = {
+  where?: Prisma.EmployeeWhereInput
+  data: Prisma.XOR<Prisma.EmployeeUpdateWithoutRequestedBookingChangesInput, Prisma.EmployeeUncheckedUpdateWithoutRequestedBookingChangesInput>
+}
+
+export type EmployeeUpdateWithoutRequestedBookingChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
+  roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
+}
+
+export type EmployeeUncheckedUpdateWithoutRequestedBookingChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  siteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
+}
+
+export type EmployeeUpsertWithoutReviewedBookingChangesInput = {
+  update: Prisma.XOR<Prisma.EmployeeUpdateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedUpdateWithoutReviewedBookingChangesInput>
+  create: Prisma.XOR<Prisma.EmployeeCreateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedCreateWithoutReviewedBookingChangesInput>
+  where?: Prisma.EmployeeWhereInput
+}
+
+export type EmployeeUpdateToOneWithWhereWithoutReviewedBookingChangesInput = {
+  where?: Prisma.EmployeeWhereInput
+  data: Prisma.XOR<Prisma.EmployeeUpdateWithoutReviewedBookingChangesInput, Prisma.EmployeeUncheckedUpdateWithoutReviewedBookingChangesInput>
+}
+
+export type EmployeeUpdateWithoutReviewedBookingChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  site?: Prisma.SiteUpdateOneWithoutEmployeesNestedInput
+  roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
+  complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
+}
+
+export type EmployeeUncheckedUpdateWithoutReviewedBookingChangesInput = {
+  id?: Prisma.StringFieldUpdateOperationsInput | string
+  userId?: Prisma.StringFieldUpdateOperationsInput | string
+  name?: Prisma.StringFieldUpdateOperationsInput | string
+  siteId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
+  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
+  roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
+  permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
 export type EmployeeCreateManySiteInput = {
@@ -805,6 +1021,8 @@ export type EmployeeUpdateWithoutSiteInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUpdateManyWithoutReviewedByNestedInput
   user?: Prisma.UserUpdateOneRequiredWithoutEmployeeNestedInput
   complaintsAssigned?: Prisma.ComplaintUpdateManyWithoutAssignedToNestedInput
 }
@@ -817,6 +1035,8 @@ export type EmployeeUncheckedUpdateWithoutSiteInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   roles?: Prisma.EmployeeRoleUncheckedUpdateManyWithoutEmployeeNestedInput
   permissions?: Prisma.EmployeePermissionUncheckedUpdateManyWithoutEmployeeNestedInput
+  requestedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutRequestedByNestedInput
+  reviewedBookingChanges?: Prisma.BookingChangeRequestUncheckedUpdateManyWithoutReviewedByNestedInput
   complaintsAssigned?: Prisma.ComplaintUncheckedUpdateManyWithoutAssignedToNestedInput
 }
 
@@ -836,12 +1056,16 @@ export type EmployeeUncheckedUpdateManyWithoutSiteInput = {
 export type EmployeeCountOutputType = {
   roles: number
   permissions: number
+  requestedBookingChanges: number
+  reviewedBookingChanges: number
   complaintsAssigned: number
 }
 
 export type EmployeeCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   roles?: boolean | EmployeeCountOutputTypeCountRolesArgs
   permissions?: boolean | EmployeeCountOutputTypeCountPermissionsArgs
+  requestedBookingChanges?: boolean | EmployeeCountOutputTypeCountRequestedBookingChangesArgs
+  reviewedBookingChanges?: boolean | EmployeeCountOutputTypeCountReviewedBookingChangesArgs
   complaintsAssigned?: boolean | EmployeeCountOutputTypeCountComplaintsAssignedArgs
 }
 
@@ -872,6 +1096,20 @@ export type EmployeeCountOutputTypeCountPermissionsArgs<ExtArgs extends runtime.
 /**
  * EmployeeCountOutputType without action
  */
+export type EmployeeCountOutputTypeCountRequestedBookingChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingChangeRequestWhereInput
+}
+
+/**
+ * EmployeeCountOutputType without action
+ */
+export type EmployeeCountOutputTypeCountReviewedBookingChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  where?: Prisma.BookingChangeRequestWhereInput
+}
+
+/**
+ * EmployeeCountOutputType without action
+ */
 export type EmployeeCountOutputTypeCountComplaintsAssignedArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   where?: Prisma.ComplaintWhereInput
 }
@@ -887,6 +1125,8 @@ export type EmployeeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs
   site?: boolean | Prisma.Employee$siteArgs<ExtArgs>
   roles?: boolean | Prisma.Employee$rolesArgs<ExtArgs>
   permissions?: boolean | Prisma.Employee$permissionsArgs<ExtArgs>
+  requestedBookingChanges?: boolean | Prisma.Employee$requestedBookingChangesArgs<ExtArgs>
+  reviewedBookingChanges?: boolean | Prisma.Employee$reviewedBookingChangesArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   complaintsAssigned?: boolean | Prisma.Employee$complaintsAssignedArgs<ExtArgs>
   _count?: boolean | Prisma.EmployeeCountOutputTypeDefaultArgs<ExtArgs>
@@ -928,6 +1168,8 @@ export type EmployeeInclude<ExtArgs extends runtime.Types.Extensions.InternalArg
   site?: boolean | Prisma.Employee$siteArgs<ExtArgs>
   roles?: boolean | Prisma.Employee$rolesArgs<ExtArgs>
   permissions?: boolean | Prisma.Employee$permissionsArgs<ExtArgs>
+  requestedBookingChanges?: boolean | Prisma.Employee$requestedBookingChangesArgs<ExtArgs>
+  reviewedBookingChanges?: boolean | Prisma.Employee$reviewedBookingChangesArgs<ExtArgs>
   user?: boolean | Prisma.UserDefaultArgs<ExtArgs>
   complaintsAssigned?: boolean | Prisma.Employee$complaintsAssignedArgs<ExtArgs>
   _count?: boolean | Prisma.EmployeeCountOutputTypeDefaultArgs<ExtArgs>
@@ -947,6 +1189,8 @@ export type $EmployeePayload<ExtArgs extends runtime.Types.Extensions.InternalAr
     site: Prisma.$SitePayload<ExtArgs> | null
     roles: Prisma.$EmployeeRolePayload<ExtArgs>[]
     permissions: Prisma.$EmployeePermissionPayload<ExtArgs>[]
+    requestedBookingChanges: Prisma.$BookingChangeRequestPayload<ExtArgs>[]
+    reviewedBookingChanges: Prisma.$BookingChangeRequestPayload<ExtArgs>[]
     user: Prisma.$UserPayload<ExtArgs>
     complaintsAssigned: Prisma.$ComplaintPayload<ExtArgs>[]
   }
@@ -1354,6 +1598,8 @@ export interface Prisma__EmployeeClient<T, Null = never, ExtArgs extends runtime
   site<T extends Prisma.Employee$siteArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$siteArgs<ExtArgs>>): Prisma.Prisma__SiteClient<runtime.Types.Result.GetResult<Prisma.$SitePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
   roles<T extends Prisma.Employee$rolesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$rolesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeeRolePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   permissions<T extends Prisma.Employee$permissionsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$permissionsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmployeePermissionPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  requestedBookingChanges<T extends Prisma.Employee$requestedBookingChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$requestedBookingChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingChangeRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
+  reviewedBookingChanges<T extends Prisma.Employee$reviewedBookingChangesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$reviewedBookingChangesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingChangeRequestPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   user<T extends Prisma.UserDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.UserDefaultArgs<ExtArgs>>): Prisma.Prisma__UserClient<runtime.Types.Result.GetResult<Prisma.$UserPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   complaintsAssigned<T extends Prisma.Employee$complaintsAssignedArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Employee$complaintsAssignedArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComplaintPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
@@ -1856,6 +2102,54 @@ export type Employee$permissionsArgs<ExtArgs extends runtime.Types.Extensions.In
   take?: number
   skip?: number
   distinct?: Prisma.EmployeePermissionScalarFieldEnum | Prisma.EmployeePermissionScalarFieldEnum[]
+}
+
+/**
+ * Employee.requestedBookingChanges
+ */
+export type Employee$requestedBookingChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BookingChangeRequest
+   */
+  select?: Prisma.BookingChangeRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BookingChangeRequest
+   */
+  omit?: Prisma.BookingChangeRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingChangeRequestInclude<ExtArgs> | null
+  where?: Prisma.BookingChangeRequestWhereInput
+  orderBy?: Prisma.BookingChangeRequestOrderByWithRelationInput | Prisma.BookingChangeRequestOrderByWithRelationInput[]
+  cursor?: Prisma.BookingChangeRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingChangeRequestScalarFieldEnum | Prisma.BookingChangeRequestScalarFieldEnum[]
+}
+
+/**
+ * Employee.reviewedBookingChanges
+ */
+export type Employee$reviewedBookingChangesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
+  /**
+   * Select specific fields to fetch from the BookingChangeRequest
+   */
+  select?: Prisma.BookingChangeRequestSelect<ExtArgs> | null
+  /**
+   * Omit specific fields from the BookingChangeRequest
+   */
+  omit?: Prisma.BookingChangeRequestOmit<ExtArgs> | null
+  /**
+   * Choose, which related nodes to fetch as well
+   */
+  include?: Prisma.BookingChangeRequestInclude<ExtArgs> | null
+  where?: Prisma.BookingChangeRequestWhereInput
+  orderBy?: Prisma.BookingChangeRequestOrderByWithRelationInput | Prisma.BookingChangeRequestOrderByWithRelationInput[]
+  cursor?: Prisma.BookingChangeRequestWhereUniqueInput
+  take?: number
+  skip?: number
+  distinct?: Prisma.BookingChangeRequestScalarFieldEnum | Prisma.BookingChangeRequestScalarFieldEnum[]
 }
 
 /**

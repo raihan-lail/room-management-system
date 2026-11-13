@@ -71,6 +71,7 @@ export const ModelName = {
   Complaint: 'Complaint',
   ComplaintMessage: 'ComplaintMessage',
   BookingRating: 'BookingRating',
+  BookingChangeRequest: 'BookingChangeRequest',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
   EmailLog: 'EmailLog',
@@ -360,6 +361,26 @@ export const BookingRatingScalarFieldEnum = {
 export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
 
 
+export const BookingChangeRequestScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  requestedById: 'requestedById',
+  reviewedById: 'reviewedById',
+  type: 'type',
+  status: 'status',
+  reason: 'reason',
+  oldData: 'oldData',
+  requestedData: 'requestedData',
+  rejectionReason: 'rejectionReason',
+  requestedAt: 'requestedAt',
+  reviewedAt: 'reviewedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+} as const
+
+export type BookingChangeRequestScalarFieldEnum = (typeof BookingChangeRequestScalarFieldEnum)[keyof typeof BookingChangeRequestScalarFieldEnum]
+
+
 export const NotificationScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -436,6 +457,13 @@ export const NullableJsonNullValueInput = {
 } as const
 
 export type NullableJsonNullValueInput = (typeof NullableJsonNullValueInput)[keyof typeof NullableJsonNullValueInput]
+
+
+export const JsonNullValueInput = {
+  JsonNull: JsonNull
+} as const
+
+export type JsonNullValueInput = (typeof JsonNullValueInput)[keyof typeof JsonNullValueInput]
 
 
 export const QueryMode = {
