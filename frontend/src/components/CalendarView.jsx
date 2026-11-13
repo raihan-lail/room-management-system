@@ -1379,12 +1379,17 @@ export default function CalendarView() {
     setIsSavingBookingMove(true);
     setBookingMoveError("");
     try {
-      await apiRequest(`/api/booking/${encodeURIComponent(bookingMoveDraft.booking.id)}`, {
-        method: "PATCH",
+      await apiRequest("/api/booking-approval", {
+        method: "POST",
         body: JSON.stringify({
-          bedId: bookingMoveDraft.bedId,
-          startedAt: bookingMoveDraft.startedAt,
-          endedAt: bookingMoveDraft.endedAt,
+          bookingId: bookingMoveDraft.booking.id,
+          type: "CHANGE_DATES",
+          reason: "Booking move requested from calendar",
+          requestedData: {
+            bedId: bookingMoveDraft.bedId,
+            startedAt: bookingMoveDraft.startedAt,
+            endedAt: bookingMoveDraft.endedAt,
+          },
         }),
       });
       setBookingMoveDraft(null);

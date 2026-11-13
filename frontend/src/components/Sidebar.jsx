@@ -10,6 +10,8 @@ const COMPLAINT_PATHS = new Set([
   "/resident/complaints",
 ]);
 
+const BOOKING_APPROVAL_PATH = "/bookings/approval";
+
 function isComplaintPath(path) {
   return COMPLAINT_PATHS.has(path);
 }
@@ -72,6 +74,8 @@ export default function Sidebar({
   const [openMenus, setOpenMenus] = useState({});
   const [hasFrontdeskAlerts, setHasFrontdeskAlerts] = useState(false);
   const [hasComplaintAlerts, setHasComplaintAlerts] = useState(false);
+  const [hasBookingApprovalAlerts, setHasBookingApprovalAlerts] =
+    useState(false);
   const visibleMenuItems = useMemo(
   () => filterMenuItems(menuItems, hasPermission),
   [menuItems, hasPermission]
@@ -140,6 +144,31 @@ export default function Sidebar({
       window.removeEventListener("notifications:updated", handleNotificationUpdate);
     };
   }, [hasPermission, isResident]);
+
+  useEffect(() => {
+    if (!hasPermission("bookings.approve")) return undefined;
+
+    let isMounted = true;
+    const refreshBookingApprovalAlerts = async () => {
+      try {
+        const response = await apiRequest("/api/booking-approval?status=PENDING");
+        const requests = Array.isArray(response?.data) ? response.data : [];
+        if (isMounted) setHasBookingApprovalAlerts(requests.length > 0);
+      } catch {
+        if (isMounted) setHasBookingApprovalAlerts(false);
+      }
+    };
+
+    const handleApprovalUpdate = () => { void refreshBookingApprovalAlerts(); };
+    void refreshBookingApprovalAlerts();
+    const timer = window.setInterval(refreshBookingApprovalAlerts, 60000);
+    window.addEventListener("booking-approvals:updated", handleApprovalUpdate);
+    return () => {
+      isMounted = false;
+      window.clearInterval(timer);
+      window.removeEventListener("booking-approvals:updated", handleApprovalUpdate);
+    };
+  }, [hasPermission]);
 
   const toggleMenu = (path) => {
     // If sidebar is collapsed, open it first.
@@ -267,6 +296,17 @@ export default function Sidebar({
                     />
                   )}
 
+                {hasChildren &&
+                  hasBookingApprovalAlerts &&
+                  item.items.some(
+                    (child) => child.path === BOOKING_APPROVAL_PATH
+                  ) && (
+                    <span
+                      className="side-nav-alert-dot"
+                      aria-label="Pending booking approvals"
+                    />
+                  )}
+
                
                 {hasChildren && (
                   <i
@@ -287,6 +327,8 @@ export default function Sidebar({
                     const isChildActive =
                       location.pathname === child.path;
                     const isComplaintItem = isComplaintPath(child.path);
+                    const isBookingApprovalItem =
+                      child.path === BOOKING_APPROVAL_PATH;
 
                     return (
                       <button
@@ -312,6 +354,9 @@ export default function Sidebar({
                         </span>
                         {isComplaintItem && hasComplaintAlerts && (
                           <span className="side-nav-alert-dot" aria-label="Unread complaint activity" />
+                        )}
+                        {isBookingApprovalItem && hasBookingApprovalAlerts && (
+                          <span className="side-nav-alert-dot" aria-label="Pending booking approvals" />
                         )}
                       </button>
                     );
