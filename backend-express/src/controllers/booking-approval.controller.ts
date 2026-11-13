@@ -39,6 +39,36 @@ export async function listBookingChangeRequests(req: AuthRequest, res: Response)
   }
 }
 
+export async function listBookingChangeRequestHistory(req: AuthRequest, res: Response): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+  try {
+    const requests = await prisma.bookingChangeRequest.findMany({
+      where: { booking: getSiteBookingFilter(actor), status: { not: BookingChangeStatus.PENDING } },
+      include: includeRequest,
+      orderBy: { reviewedAt: "desc" },
+    });
+    const requestedBedIds = requests.flatMap((request) => {
+      const bedId = (request.requestedData as Record<string, unknown>).bedId;
+      return typeof bedId === "string" ? [bedId] : [];
+    });
+    const requestedBeds = requestedBedIds.length
+      ? await prisma.bed.findMany({
+          where: { id: { in: requestedBedIds }, ...getSiteBedFilter(actor) },
+          select: { id: true, name: true, room: { select: { name: true } } },
+        })
+      : [];
+    const requestedBedsById = new Map(requestedBeds.map((bed) => [bed.id, bed]));
+    res.json({ data: requests.map((request) => {
+      const bedId = (request.requestedData as Record<string, unknown>).bedId;
+      return { ...request, requestedBed: typeof bedId === "string" ? requestedBedsById.get(bedId) ?? null : null };
+    }) });
+  } catch (error) {
+    console.error("List booking change request history error:", error);
+    res.status(500).json({ message: "Failed to load booking change request history." });
+  }
+}
+
 export async function createBookingChangeRequest(req: AuthRequest, res: Response): Promise<void> {
   const actor = await getActorOrRespond(req, res);
   if (!actor) return;
