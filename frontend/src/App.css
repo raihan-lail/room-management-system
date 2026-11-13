@@ -2632,8 +2632,7 @@ textarea,
   align-items: center;
 }
 
-.calendar-filters--primary,
-.calendar-filters--settings {
+.calendar-filters--primary {
   display: flex;
   justify-content: space-between;
   gap: 12px;
@@ -2641,15 +2640,8 @@ textarea,
   background: #f8fafc;
   border: 1px solid #e2e8f0;
   border-radius: 8px;
-}
 
-.calendar-filters--primary {
   flex-wrap: wrap;
-}
-
-.calendar-filters--settings {
-  flex-wrap: wrap;
-  margin-top: 8px;
 }
 
 .calendar-filters__search {
@@ -2719,10 +2711,13 @@ textarea,
 }
 
 .calendar-range {
-  display: inline-flex;
+  display: flex;
   align-items: center;
 
-  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: space-between;
+
+  gap: 8px 12px;
 
   padding: 8px 12px;
 
@@ -2739,14 +2734,22 @@ textarea,
   margin-bottom: 12px;
 }
 
+.calendar-range__summary {
+  display: flex;
+  align-items: center;
+
+  flex-wrap: wrap;
+
+  gap: 8px;
+}
+
 .calendar-range__toggle {
   flex: 0 0 auto;
   margin-left: 4px;
 }
 
 .calendar-filters__locations,
-.calendar-filters__range-filters,
-.calendar-filters__settings-fields {
+.calendar-filters__range-filters {
   flex-wrap: nowrap;
 }
 
@@ -3744,15 +3747,13 @@ textarea,
   }
 
   .calendar-filters__locations,
-  .calendar-filters__range-filters,
-  .calendar-filters__settings-fields {
+  .calendar-filters__range-filters {
     flex-wrap: wrap;
     margin-left: 0;
   }
 
   .calendar-filters__locations .calendar-date-filter,
-  .calendar-filters__range-filters .calendar-date-filter,
-  .calendar-filters__settings-fields .calendar-date-filter {
+  .calendar-filters__range-filters .calendar-date-filter {
     flex: 1 1 135px;
   }
 
