@@ -40,19 +40,6 @@ const todayString = [today.getFullYear(), String(today.getMonth() + 1).padStart(
 const defaultEndDate = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 90);
 const defaultEndString = [defaultEndDate.getFullYear(), String(defaultEndDate.getMonth() + 1).padStart(2, "0"), String(defaultEndDate.getDate()).padStart(2, "0")].join("-");
 
-const DEFAULT_SETTINGS = {
-  calendarStart: todayString,
-  calendarEnd: defaultEndString,
-  viewMode: "CUSTOM",
-};
-
-const VIEW_DAYS = {
-  DAILY: 0,
-  WEEKLY: 6,
-  BIWEEKLY: 13,
-};
-
-
 const STATUS_META = {
   in_house: { label: "In house" },
   confirmed: { label: "Confirmed" },
@@ -154,20 +141,6 @@ function addDays(dateStr, days) {
   date.setUTCDate(date.getUTCDate() + days);
 
   return date.toISOString().slice(0, 10);
-}
-
-function lastDayOfMonth(dateStr) {
-  const date = parseDate(dateStr);
-
-  if (!date) return null;
-
-  return new Date(
-    Date.UTC(
-      date.getUTCFullYear(),
-      date.getUTCMonth() + 1,
-      0
-    )
-  ).toISOString().slice(0, 10);
 }
 
 function isWeekend(date) {
@@ -305,14 +278,8 @@ export default function CalendarView() {
   const [endDate, setEndDate] =
     useState("");
 
-  const [calendarStart, setCalendarStart] =
-    useState(DEFAULT_SETTINGS.calendarStart);
-
   const [calendarEnd, setCalendarEnd] =
-    useState(DEFAULT_SETTINGS.calendarEnd);
-
-  const [viewMode, setViewMode] =
-    useState(DEFAULT_SETTINGS.viewMode);
+    useState(defaultEndString);
 
   const [leadDays, setLeadDays] =
     useState(INITIAL_LEAD_DAYS);
@@ -377,50 +344,26 @@ export default function CalendarView() {
   /*
    * Calendar bounds
    */
-  const sortedCalStart =
-    calendarStart <= calendarEnd
-      ? calendarStart
-      : calendarEnd;
+  const calStart = todayString;
 
-  const sortedCalEnd =
-    calendarStart <= calendarEnd
-      ? calendarEnd
-      : calendarStart;
+  const calEnd = calendarEnd;
 
   /*
    * Calendar window
    */
   const windowStart =
     startDate &&
-    startDate >= sortedCalStart &&
-    startDate <= sortedCalEnd
+    startDate >= calStart &&
+    startDate <= calEnd
       ? startDate
-      : sortedCalStart;
+      : calStart;
 
-  let windowEnd;
-
-  if (viewMode === "CUSTOM") {
-    windowEnd =
-      endDate &&
-      endDate >= sortedCalStart &&
-      endDate <= sortedCalEnd
-        ? endDate
-        : sortedCalEnd;
-  } else if (viewMode === "MONTHLY") {
-    windowEnd =
-      lastDayOfMonth(windowStart) ||
-      windowStart;
-  } else {
-    windowEnd =
-      addDays(
-        windowStart,
-        VIEW_DAYS[viewMode]
-      ) || windowStart;
-  }
-
-  if (windowEnd > sortedCalEnd) {
-    windowEnd = sortedCalEnd;
-  }
+  let windowEnd =
+    endDate &&
+    endDate >= calStart &&
+    endDate <= calEnd
+      ? endDate
+      : calEnd;
 
   if (windowEnd < windowStart) {
     windowEnd = windowStart;
@@ -431,10 +374,9 @@ export default function CalendarView() {
    * calendar scroll into dates before the window
    * start without moving the initial view.
    */
-  const rangeStart =
-    viewMode === "CUSTOM" && !startDate
-      ? addDays(windowStart, -leadDays) || windowStart
-      : windowStart;
+  const rangeStart = !startDate
+    ? addDays(windowStart, -leadDays) || windowStart
+    : windowStart;
 
   /*
    * Generate calendar dates
@@ -763,8 +705,7 @@ export default function CalendarView() {
 
     if (
       !container ||
-      dates.length === 0 ||
-      viewMode !== "CUSTOM"
+      dates.length === 0
     ) {
       return;
     }
@@ -799,7 +740,7 @@ export default function CalendarView() {
       const extended = addDays(current, RANGE_EXTEND_DAYS);
       return extended || current;
     });
-  }, [dates.length, endDate, startDate, updateVisibleRange, viewMode]);
+  }, [dates.length, endDate, startDate, updateVisibleRange]);
 
   /*
    * Anchor the initial view on the window start once
@@ -1063,10 +1004,7 @@ export default function CalendarView() {
   const hasActiveFilters = Boolean(
       search.trim() || selectedLocation || selectedFloor || statusFilter ||
       startDate ||
-      endDate ||
-      calendarStart !== DEFAULT_SETTINGS.calendarStart ||
-      calendarEnd !== DEFAULT_SETTINGS.calendarEnd ||
-      viewMode !== DEFAULT_SETTINGS.viewMode
+      endDate
   );
 
   const clearFilters = () => {
@@ -1076,13 +1014,6 @@ export default function CalendarView() {
     setStatusFilter("");
     setStartDate("");
     setEndDate("");
-    setCalendarStart(
-      todayString
-    );
-    setCalendarEnd(
-      defaultEndString
-    );
-    setViewMode(DEFAULT_SETTINGS.viewMode);
     setLeadDays(INITIAL_LEAD_DAYS);
 
     pendingScrollAdjustRef.current = 0;
@@ -1495,23 +1426,46 @@ export default function CalendarView() {
     <div className={`calendar-view${filtersVisible ? "" : " calendar-view--expanded"}`}>
 
       <div className="calendar-range">
-       
 
-        <span>
-          {visibleStart && visibleEnd
-            ? `${formatVisibleDate(visibleStart)} - ${formatVisibleDate(visibleEnd)}`
-            : "No dates to display"}
-        </span>
-        <button
-          type="button"
-          className="btn btn-neutral calendar-range__toggle"
-          aria-expanded={filtersVisible}
-          aria-controls="calendar-filters"
-          onClick={() => setFiltersVisible((visible) => !visible)}
-        >
-          <i className={`bi ${filtersVisible ? "bi-eye-slash" : "bi-eye"}`} aria-hidden="true" />
-          {filtersVisible ? "Hide tools" : "Show tools"}
-        </button>
+        <div className="calendar-range__summary">
+
+          <span>
+            {visibleStart && visibleEnd
+              ? `${formatVisibleDate(visibleStart)} - ${formatVisibleDate(visibleEnd)}`
+              : "No dates to display"}
+          </span>
+
+          <button
+            type="button"
+            className="btn btn-neutral calendar-range__toggle"
+            aria-expanded={filtersVisible}
+            aria-controls="calendar-filters"
+            onClick={() => setFiltersVisible((visible) => !visible)}
+          >
+            <i className={`bi ${filtersVisible ? "bi-eye-slash" : "bi-eye"}`} aria-hidden="true" />
+            {filtersVisible ? "Hide tools" : "Show tools"}
+          </button>
+
+        </div>
+
+        <div className="calendar-legend">
+
+          {STATUS_ORDER.map((key) => (
+            <span
+              className="calendar-legend__item"
+              key={key}
+            >
+              <i
+                className={`calendar-legend__dot calendar-legend__dot--${key}`}
+                aria-hidden="true"
+              />
+
+              {STATUS_META[key].label}
+            </span>
+          ))}
+
+        </div>
+
       </div>
 
       {bookingMoveNotice && (
@@ -1579,8 +1533,8 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={sortedCalStart}
-              max={sortedCalEnd}
+              min={calStart}
+              max={calEnd}
               value={startDate}
               onChange={(e) =>
                 setStartDate(e.target.value)
@@ -1593,16 +1547,9 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={sortedCalStart}
-              max={sortedCalEnd}
-              value={
-                viewMode === "CUSTOM"
-                  ? endDate
-                  : windowEnd
-              }
-              disabled={
-                viewMode !== "CUSTOM"
-              }
+              min={calStart}
+              max={calEnd}
+              value={endDate}
               onChange={(e) =>
                 setEndDate(e.target.value)
               }
@@ -1627,98 +1574,6 @@ export default function CalendarView() {
         </div>
 
        
-
-      </div>
-
-      {/* =========================
-          CALENDAR SETTINGS
-      ========================== */}
-
-      <div className="calendar-filters calendar-filters--settings form-actions bookings-toolbar">
-
-        <div className="calendar-filters__dates calendar-filters__settings-fields">
-
-          <label
-            className="calendar-date-filter"
-          >
-            <span>Calendar Start</span>
-
-            <input
-              type="date"
-              value={calendarStart}
-              onChange={(e) =>
-                setCalendarStart(e.target.value)
-              }
-            />
-          </label>
-
-          <label
-            className="calendar-date-filter"
-          >
-            <span>Calendar End</span>
-
-            <input
-              type="date"
-              value={calendarEnd}
-              onChange={(e) =>
-                setCalendarEnd(e.target.value)
-              }
-            />
-          </label>
-
-         
-
-          <label
-            className="calendar-date-filter"
-          >
-            <span>View</span>
-
-            <select
-              value={viewMode}
-              onChange={(e) =>
-                setViewMode(e.target.value)
-              }
-            >
-              <option value="CUSTOM">
-                Custom
-              </option>
-
-              <option value="DAILY">
-                Daily
-              </option>
-
-              <option value="WEEKLY">
-                Weekly
-              </option>
-
-              <option value="BIWEEKLY">
-                Biweekly
-              </option>
-
-              <option value="MONTHLY">
-                Monthly
-              </option>
-            </select>
-          </label>
-
-        </div>
-         <div className="calendar-legend">
-
-          {STATUS_ORDER.map((key) => (
-            <span
-              className="calendar-legend__item"
-              key={key}
-            >
-              <i
-                className={`calendar-legend__dot calendar-legend__dot--${key}`}
-                aria-hidden="true"
-              />
-
-              {STATUS_META[key].label}
-            </span>
-          ))}
-
-        </div>
 
       </div>
       </div>
