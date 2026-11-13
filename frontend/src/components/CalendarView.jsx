@@ -1220,6 +1220,12 @@ export default function CalendarView() {
       const endedAt = addDays(move.booking.ended_at, move.dayOffset);
       if (!destinationBed || !startedAt || !endedAt) return;
       if (destinationBed.id === move.booking.bedId && move.dayOffset === 0) return;
+      if (destinationBed.room?.allocation) {
+        setBookingMoveNotice("This booking can't be moved to this bed because the room is allocated.");
+        const index = dayCount(rangeStart, startedAt);
+        if (index >= 0 && index < dates.length) flashBlockedCell(destinationBed.id, index);
+        return;
+      }
       setBookingMoveError("");
       setBookingMoveNotice("");
       try {
@@ -1307,6 +1313,10 @@ export default function CalendarView() {
 
   const confirmBookingMove = async () => {
     if (!bookingMoveDraft || isSavingBookingMove) return;
+    if (bookingMoveDraft.bed?.room?.allocation) {
+      setBookingMoveError("This booking can't be moved to this bed because the room is allocated.");
+      return;
+    }
     setIsSavingBookingMove(true);
     setBookingMoveError("");
     try {
