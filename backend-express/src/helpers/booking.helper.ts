@@ -207,7 +207,7 @@ export async function createBookingEvent(
   tx: Prisma.TransactionClient,
   input: {
     bookingId: string;
-    actorUserId: string;
+    actorUserId: string | null;
     action: string;
     description?: string;
     metadata?: Prisma.InputJsonValue;

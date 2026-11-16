@@ -135,11 +135,6 @@ export default function HomeLeave() {
           bValue = b.startedAt;
           break;
 
-        case "expected_return":
-          aValue = a.expectedReturnAt;
-          bValue = b.expectedReturnAt;
-          break;
-
         case "returned_at":
           aValue = a.returnedAt;
           bValue = b.returnedAt;
@@ -303,16 +298,6 @@ export default function HomeLeave() {
                     <button
                       type="button"
                       className="table-sort"
-                      onClick={() => handleSort("expected_return")}
-                    >
-                      Expected Return
-                      <i className="bi bi-sort-alpha-down" aria-hidden="true" />
-                    </button>
-                  </th>
-                  <th>
-                    <button
-                      type="button"
-                      className="table-sort"
                       onClick={() => handleSort("returned_at")}
                     >
                       Returned At
@@ -345,19 +330,19 @@ export default function HomeLeave() {
               <tbody>
                 {error ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       {error}
                     </td>
                   </tr>
                 ) : isLoading ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       Loading home leaves...
                     </td>
                   </tr>
                 ) : sortedHomeLeaves.length === 0 ? (
                   <tr>
-                    <td colSpan="9" className="muted">
+                    <td colSpan="8" className="muted">
                       No home leaves found.
                     </td>
                   </tr>
@@ -379,8 +364,6 @@ export default function HomeLeave() {
                       <td>{homeLeave.booking?.bed?.room?.name || "-"}</td>
 
                       <td>{formatDate(homeLeave.startedAt)}</td>
-
-                      <td>{formatDate(homeLeave.expectedReturnAt)}</td>
 
                       <td>{formatDate(homeLeave.returnedAt)}</td>
 

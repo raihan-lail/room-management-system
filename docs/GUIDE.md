@@ -65,13 +65,13 @@ The main purpose of this system is to:
 
 ### Home Leave
 
-18. If a resident plans to leave the premises temporarily, the resident contacts the receptionist and provides the expected departure time, return time, and reason for the home leave.
+18. If a resident plans to leave the premises temporarily, the resident contacts the receptionist and provides the departure time and reason for the home leave.
 
-19. The receptionist records the home-leave information in the system. A new record is created in `home_leaves`, linked to the resident's active occupancy. The record contains the start time, expected return time, reason, and approval information where applicable.
+19. The receptionist records the home-leave information in the system. A new record is created in `home_leaves`, linked to the resident's active occupancy. The record contains the start time, reason, and approval information where applicable. If the start date is in the future, the booking remains `IN_HOUSE` until that date, when the booking and bed statuses change to home leave automatically.
 
 20. When the resident actually leaves the room, the receptionist confirms the departure. The room status changes from `OCCUPIED` to `HOME_LEAVE`, while the booking status changes to `HOME_LEAVE`.
 
-21. The current home-leave records are displayed in **Front Desk → Home Leave**. The system displays the resident's name, room, booking ID, departure time, expected return time, and home-leave duration.
+21. The current home-leave records are displayed in **Front Desk → Home Leave**. The system displays the resident's name, room, booking ID, and departure time.
 
 22. The dedicated Home Leave page provides additional functions, including searching home-leave records, viewing upcoming leave, filtering by site and date, and reviewing historical home-leave periods.
 

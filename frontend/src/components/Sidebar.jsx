@@ -101,7 +101,6 @@ export default function Sidebar({
           const response = await apiRequest(`/api/booking/home-leaves?${params}`);
           const leaves = Array.isArray(response?.data) ? response.data : [];
           hasHomeLeaveAlert = leaves.some((leave) =>
-            (leave.status === "ACTIVE" && leave.expectedReturnAt?.slice(0, 10) < date) ||
             leave.returnedAt?.slice(0, 10) === date
           );
         }

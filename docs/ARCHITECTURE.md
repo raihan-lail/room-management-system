@@ -206,11 +206,13 @@ stateDiagram-v2
 
 Each booking links a resident to a bed and stores the planned start/end dates, current status, and applicable lifecycle timestamps. Home leave is tracked in a separate `HomeLeave` record, while `BookingEvent` records actions and their actor. The bed's availability/status must remain consistent with the booking lifecycle; exact transitions are enforced by booking endpoints.
 
+A home leave can start immediately or on a future date. Future-dated home leaves keep the booking `IN_HOUSE` until the scheduled start date, when a background processor moves the booking to `HOME_LEAVE` and refreshes the bed status.
+
 A resident cannot hold overlapping active bookings. Booking creation, updates, and extensions reject any date range that overlaps the resident's existing `CONFIRMED`, `IN_HOUSE`, or `HOME_LEAVE` bookings, preventing double-booking across beds.
 
 Staff with `bookings.import` can choose either to import bookings for existing residents or import bookings while adding new resident accounts. The existing-resident template matches by email and location, floor, room, and bed; it rejects emails without an active resident account. The add-resident template can create accounts from the supplied profile and hashed password, matching beds by site, location, floor, room, and bed. The optional status field defaults to `CONFIRMED` and accepts `CONFIRMED`, `IN_HOUSE`, `HOME_LEAVE`, `CANCELLED`, or `ARCHIVED`. Both paths validate row data and bed access, record booking events, refresh bed statuses, and write an audit log and completion notification. Each batch is transactional, so a booking conflict prevents the batch from being committed.
 
-Booking edits, date extensions, cancellations, archiving, and calendar moves are recorded as `BookingChangeRequest` records. The booking stays unchanged while a request is pending. Staff with `bookings.approve` can approve or reject requests; approval revalidates resident and bed availability before applying edits and refreshing affected bed statuses. Check-in, check-out, and home-leave actions remain immediate lifecycle operations. The calendar also lists beds belonging to allocated rooms as full-range `ALLOCATED` blocks labeled with the allocation purpose, and those beds cannot be booked.
+Booking edits, date extensions, cancellations, archiving, and calendar moves are recorded as `BookingChangeRequest` records. The booking stays unchanged while a request is pending. Staff with `bookings.approve` can approve or reject requests; approval revalidates resident and bed availability before applying edits and refreshing affected bed statuses. Check-in and check-out remain immediate lifecycle operations, while home leave starts immediately for today or earlier and is activated automatically on its scheduled start date when dated in the future. The calendar also lists beds belonging to allocated rooms as full-range `ALLOCATED` blocks labeled with the allocation purpose, and those beds cannot be booked.
 
 The Front Desk views support a start-to-end date range filter. Arrival and departure use the booking start/end dates, near-end uses the booking end date, home leave uses the leave start date, and historical ranges use stay-overlap rules so records active during the range remain visible. The selected range is applied consistently to tab counts and Excel exports; only the current range exposes row actions.
 
@@ -412,7 +414,7 @@ erDiagram
     string id PK
     string bookingId FK
     datetime startedAt
-    datetime expectedReturnAt
+    datetime returnedAt
     enum status
   }
   BOOKING_EVENT {
