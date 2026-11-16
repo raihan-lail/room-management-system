@@ -31,7 +31,12 @@ import {
 } from "../helpers/booking.helper.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
-import { buildBookingCreatedEmail, sendEmail } from "../services/email.service.js";
+import { buildBookingCreatedEmail } from "../mails/booking-created.js";
+import {
+  CHECK_IN_EMAIL_ATTACHMENTS,
+  buildCheckInWelcomeEmail,
+} from "../mails/check-in-welcome.js";
+import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 
@@ -1164,8 +1169,22 @@ export async function checkInBooking(
       const result = await tx.booking.findUniqueOrThrow({
         where: { id: existing.id },
         include: {
-          resident: true,
-          bed: { include: { room: true } },
+          resident: { include: { user: true } },
+          bed: {
+            include: {
+              room: {
+                include: {
+                  floor: {
+                    include: {
+                      location: {
+                        include: { site: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
         },
       });
 
@@ -1181,15 +1200,64 @@ export async function checkInBooking(
       return result;
     });
 
+    const recipientEmail = booking.resident.user.email;
+    const location = booking.bed.room.floor.location;
+    let emailSent = false;
+
+    if (await isEmailEnabled()) {
+      try {
+        const email = buildCheckInWelcomeEmail({
+          residentName: booking.resident.fullName,
+          bookingNumber: booking.bookingNumber,
+          siteName: location.site.name,
+          locationName: location.name,
+          roomName: booking.bed.room.name,
+          bedName: booking.bed.name,
+          checkedInAt: booking.checkedInAt ?? new Date(),
+        });
+
+        const emailResult = await sendEmail({
+          to: recipientEmail,
+          ...email,
+          attachments: CHECK_IN_EMAIL_ATTACHMENTS,
+          type: "CHECK_IN_WELCOME",
+          bookingId: booking.id,
+          siteId: location.site.id,
+        });
+
+        emailSent = emailResult.success;
+
+        if (!emailSent && !emailResult.skipped) {
+          await notifyActor(req, {
+            title: "Resident checked in, email not sent",
+            message: `Resident ${booking.resident.fullName} checked in, but the welcome email to ${recipientEmail} could not be sent.`,
+            type: "WARNING",
+          });
+        }
+      } catch (error) {
+        console.error("Check-in welcome email error:", error);
+
+        await notifyActor(req, {
+          title: "Resident checked in, email not sent",
+          message: `Resident ${booking.resident.fullName} checked in, but the welcome email to ${recipientEmail} could not be sent.`,
+          type: "WARNING",
+        });
+      }
+    }
+
     await auditBooking(req, actor, {
       bookingId: booking.bookingNumber,
       action: "booking_checked_in",
-      description: "Resident checked in.",
+      description: `Resident checked in.${
+        emailSent ? " Welcome email was sent to the resident." : ""
+      }`,
     })
 
     await notifyActor(req, {
       title: "Resident checked in",
-      message: `Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} successfully checked in`,
+      message: `Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} successfully checked in${
+        emailSent ? " and the welcome email was sent" : ""
+      }`,
       type: "SUCCESS"
     })
 
