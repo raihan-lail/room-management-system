@@ -11,6 +11,7 @@ import locationRouter from "./routes/location.route";
 import notificationRouter from "./routes/notification.route";
 import auditRouter from "./routes/audit.route";
 import { setupNotificationSocket } from "./websocket/notification.socket";
+import { startScheduledHomeLeaveProcessor } from "./services/home-leave-scheduler.service";
 import { createServer } from "node:http";
 import roomRouter from "./routes/room.route";
 import bedRouter from "./routes/bed.route";
@@ -66,4 +67,5 @@ const PORT = process.env.PORT || 5000;
 
 server.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+  startScheduledHomeLeaveProcessor();
 });

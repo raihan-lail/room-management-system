@@ -171,7 +171,6 @@ export async function getMyBookings(
             select: {
               id: true,
               startedAt: true,
-              expectedReturnAt: true,
               returnedAt: true,
               status: true,
               reason: true,

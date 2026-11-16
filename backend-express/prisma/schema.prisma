@@ -321,7 +321,7 @@ model HomeLeave {
   id          String           @id @default(cuid())
   bookingId   String
   startedAt   DateTime
-  expectedReturnAt DateTime
+  expectedReturnAt DateTime?
   returnedAt  DateTime?
   status      HomeLeaveStatus  @default(ACTIVE)
   reason      String?
