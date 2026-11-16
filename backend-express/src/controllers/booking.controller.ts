@@ -1608,16 +1608,14 @@ export async function startHomeLeave(
   if (!actor) return;
 
   try {
-    const expectedReturnAt = parseDate(req.body.expectedReturnAt);
+    const startedAt = parseDate(req.body.startedAt);
 
-    if (!expectedReturnAt || expectedReturnAt <= new Date()) {
-      sendError(
-        res,
-        400,
-        "expectedReturnAt must be a valid future date."
-      );
+    if (!startedAt) {
+      sendError(res, 400, "startedAt must be a valid date.");
       return;
     }
+
+    const activateNow = startedAt <= new Date();
 
     const result = await prisma.$transaction(async (tx) => {
       const booking = await tx.booking.findFirst({
@@ -1640,35 +1638,43 @@ export async function startHomeLeave(
         );
       }
 
-      if (expectedReturnAt > booking.endedAt) {
-        throw Object.assign(
-          new Error("Expected return cannot be later than the booking end date."),
-          { statusCode: 400 }
-        );
-      }
-
-      const updated = await tx.booking.updateMany({
+      const existingLeave = await tx.homeLeave.findFirst({
         where: {
-          id: booking.id,
-          status: BookingStatus.IN_HOUSE,
-        },
-        data: {
-          status: BookingStatus.HOME_LEAVE,
+          bookingId: booking.id,
+          status: HomeLeaveStatus.ACTIVE,
         },
       });
 
-      if (updated.count !== 1) {
+      if (existingLeave) {
         throw Object.assign(
-          new Error("The booking was changed by another request."),
+          new Error("This booking already has an active home leave."),
           { statusCode: 409 }
         );
+      }
+
+      if (activateNow) {
+        const updated = await tx.booking.updateMany({
+          where: {
+            id: booking.id,
+            status: BookingStatus.IN_HOUSE,
+          },
+          data: {
+            status: BookingStatus.HOME_LEAVE,
+          },
+        });
+
+        if (updated.count !== 1) {
+          throw Object.assign(
+            new Error("The booking was changed by another request."),
+            { statusCode: 409 }
+          );
+        }
       }
 
       const homeLeave = await tx.homeLeave.create({
         data: {
           bookingId: booking.id,
-          startedAt: new Date(),
-          expectedReturnAt,
+          startedAt,
           reason:
             typeof req.body.reason === "string"
               ? req.body.reason.trim() || null
@@ -1682,26 +1688,32 @@ export async function startHomeLeave(
       await createBookingEvent(tx, {
         bookingId: booking.id,
         actorUserId: req.userId!,
-        action: "home_leave_started",
-        description: "Resident started home leave.",
+        action: activateNow ? "home_leave_started" : "home_leave_scheduled",
+        description: activateNow
+          ? "Resident started home leave."
+          : "Home leave scheduled.",
         metadata: {
           homeLeaveId: homeLeave.id,
-          expectedReturnAt: expectedReturnAt.toISOString(),
+          startedAt: startedAt.toISOString(),
         },
       });
 
-      return { bookingId: booking.id, homeLeave };
+      return { bookingId: booking.id, homeLeave, activateNow };
     });
 
     await auditBooking(req, actor, {
       bookingId: result.bookingId,
-      action: "home_leave_started",
-      description: "Resident started home leave.",
+      action: result.activateNow ? "home_leave_started" : "home_leave_scheduled",
+      description: result.activateNow
+        ? "Resident started home leave."
+        : "Home leave scheduled.",
     });
 
     await notifyActor(req, {
-      title:" Resident started home leave",
-      message: `Resident with booking id ${result.homeLeave.bookingId} started home leave`
+      title: result.activateNow ? "Resident started home leave" : "Home leave scheduled",
+      message: result.activateNow
+        ? `Resident with booking id ${result.homeLeave.bookingId} started home leave`
+        : `Home leave scheduled for booking id ${result.homeLeave.bookingId} on ${startedAt.toDateString()}`
     })
 
     res.status(201).json({
@@ -2066,15 +2078,14 @@ export async function exportHomeLeavesToExcel(
       "Resident Name": booking.resident.fullName,
       Room: booking.bed.room.name,
       Bed: booking.bed.name,
-      "Leave Started": leave.startedAt.toDateString(),
-      "Expected Return": leave.expectedReturnAt.toDateString(),
-      "Returned At": leave.returnedAt?.toDateString() ?? "",
+      "Leave Started": formatTimestapWithoutHours(leave.startedAt),
+      "Returned At": formatTimestamp(leave.returnedAt) ?? "",
       Reason: leave.reason ?? "",
       Status: leave.status,
     }));
     const workbook = XLSX.utils.book_new();
     const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet["!cols"] = [20, 28, 20, 18, 20, 20, 20, 32, 16].map((wch) => ({ wch }));
+    worksheet["!cols"] = [20, 28, 20, 18, 20, 20, 32, 16].map((wch) => ({ wch }));
     XLSX.utils.book_append_sheet(workbook, worksheet, "Home Leaves");
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
     const filename = `home-leaves-${new Date().toISOString().slice(0, 10)}.xlsx`;
