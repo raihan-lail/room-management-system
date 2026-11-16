@@ -39,6 +39,9 @@ COPY --from=build /app/src ./src
 COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/prisma7.config.ts ./prisma7.config.ts
 
+# Email attachments served to the email service
+COPY --from=build /app/public ./public
+
 EXPOSE 5000
 
 CMD ["bun", "run", "start"]
