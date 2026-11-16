@@ -6,6 +6,7 @@ import {
   Prisma,
 } from "../generated/prisma/client.js";
 import * as XLSX from "xlsx";
+import argon2 from "argon2";
 
 import { prisma } from "../lib/prisma.js";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
@@ -39,6 +40,7 @@ import {
 import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
+import { isValidEmail, normalizeEmail, normalizeHeader, parseGender, readString } from "../utils/excel.js";
 
 function getResidentPortalUrl(): string | undefined {
   const origin =
@@ -49,6 +51,14 @@ function getResidentPortalUrl(): string | undefined {
 
   return `${origin.replace(/\/+$/, "")}/login`;
 }
+
+const BOOKING_IMPORT_STATUSES = new Set<BookingStatus>([
+  BookingStatus.CONFIRMED,
+  BookingStatus.IN_HOUSE,
+  BookingStatus.HOME_LEAVE,
+  BookingStatus.CANCELLED,
+  BookingStatus.ARCHIVED,
+]);
 
 
 
@@ -1117,6 +1127,210 @@ export async function createBooking(
     console.error("Create booking error:", error);
     sendError(res, 500, "Failed to create booking.");
   }
+}
+
+async function importBookings(
+  req: AuthRequest,
+  res: Response,
+  allowNewResidents: boolean,
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  if (!req.file) {
+    res.status(400).json({ message: "An .xlsx file is required." });
+    return;
+  }
+
+  try {
+    // Keep Excel dates as serial numbers so parsing their calendar date does not
+    // apply the server's local timezone and shift date-only values by one day.
+    const workbook = XLSX.read(req.file.buffer, { type: "buffer", cellDates: false });
+    const sheetName = workbook.SheetNames[0];
+    if (!sheetName) {
+      res.status(400).json({ message: "The workbook contains no worksheet." });
+      return;
+    }
+    const rawRows = XLSX.utils.sheet_to_json<Record<string, unknown>>(
+      workbook.Sheets[sheetName], { defval: "" },
+    );
+    if (!rawRows.length || rawRows.length > 1000) {
+      res.status(400).json({ message: rawRows.length ? "A maximum of 1,000 bookings can be imported per file." : "The worksheet contains no booking rows." });
+      return;
+    }
+
+    const rows = rawRows.map((raw, index) => {
+      const values: Record<string, unknown> = {};
+      for (const [key, value] of Object.entries(raw)) values[normalizeHeader(key)] = value;
+      const dateValue = (value: unknown): Date | null => {
+        if (value instanceof Date && !Number.isNaN(value.getTime())) return value;
+        if (typeof value === "number") {
+          const parts = XLSX.SSF.parse_date_code(value);
+          if (parts) return new Date(Date.UTC(parts.y, parts.m - 1, parts.d));
+        }
+        if (typeof value === "string" && value.trim()) {
+          const parsed = new Date(value.trim());
+          if (!Number.isNaN(parsed.getTime())) return parsed;
+        }
+        return null;
+      };
+      return {
+        row: index + 2,
+        fullName: readString(values.fullname),
+        email: normalizeEmail(readString(values.email)),
+        password: readString(values.password),
+        gender: parseGender(values.gender),
+        mealType: readString(values.mealtype),
+        phone: readString(values.phone),
+        siteName: readString(values.sitename),
+        locationName: readString(values.locationname),
+        floorName: readString(values.floorname),
+        nationality: readString(values.nationality),
+        company: readString(values.company),
+        department: readString(values.department),
+        title: readString(values.title),
+        roomName: readString(values.roomname),
+        bedName: readString(values.bedname),
+        startedAt: dateValue(values.started_at),
+        endedAt: dateValue(values.ended_at),
+        status: (readString(values.status).toUpperCase() || BookingStatus.CONFIRMED) as BookingStatus,
+        notes: readString(values.notes),
+      };
+    });
+    const requiredHeaders = allowNewResidents
+      ? ["fullname", "email", "password", "gender", "phone", "sitename", "locationname", "floorname", "roomname", "bedname", "started_at", "ended_at"]
+      : ["email", "locationname", "floorname", "roomname", "bedname", "started_at", "ended_at"];
+    const headers = new Set(Object.keys(rawRows[0]).map(normalizeHeader));
+    const missingHeaders = requiredHeaders.filter((header) => !headers.has(header));
+    if (missingHeaders.length) {
+      res.status(400).json({ message: "Required Excel columns are missing.", missingColumns: missingHeaders, requiredColumns: requiredHeaders });
+      return;
+    }
+
+    const errors: Array<{ row: number; fullName: string; message: string }> = [];
+    const seenEmails = new Set<string>();
+    rows.forEach((row) => {
+      const issue = (message: string) => errors.push({ row: row.row, fullName: row.fullName, message });
+      if (!row.email || !isValidEmail(row.email)) issue("A valid email is required.");
+      if (!row.locationName || !row.floorName || !row.roomName || !row.bedName) issue("locationName, floorName, roomName, and bedName are required.");
+      if (!row.startedAt || !row.endedAt || row.startedAt >= row.endedAt) issue("Valid started_at and ended_at dates are required; ended_at must be after started_at.");
+      if (!BOOKING_IMPORT_STATUSES.has(row.status)) issue("status must be CONFIRMED, IN_HOUSE, HOME_LEAVE, CANCELLED, or ARCHIVED.");
+      if (row.email && seenEmails.has(row.email)) issue("Duplicate email in this Excel file.");
+      if (row.email) seenEmails.add(row.email);
+    });
+
+    const [existingUsers, beds] = await Promise.all([
+      prisma.user.findMany({ where: { email: { in: [...seenEmails] } }, include: { resident: { include: { site: true } } } }),
+      prisma.bed.findMany({
+        where: {
+          isActive: true,
+          ...getSiteBedFilter(actor),
+          room: { isBookable: true },
+        },
+        include: { room: { include: { floor: { include: { location: { include: { site: true } } } } } } },
+      }),
+    ]);
+    const usersByEmail = new Map(existingUsers.map((user) => [normalizeEmail(user.email), user]));
+    const bedsByKey = new Map<string, typeof beds>();
+    const normalizeName = (value: string) => value.trim().toLowerCase();
+    const bedKeyFor = (bed: (typeof beds)[number]) => allowNewResidents
+      ? [bed.room.floor.location.site.name, bed.room.floor.location.name, bed.room.floor.name, bed.room.name, bed.name].map(normalizeName).join("|")
+      : [bed.room.floor.location.name, bed.room.floor.name, bed.room.name, bed.name].map(normalizeName).join("|");
+    const rowBedKeyFor = (row: (typeof rows)[number]) => allowNewResidents
+      ? [row.siteName, row.locationName, row.floorName, row.roomName, row.bedName].map(normalizeName).join("|")
+      : [row.locationName, row.floorName, row.roomName, row.bedName].map(normalizeName).join("|");
+    for (const bed of beds) {
+      const key = bedKeyFor(bed);
+      bedsByKey.set(key, [...(bedsByKey.get(key) ?? []), bed]);
+    }
+    for (const row of rows) {
+      const user = usersByEmail.get(row.email);
+      if (user && !user.resident) {
+        errors.push({ row: row.row, fullName: row.fullName, message: "The email belongs to an account that is not a resident." });
+      } else if (user && !user.isActive) {
+        errors.push({ row: row.row, fullName: row.fullName, message: "The resident account is inactive." });
+      }
+      if (!user && !allowNewResidents) errors.push({ row: row.row, fullName: row.fullName, message: "No existing resident account was found for this email." });
+      if (!user && allowNewResidents) {
+        if (!row.fullName) errors.push({ row: row.row, fullName: row.fullName, message: "fullName is required for a new resident." });
+        if (!row.phone) errors.push({ row: row.row, fullName: row.fullName, message: "phone is required for a new resident." });
+        if (!row.gender) errors.push({ row: row.row, fullName: row.fullName, message: "gender must be MALE, FEMALE, or OTHER for a new resident." });
+        if (!row.siteName) errors.push({ row: row.row, fullName: row.fullName, message: "siteName is required for a new resident." });
+        if (row.password.length < 8) errors.push({ row: row.row, fullName: row.fullName, message: "A password of at least 8 characters is required for a new resident account." });
+      }
+      const bedKey = rowBedKeyFor(row);
+      const matches = bedsByKey.get(bedKey) ?? [];
+      if (matches.length !== 1) errors.push({ row: row.row, fullName: row.fullName, message: matches.length ? "siteName, locationName, floorName, roomName, and bedName do not uniquely identify a bed." : "Bed not found, inactive, not bookable, or not accessible. Check the site, location, floor, room, and bed names." });
+      else if (user?.resident && user.resident.siteId !== matches[0].room.floor.location.siteId) {
+        errors.push({ row: row.row, fullName: row.fullName, message: "The resident and room must belong to the same site." });
+      }
+    }
+    if (errors.length) {
+      res.status(400).json({ message: "Booking import validation failed. No records were created.", totalRows: rows.length, errorCount: errors.length, errors });
+      return;
+    }
+
+    const created = await prisma.$transaction(async (tx) => {
+      const imported = [];
+      for (const row of rows) {
+        const bedKey = rowBedKeyFor(row);
+        const bed = (bedsByKey.get(bedKey) ?? [])[0];
+        let residentId = usersByEmail.get(row.email)?.resident?.id;
+        if (!residentId && allowNewResidents) {
+          const password = await argon2.hash(row.password, { type: argon2.argon2id });
+          const user = await tx.user.create({
+            data: {
+              email: row.email, password, isActive: true,
+              resident: { create: {
+                siteId: bed.room.floor.location.siteId, fullName: row.fullName, phone: row.phone,
+                gender: row.gender!, nationality: row.nationality || null, mealType: row.mealType || null,
+                company: row.company || null, department: row.department || null, title: row.title || null,
+              } },
+            }, include: { resident: { include: { site: true } } },
+          });
+          residentId = user.resident!.id;
+          usersByEmail.set(row.email, user);
+        }
+        if (!residentId) throw new Error("Existing resident could not be resolved.");
+        const conflict = await validateBookingDates(tx, { bedId: bed.id, startedAt: row.startedAt!, endedAt: row.endedAt! });
+        if (conflict) throw Object.assign(new Error(conflict), { importRow: row.row });
+        const residentConflict = await validateResidentBookingDates(tx, { residentId, startedAt: row.startedAt!, endedAt: row.endedAt! });
+        if (residentConflict) throw Object.assign(new Error(residentConflict), { importRow: row.row });
+        const booking = await tx.booking.create({
+          data: { residentId, bedId: bed.id, startedAt: row.startedAt!, endedAt: row.endedAt!, status: row.status, notes: row.notes || null },
+          select: { id: true, bookingNumber: true, resident: { select: { fullName: true } } },
+        });
+        await refreshBedStatus(tx, bed.id);
+        await createBookingEvent(tx, { bookingId: booking.id, actorUserId: req.userId!, action: "booking_created", description: `Booking imported from Excel with status ${row.status}.`, metadata: { residentId, bedId: bed.id, startedAt: row.startedAt!.toISOString(), endedAt: row.endedAt!.toISOString(), status: row.status } });
+        imported.push(booking);
+      }
+      return imported;
+    }, { maxWait: 10000, timeout: 60000 });
+
+    await auditActor(req, actor, { action: "import", resource: "booking", description: `Imported ${created.length} bookings from Excel`, after: { filename: req.file.originalname, bookingNumbers: created.map((booking) => booking.bookingNumber) } });
+    await notifyActor(req, { title: "Booking Import Completed", message: `${created.length} bookings were imported successfully.`, type: "SUCCESS" });
+    res.status(201).json({ message: `${created.length} bookings imported successfully.`, importedBookings: created.length });
+  } catch (error) {
+    const importRow = typeof error === "object" && error !== null && "importRow" in error ? Number((error as { importRow: unknown }).importRow) : null;
+    if (importRow) {
+      res.status(409).json({ message: "Booking import validation failed. No records were created.", errors: [{ row: importRow, message: (error as Error).message }] });
+      return;
+    }
+    if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+      sendError(res, 409, "A conflicting booking or resident account already exists.");
+      return;
+    }
+    console.error("Booking import error:", error);
+    sendError(res, 500, "Failed to import bookings.");
+  }
+}
+
+export async function importBookingsFromExcel(req: AuthRequest, res: Response): Promise<void> {
+  return importBookings(req, res, true);
+}
+
+export async function importBookingsForExistingResidents(req: AuthRequest, res: Response): Promise<void> {
+  return importBookings(req, res, false);
 }
 
 export async function checkInBooking(
