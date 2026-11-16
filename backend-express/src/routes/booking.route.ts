@@ -2,13 +2,16 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
 import { requestBookingArchive, requestBookingCancellation, requestBookingExtension } from "../controllers/booking-approval.controller.js";
-import { checkInBooking, checkOutBooking, createBooking, exportBookingsToExcel, exportHomeLeavesToExcel, getBookingById, listBookings, listHomeLeaves, returnFromHomeLeave, startHomeLeave } from "../controllers/booking.controller";
+import { checkInBooking, checkOutBooking, createBooking, exportBookingsToExcel, exportHomeLeavesToExcel, getBookingById, importBookingsForExistingResidents, importBookingsFromExcel, listBookings, listHomeLeaves, returnFromHomeLeave, startHomeLeave } from "../controllers/booking.controller";
+import { upload } from "../utils/excel.js";
 
 const bookingRouter = Router();
 
 bookingRouter.use(authenticate)
 
 bookingRouter.get("/", requirePermission("bookings.read"), listBookings);
+bookingRouter.post("/import", requirePermission("bookings.import"), upload.single("file"), importBookingsFromExcel);
+bookingRouter.post("/import/existing-residents", requirePermission("bookings.import"), upload.single("file"), importBookingsForExistingResidents);
 bookingRouter.get("/export", requirePermission("bookings.export"), exportBookingsToExcel);
 bookingRouter.get("/home-leaves/export", requirePermission("home.leaves"), exportHomeLeavesToExcel);
 bookingRouter.get("/home-leaves", requirePermission("home.leaves"), listHomeLeaves);
