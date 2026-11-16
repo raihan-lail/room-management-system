@@ -12,6 +12,8 @@ import {
 import useAuth from "../contexts/useAuth";
 import apiRequest from "../api/client";
 import BookingCreateModal from "./modals/BookingCreateModal";
+import BookingImportModal from "./modals/BookingImportModal";
+import FlexibleButton from "./FlexibleButtons";
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
@@ -298,6 +300,7 @@ export default function CalendarView() {
   const [isLoadingCalendar, setIsLoadingCalendar] = useState(true);
   const [calendarError, setCalendarError] = useState("");
   const [reloadKey, setReloadKey] = useState(0);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
 
   const [dragRange, setDragRange] =
     useState(null);
@@ -1538,6 +1541,8 @@ export default function CalendarView() {
 
         <div className="calendar-filters__dates calendar-filters__range-filters">
 
+
+
           <label className="calendar-date-filter">
             <span>From</span>
 
@@ -1579,6 +1584,15 @@ export default function CalendarView() {
 
             Clear
           </button>
+
+          <FlexibleButton
+            permission="bookings.import"
+            className="btn btn-neutral"
+            onClick={() => setIsImportModalOpen(true)}
+          >
+            <i className="bi bi-upload" aria-hidden="true" />
+            Import
+          </FlexibleButton>
           
 
         </div>
@@ -1889,6 +1903,12 @@ export default function CalendarView() {
           lockedBed={bookingDraft.bed}
           onClose={() => setBookingDraft(null)}
           onCreated={handleCreateBooking}
+        />
+      )}
+      {isImportModalOpen && (
+        <BookingImportModal
+          onClose={() => setIsImportModalOpen(false)}
+          onImported={() => setReloadKey((value) => value + 1)}
         />
       )}
       {bookingMoveDraft && (

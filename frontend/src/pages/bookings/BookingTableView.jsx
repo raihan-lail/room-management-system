@@ -5,6 +5,7 @@ import BookingCreateModal from "../../components/modals/BookingCreateModal";
 import BookingDetailsModal from "../../components/modals/BookingDetailsModal";
 import BookingEditModal from "../../components/modals/BookingEditModal";
 import ExportModal from "../../components/modals/ExportModal";
+import BookingImportModal from "../../components/modals/BookingImportModal";
 import ConfirmModal from "../../components/modals/ConfirmModal";
 import FlexibleButton from "../../components/FlexibleButtons";
 import PageSizeSelect from "../../components/PageSizeSelect";
@@ -132,6 +133,7 @@ export default function BookingTableView() {
   const [viewingBookingId, setViewingBookingId] = useState(null);
   const [editingBooking, setEditingBooking] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
+  const [isImportModalOpen, setIsImportModalOpen] = useState(false);
   const [extendingBooking, setExtendingBooking] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
   const [archivingBooking, setArchivingBooking] = useState(null);
@@ -474,6 +476,14 @@ export default function BookingTableView() {
             </label>
 
             <FlexibleButton
+              permission="bookings.import"
+              className="btn btn-neutral"
+              onClick={() => setIsImportModalOpen(true)}
+            >
+              <i className="bi bi-upload" aria-hidden="true" />
+              Import
+            </FlexibleButton>
+            <FlexibleButton
               permission="bookings.export"
               className="btn btn-neutral"
               onClick={() => setIsExportModalOpen(true)}
@@ -787,6 +797,13 @@ export default function BookingTableView() {
           filterFields={exportFilterFields}
           initialFilters={{ search, status: statusFilter, startedAtFrom, startedAtTo }}
           onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
+
+      {isImportModalOpen && (
+        <BookingImportModal
+          onClose={() => setIsImportModalOpen(false)}
+          onImported={handleBookingChanged}
         />
       )}
 
