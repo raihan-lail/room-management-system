@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
-import { fetchComplaint, markComplaintNotificationsAsRead, sendStaffComplaintMessage, updateComplaintStatus } from "../../api/complaints";
+import { fetchComplaint, markComplaintNotificationsAsRead, updateComplaintStatus } from "../../api/complaints";
 
 const STATUS_OPTIONS = {
   OPEN: ["IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"],
@@ -17,8 +17,6 @@ export default function ComplainDetails() {
   const navigate = useNavigate();
   const { complainId } = useParams();
   const [complaint, setComplaint] = useState(null);
-  const [message, setMessage] = useState("");
-  const [isInternal, setIsInternal] = useState(false);
   const [nextStatus, setNextStatus] = useState("");
   const [resolution, setResolution] = useState("");
   const [loading, setLoading] = useState(true);
@@ -53,23 +51,6 @@ export default function ComplainDetails() {
       });
   }, [complainId]);
 
-  const sendMessage = async (event) => {
-    event.preventDefault();
-    if (!message.trim()) return;
-    setSending(true);
-    setError("");
-    try {
-      await sendStaffComplaintMessage(complainId, message.trim(), isInternal);
-      setMessage("");
-      setIsInternal(false);
-      await loadComplaint();
-    } catch (requestError) {
-      setError(requestError.message || "Failed to send message.");
-    } finally {
-      setSending(false);
-    }
-  };
-
   const changeStatus = async (event) => {
     event.preventDefault();
     if (!nextStatus) return;
@@ -95,7 +76,7 @@ export default function ComplainDetails() {
         <div className="dashboard-header">
           <div className="dashboard-header__text">
             <h1 className="dashboard-header__title">Complaint Details</h1>
-            <p className="dashboard-header__subtitle">Review and respond to the resident</p>
+            <p className="dashboard-header__subtitle">Review and update the resident complaint</p>
           </div>
           <button type="button" className="btn btn-neutral" onClick={() => navigate("/bookings/complains")}>
             <i className="bi bi-arrow-left" aria-hidden="true" /> Back to Complaints
@@ -122,34 +103,6 @@ export default function ComplainDetails() {
               <div className="detail-card__head"><h2 className="detail-card__title">Description</h2></div>
               <div className="complain-notes"><p className="complain-notes__text">{complaint.description}</p></div>
               {complaint.resolution && <p className="detail-grid__value">Resolution: {complaint.resolution}</p>}
-            </section>
-
-            <section className="table-card content">
-              <div className="detail-card__head"><h2 className="detail-card__title">Conversation</h2></div>
-              <div className="form-stack">
-                {(complaint.messages || []).length === 0 ? <p className="muted">No messages yet.</p> : complaint.messages.map((item) => (
-                  <article className="complain-notes" key={item.id}>
-                    <p className="detail-grid__label">
-                      {item.user?.employee?.name || item.user?.resident?.fullName || "User"} · {formatDate(item.createdAt)}
-                      {item.isInternal ? " · Internal note" : ""}
-                    </p>
-                    <p className="complain-notes__text">{item.message}</p>
-                  </article>
-                ))}
-                <form className="form-stack" onSubmit={sendMessage}>
-                  <label className="form-field">
-                    <span>Reply</span>
-                    <textarea rows="3" value={message} onChange={(event) => setMessage(event.target.value)} required />
-                  </label>
-                  <label className="form-check">
-                    <input type="checkbox" checked={isInternal} onChange={(event) => setIsInternal(event.target.checked)} />
-                    Internal note (visible to staff only)
-                  </label>
-                  <div className="form-actions">
-                    <button className="btn btn-primary" type="submit" disabled={sending || !message.trim()}>Send message</button>
-                  </div>
-                </form>
-              </div>
             </section>
 
             {(STATUS_OPTIONS[complaint.status] || []).length > 0 && (

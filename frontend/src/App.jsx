@@ -38,6 +38,10 @@ import LocationManagement from "./pages/rooms/LocationManagement";
 import ForgotPassword from "./pages/auth/ForgotPassword";
 import EmailLog from "./pages/settings/EmailLogs";
 import BookingApproval from "./pages/bookings/BookingApproval";
+import Complains from "./pages/bookings/Complains";
+import ComplainDetails from "./pages/bookings/ComplainDetails";
+import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
+import Ratings from "./pages/bookings/Ratings";
 
 function DefaultRedirect() {
   const { status, user } = useAuth();
@@ -61,6 +65,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword/>} />
+            <Route path="/booking/:bookingId/complaint/:token" element={<BookingComplaints />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/unauthorized" element={<Unauthorized />} />
@@ -99,6 +104,22 @@ function App() {
                 }
               />
               <Route
+                path="/bookings/complaint"
+                element={
+                  <RequirePermission permission="complaints">
+                    <Complains/>
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/rating"
+                element={
+                  <RequirePermission permission="ratings">
+                    <Ratings/>
+                  </RequirePermission>
+                }
+              />
+              <Route
                 path="/rooms/map"
                 element={
                   <RequirePermission permission="rooms.map">
@@ -119,6 +140,22 @@ function App() {
                 element={
                   <RequirePermission permission="bookings.approve">
                     <BookingApproval />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/complains"
+                element={
+                  <RequirePermission permission="complaints">
+                    <Complains />
+                  </RequirePermission>
+                }
+              />
+              <Route
+                path="/bookings/complains/:complainId"
+                element={
+                  <RequirePermission permission="complaints">
+                    <ComplainDetails />
                   </RequirePermission>
                 }
               />

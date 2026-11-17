@@ -303,20 +303,6 @@ export default function BookingHistory() {
                       <i className="bi bi-star" aria-hidden="true" />
                       Rate Your Experience
                     </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-neutral"
-                      onClick={() =>
-                        navigate(`/resident/bookings/${booking.id}/complaints`)
-                      }
-                    >
-                      <i
-                        className="bi bi-chat-dots"
-                        aria-hidden="true"
-                      />
-                      Complaint
-                    </button>
                   </div>
                 </article>
               ))

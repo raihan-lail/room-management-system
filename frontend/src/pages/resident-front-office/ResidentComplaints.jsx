@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
-import { fetchMyComplaint, fetchMyComplaints, markComplaintNotificationsAsRead, replyToMyComplaint } from "../../api/complaints";
+import { fetchMyComplaint, fetchMyComplaints, markComplaintNotificationsAsRead } from "../../api/complaints";
 import { fetchNotifications } from "../../api/notifications";
 
 const formatDate = (value) => value ? new Date(value).toLocaleString("en-GB") : "-";
@@ -12,9 +12,7 @@ export default function ResidentComplaints() {
   const [complaints, setComplaints] = useState([]);
   const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
   const [complaint, setComplaint] = useState(null);
-  const [message, setMessage] = useState("");
   const [loading, setLoading] = useState(true);
-  const [sending, setSending] = useState(false);
   const [error, setError] = useState("");
 
   const load = useCallback(async () => {
@@ -59,29 +57,13 @@ export default function ResidentComplaints() {
       });
   }, [complaintId]);
 
-  const sendReply = async (event) => {
-    event.preventDefault();
-    if (!message.trim()) return;
-    setSending(true);
-    setError("");
-    try {
-      await replyToMyComplaint(complaintId, message.trim());
-      setMessage("");
-      await load();
-    } catch (requestError) {
-      setError(requestError.message || "Failed to send reply.");
-    } finally {
-      setSending(false);
-    }
-  };
-
   return (
     <MainLayout>
       <div className="dashboard">
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">{complaintId ? "Complaint conversation" : "My complaints"}</h1>
-            <p className="dashboard-header__subtitle">Review updates and reply to your care team</p>
+            <h1 className="dashboard-header__title">{complaintId ? "Complaint details" : "My complaints"}</h1>
+            <p className="dashboard-header__subtitle">Review your complaint and its updates</p>
           </div>
           <button type="button" className="btn btn-neutral" onClick={() => navigate(complaintId ? "/resident/complaints" : "/resident/history")}>
             <i className="bi bi-arrow-left" aria-hidden="true" /> {complaintId ? "All complaints" : "Booking history"}
@@ -104,23 +86,6 @@ export default function ResidentComplaints() {
               <div className="complain-notes"><p className="complain-notes__text">{complaint.description}</p></div>
               {complaint.resolution && <p className="detail-grid__value">Resolution: {complaint.resolution}</p>}
             </section>
-            <section className="table-card content">
-              <div className="detail-card__head"><h2 className="detail-card__title">Conversation</h2></div>
-              <div className="form-stack">
-                {(complaint.messages || []).length === 0 ? <p className="muted">No messages yet.</p> : complaint.messages.map((item) => (
-                  <article className="complain-notes" key={item.id}>
-                    <p className="detail-grid__label">{item.user?.employee?.name || item.user?.resident?.fullName || "Care team"} · {formatDate(item.createdAt)}</p>
-                    <p className="complain-notes__text">{item.message}</p>
-                  </article>
-                ))}
-                {!["CLOSED", "REJECTED"].includes(complaint.status) && (
-                  <form className="form-stack" onSubmit={sendReply}>
-                    <label className="form-field"><span>Your reply</span><textarea rows="3" value={message} onChange={(event) => setMessage(event.target.value)} required /></label>
-                    <div className="form-actions"><button type="submit" className="btn btn-primary" disabled={sending || !message.trim()}>{sending ? "Sending..." : "Send reply"}</button></div>
-                  </form>
-                )}
-              </div>
-            </section>
           </>
         ) : complaints.length === 0 ? (
           <section className="table-card content">
@@ -140,9 +105,9 @@ export default function ResidentComplaints() {
                     <td>{item.status?.replaceAll("_", " ")}</td>
                     <td>
                       <button type="button" className="btn btn-neutral" onClick={() => navigate(`/resident/complaints/${item.id}`)}>
-                        View conversation
+                        View details
                         {unreadComplaintIds.includes(item.id) && (
-                          <span className="side-nav-alert-dot" aria-label="Unread conversation activity" />
+                          <span className="side-nav-alert-dot" aria-label="Unread complaint activity" />
                         )}
                       </button>
                     </td>
