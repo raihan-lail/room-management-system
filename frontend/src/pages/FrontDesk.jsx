@@ -59,6 +59,15 @@ const SEGMENTS = [
   { id: "departure", label: "Departure", icon: "bi-box-arrow-right", title: "Departure Schedule" },
 ];
 
+const ACTION_SUCCESS_MESSAGES = {
+  "check-in": (name) => `Resident ${name} checked in successfully.`,
+  "check-out": (name) => `Resident ${name} checked out successfully.`,
+  "home-leaves": (name) => `Home leave recorded for ${name}.`,
+  "return-from-leave": (name) => `${name} returned from home leave.`,
+  cancel: (name) => `Booking cancellation request for ${name} successfully sent. `,
+  extend: (name) => `Booking extention request for ${name} successfully sent.`,
+};
+
 const selectedDateFormatter = new Intl.DateTimeFormat("en-US", {
   month: "short",
   day: "numeric",
@@ -119,6 +128,7 @@ export default function FrontDesk() {
   const [error, setError] = useState("");
   const [isSavingAction, setIsSavingAction] = useState(false);
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
   const [extendingRow, setExtendingRow] = useState(null);
   const [extensionDate, setExtensionDate] = useState("");
   const [homeLeaveList, setHomeLeaveList] = useState([]);
@@ -134,6 +144,7 @@ export default function FrontDesk() {
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [checkingInBooking, setCheckingInBooking] = useState(null);
+  const [checkingOutBooking, setCheckingOutBooking] = useState(null);
   const [viewingBookingId, setViewingBookingId] = useState(null);
   const [isExportModalOpen, setIsExportModalOpen] = useState(false);
   const [startDate, setStartDate] = useState(getTodayKey);
@@ -166,6 +177,7 @@ export default function FrontDesk() {
     setStartDate(value);
     if (value > endDate) setEndDate(value);
     setCurrentPage(1);
+    setActionSuccess("");
   };
 
   const handleEndDateChange = (value) => {
@@ -174,6 +186,7 @@ export default function FrontDesk() {
     setEndDate(value);
     if (value < startDate) setStartDate(value);
     setCurrentPage(1);
+    setActionSuccess("");
   };
 
   const handleSegmentChange = (nextSegment) => {
@@ -181,6 +194,7 @@ export default function FrontDesk() {
     setCurrentPage(1);
     setError("");
     setActionError("");
+    setActionSuccess("");
   };
 
   const isHomeLeave = segment === "home_leave";
@@ -285,6 +299,14 @@ export default function FrontDesk() {
   return () => window.clearTimeout(timer);
 }, [loadBookings]);
 
+  useEffect(() => {
+    if (!actionSuccess) return undefined;
+
+    const timer = window.setTimeout(() => setActionSuccess(""), 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [actionSuccess]);
+
   const segmentCounts = bookingCounts;
   const segmentBookings = isHomeLeave ? homeLeaveList : bookingList;
 
@@ -309,12 +331,25 @@ export default function FrontDesk() {
   const performBookingAction = async (booking, action, body) => {
     setIsSavingAction(true);
     setActionError("");
+    setActionSuccess("");
     try {
       await apiRequest(`/api/booking/${booking.id}/${action}`, {
         method: "POST",
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
       await loadBookings();
+
+      const getMessage = ACTION_SUCCESS_MESSAGES[action];
+      if (getMessage) {
+        const name =
+          booking.guest?.name ||
+          booking.resident?.fullName ||
+          booking.name ||
+          "Resident";
+
+        setActionSuccess(getMessage(name));
+      }
+
       setExtendingRow(null);
       return true;
     } catch (err) {
@@ -559,6 +594,7 @@ export default function FrontDesk() {
   const handleSearchChange = (value) => {
     setSearch(value);
     setCurrentPage(1);
+    setActionSuccess("");
   };
 
   const getBookingRowActions = (booking) => {
@@ -602,7 +638,10 @@ export default function FrontDesk() {
       actions.push({
         label: "Check Out",
         icon: "bi bi-box-arrow-right",
-        onClick: () => performBookingAction(booking, "check-out"),
+        onClick: () => {
+          setActionError("");
+          setCheckingOutBooking(booking);
+        },
       });
     }
 
@@ -631,7 +670,10 @@ export default function FrontDesk() {
         actions.push({
           label: "Check Out",
           icon: "bi bi-box-arrow-right",
-          onClick: () => performBookingAction(booking, "check-out"),
+          onClick: () => {
+            setActionError("");
+            setCheckingOutBooking(booking);
+          },
         });
       }
     }
@@ -766,6 +808,11 @@ aria-label={
 
         {/* TABLE CARD */}
         <section className="table-card content">
+          {actionSuccess && (
+            <div className="frontdesk-overdue-alert" role="status">
+              {actionSuccess}
+            </div>
+          )}
           {overdueArrivalCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
@@ -1189,6 +1236,16 @@ aria-label={
             </div>
           </form>
         </div>
+      )}
+
+      {checkingOutBooking && (
+        <ConfirmModal
+          title="Check out booking"
+          message={`Check out ${checkingOutBooking.guest?.name || "this resident"}? This cannot be undone.`}
+          confirmLabel="Check Out"
+          onClose={() => setCheckingOutBooking(null)}
+          onConfirm={() => performBookingAction(checkingOutBooking, "check-out")}
+        />
       )}
 
       {viewingBookingId && (

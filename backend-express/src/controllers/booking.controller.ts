@@ -37,6 +37,7 @@ import {
   CHECK_IN_EMAIL_ATTACHMENTS,
   buildCheckInWelcomeEmail,
 } from "../mails/check-in-welcome.js";
+import { buildCheckOutGoodbyeEmail } from "../mails/check-out-goodbye.js";
 import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
@@ -2472,19 +2473,87 @@ export async function checkOutBooking(
 
       return tx.booking.findUniqueOrThrow({
         where: { id: existing.id },
-        include: { resident: true, bed: true },
+        include: {
+          resident: { include: { user: true } },
+          bed: {
+            include: {
+              room: {
+                include: {
+                  floor: {
+                    include: {
+                      location: {
+                        include: { site: true },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
       });
     });
+
+    const recipientEmail = booking.resident.user.email;
+    const location = booking.bed.room.floor.location;
+    let emailSent = false;
+
+    if (await isEmailEnabled()) {
+      try {
+        const email = buildCheckOutGoodbyeEmail({
+          residentName: booking.resident.fullName,
+          bookingNumber: booking.bookingNumber,
+          siteName: location.site.name,
+          locationName: location.name,
+          roomName: booking.bed.room.name,
+          bedName: booking.bed.name,
+          startedAt: booking.startedAt,
+          endedAt: booking.endedAt,
+          checkedInAt: booking.checkedInAt,
+          checkedOutAt: booking.checkedOutAt ?? new Date(),
+        });
+
+        const emailResult = await sendEmail({
+          to: recipientEmail,
+          ...email,
+          type: "CHECK_OUT_GOODBYE",
+          bookingId: booking.id,
+          siteId: location.site.id,
+        });
+
+        emailSent = emailResult.success;
+
+        if (!emailSent && !emailResult.skipped) {
+          await notifyActor(req, {
+            title: "Resident checked out, email not sent",
+            message: `Resident ${booking.resident.fullName} checked out, but the goodbye email to ${recipientEmail} could not be sent.`,
+            type: "WARNING",
+          });
+        }
+      } catch (error) {
+        console.error("Check-out goodbye email error:", error);
+
+        await notifyActor(req, {
+          title: "Resident checked out, email not sent",
+          message: `Resident ${booking.resident.fullName} checked out, but the goodbye email to ${recipientEmail} could not be sent.`,
+          type: "WARNING",
+        });
+      }
+    }
 
     await auditBooking(req, actor, {
       bookingId: booking.id,
       action: "booking_checked_out",
-      description: "Resident checked out.",
+      description: `Resident checked out.${
+        emailSent ? " Goodbye email was sent to the resident." : ""
+      }`,
     });
 
     await notifyActor(req, {
       title:"Resident checked out",
-      message:`Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} checked out`
+      message:`Resident ${booking.resident.fullName} with booking id ${booking.bookingNumber} checked out${
+        emailSent ? " and the goodbye email was sent" : ""
+      }`
     })
 
     res.status(200).json({
