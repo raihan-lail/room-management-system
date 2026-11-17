@@ -64,6 +64,7 @@ const ACTION_SUCCESS_MESSAGES = {
   "check-out": (name) => `Resident ${name} checked out successfully.`,
   "home-leaves": (name) => `Home leave recorded for ${name}.`,
   "return-from-leave": (name) => `${name} returned from home leave.`,
+  "send-reminder": (name) => `Near-end reminder sent to ${name}.`,
   cancel: (name) => `Booking cancellation request for ${name} successfully sent. `,
   extend: (name) => `Booking extention request for ${name} successfully sent.`,
 };
@@ -623,6 +624,12 @@ export default function FrontDesk() {
     }
 
     if (segment === "near-end" && hasPermission("bookings.create")) {
+      actions.push({
+        label: "Send Reminder",
+        icon: "bi bi-envelope-paper",
+        onClick: () => performBookingAction(booking, "send-reminder"),
+      });
+
       actions.push({
         label: "Extend Stay",
         icon: "bi bi-calendar-plus",
