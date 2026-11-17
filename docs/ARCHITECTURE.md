@@ -294,7 +294,7 @@ flowchart LR
 
 Booking records connect residents to beds and preserve lifecycle timestamps and status. Home-leave records and booking events capture related lifecycle information. Email, notification, and audit records provide operational history. Specific side effects depend on the endpoint and action.
 
-Booking creation sends a confirmation email, and check-in sends a welcome email describing the site, location, room, and bed, with the welcome book and guide attachments from `backend-express/public/attachment`. Check-out sends a goodbye email with a stay summary including total days. All outbound email is gated by the global `email_enabled` system setting, which staff toggle from the Email Logs page.
+Booking creation sends a confirmation email, and check-in sends a welcome email describing the site, location, room, and bed, with the welcome book and guide attachments from `backend-express/public/attachment`. Check-out sends a goodbye email with a stay summary including total days. From the Near End Date tab, frontdesk staff can send a near-end reminder email asking the resident to contact reception to extend. All outbound email is gated by the global `email_enabled` system setting, which staff toggle from the Email Logs page.
 
 ### Notification connection
 

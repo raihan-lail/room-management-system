@@ -978,7 +978,7 @@ textarea,
 .table-sort,
 .simple-table,
 .office-table {
-  font-size: 13px;
+  font-size: 11px;
   line-height: 20px;
 }
 
@@ -2282,7 +2282,7 @@ textarea,
 
   color: #111827;
 
-  font-size: 14px;
+  font-size: 12px;
   font-weight: 500;
 
   border-radius: 6px;
