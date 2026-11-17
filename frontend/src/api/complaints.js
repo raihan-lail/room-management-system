@@ -2,6 +2,7 @@ import apiRequest from "./client";
 
 const residentComplaintsPath = "/api/resident-portal/complaints";
 const staffComplaintsPath = "/api/complaint";
+const feedbackComplaintsPath = "/api/feedback/complaints";
 
 export function fetchComplaints(params = {}) {
   const query = new URLSearchParams(params).toString();
@@ -19,16 +20,15 @@ export function updateComplaintStatus(id, status, resolution) {
   });
 }
 
-export function sendStaffComplaintMessage(id, message, isInternal = false) {
-  return apiRequest(`${staffComplaintsPath}/${encodeURIComponent(id)}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ message, isInternal }),
-  });
+export function fetchComplaintFeedback(bookingId, token) {
+  return apiRequest(
+    `${feedbackComplaintsPath}/${encodeURIComponent(bookingId)}/${encodeURIComponent(token)}`
+  );
 }
 
-export function submitResidentComplaint(bookingId, complaint) {
+export function submitComplaintFeedback(bookingId, token, complaint) {
   return apiRequest(
-    `/api/resident-portal/bookings/${encodeURIComponent(bookingId)}/complaints`,
+    `${feedbackComplaintsPath}/${encodeURIComponent(bookingId)}/${encodeURIComponent(token)}`,
     { method: "POST", body: JSON.stringify(complaint) }
   );
 }
@@ -39,13 +39,6 @@ export function fetchMyComplaints() {
 
 export function fetchMyComplaint(id) {
   return apiRequest(`${residentComplaintsPath}/${encodeURIComponent(id)}`);
-}
-
-export function replyToMyComplaint(id, message) {
-  return apiRequest(`${residentComplaintsPath}/${encodeURIComponent(id)}/messages`, {
-    method: "POST",
-    body: JSON.stringify({ message }),
-  });
 }
 
 export function markComplaintNotificationsAsRead(id) {

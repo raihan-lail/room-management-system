@@ -215,6 +215,7 @@ Edit `backend-express/.env`:
 | `JWT_SECRET` | Yes | — | Secret used to sign access tokens. The API fails to start without it. |
 | `PORT` | No | `5000` | HTTP/WebSocket port |
 | `CORS_ORIGINS` | No | Empty | Comma-separated allowed origins, e.g. `http://localhost:5173,http://localhost:8080`. Must include the frontend origin. |
+| `APP_URL` | No | First `CORS_ORIGINS` value | Public frontend origin used to build links in emails, such as the check-in complaint feedback link. |
 | `SUPERADMIN_EMAIL` | No | `superadmin@example.com` | Email created by `superAdminSeeder.ts` |
 | `SUPERADMIN_PASSWORD` | No | `ChangeMe123!` | Password created by `superAdminSeeder.ts` |
 | `SUPERADMIN_NAME` | No | `Super Admin` | Employee name created by `superAdminSeeder.ts` |

@@ -25,6 +25,9 @@ export const sidebarMenu = [
        { label: 'Table View', path: '/bookings/table', icon: 'bi-table', permission:"bookings.read" },
        { label: 'Home Leaves', path: '/bookings/home-leave', icon: 'bi-house-door', permission:"home.leaves" },
        { label: 'Change Approvals', path: '/bookings/approval', icon: 'bi-check2-square', permission:"bookings.approve" },
+       { label: 'Complaints', path: '/bookings/complaint', icon: 'bi-chat-dots', permission:"complaints" },
+        { label: 'Ratings', path: '/bookings/rating', icon: 'bi-star', permission:"ratings" },
+
 
     ],
   },

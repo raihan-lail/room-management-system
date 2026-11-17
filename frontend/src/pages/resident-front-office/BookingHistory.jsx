@@ -291,33 +291,6 @@ export default function BookingHistory() {
                       </p>
                     </div>
                   )}
-
-                  <div className="history-card__actions">
-                    <button
-                      type="button"
-                      className="btn btn-primary"
-                      onClick={() =>
-                        navigate(`/resident/rating/${booking.id}`)
-                      }
-                    >
-                      <i className="bi bi-star" aria-hidden="true" />
-                      Rate Your Experience
-                    </button>
-
-                    <button
-                      type="button"
-                      className="btn btn-neutral"
-                      onClick={() =>
-                        navigate(`/resident/bookings/${booking.id}/complaints`)
-                      }
-                    >
-                      <i
-                        className="bi bi-chat-dots"
-                        aria-hidden="true"
-                      />
-                      Complaint
-                    </button>
-                  </div>
                 </article>
               ))
             )}

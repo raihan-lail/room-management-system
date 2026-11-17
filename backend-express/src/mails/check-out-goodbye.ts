@@ -12,6 +12,7 @@ interface CheckOutGoodbyeEmailInput {
   endedAt: Date;
   checkedInAt: Date | null;
   checkedOutAt: Date;
+  ratingUrl?: string;
 }
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -70,6 +71,19 @@ export function buildCheckOutGoodbyeEmail(
     )
     .join("");
 
+  const ratingSection = input.ratingUrl
+    ? `
+            <tr>
+              <td style="padding:20px 32px 0;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#5a6275;">Rate Your Stay</p>
+                <p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:#1a1f2e;">
+                  Tell us how your stay went. This link can be used once.
+                </p>
+                <a href="${escapeHtml(input.ratingUrl)}" style="display:inline-block;padding:11px 18px;background-color:#273896;border-radius:6px;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;">Rate your stay</a>
+              </td>
+            </tr>`
+    : "";
+
   const html = `<!doctype html>
 <html lang="en">
   <head>
@@ -106,6 +120,8 @@ export function buildCheckOutGoodbyeEmail(
                 </table>
               </td>
             </tr>
+
+            ${ratingSection}
 
             <tr>
               <td style="padding:24px 32px 0;">
@@ -149,13 +165,16 @@ export function buildCheckOutGoodbyeEmail(
     `Total days: ${totalDays}`,
     "Status: Checked out",
     "",
+    ...(input.ratingUrl
+      ? ["To rate your stay, open this link (single use):", input.ratingUrl, ""]
+      : []),
     "We wish you a safe journey. If you need any assistance or have feedback about your stay, please contact the reception or site staff.",
     "",
     "This is an automated message from the Camp Management System. Please do not reply to this email.",
   ];
 
   return {
-    subject: `Goodbye from ${input.siteName} - Booking ${input.bookingNumber}`,
+    subject: `Resident Checked Out - ${input.siteName} - Booking ${input.bookingNumber}`,
     html,
     text: textLines.join("\n"),
   };

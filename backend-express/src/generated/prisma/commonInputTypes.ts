@@ -328,6 +328,23 @@ export type EnumComplaintPriorityWithAggregatesFilter<$PrismaModel = never> = {
   _max?: Prisma.NestedEnumComplaintPriorityFilter<$PrismaModel>
 }
 
+export type EnumFeedbackTokenTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.FeedbackTokenType | Prisma.EnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel> | $Enums.FeedbackTokenType
+}
+
+export type EnumFeedbackTokenTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FeedbackTokenType | Prisma.EnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFeedbackTokenTypeWithAggregatesFilter<$PrismaModel> | $Enums.FeedbackTokenType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel>
+}
+
 export type EnumBookingChangeTypeFilter<$PrismaModel = never> = {
   equals?: $Enums.BookingChangeType | Prisma.EnumBookingChangeTypeFieldRefInput<$PrismaModel>
   in?: $Enums.BookingChangeType[] | Prisma.ListEnumBookingChangeTypeFieldRefInput<$PrismaModel>
@@ -728,6 +745,23 @@ export type NestedEnumComplaintPriorityWithAggregatesFilter<$PrismaModel = never
   _count?: Prisma.NestedIntFilter<$PrismaModel>
   _min?: Prisma.NestedEnumComplaintPriorityFilter<$PrismaModel>
   _max?: Prisma.NestedEnumComplaintPriorityFilter<$PrismaModel>
+}
+
+export type NestedEnumFeedbackTokenTypeFilter<$PrismaModel = never> = {
+  equals?: $Enums.FeedbackTokenType | Prisma.EnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel> | $Enums.FeedbackTokenType
+}
+
+export type NestedEnumFeedbackTokenTypeWithAggregatesFilter<$PrismaModel = never> = {
+  equals?: $Enums.FeedbackTokenType | Prisma.EnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  in?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  notIn?: $Enums.FeedbackTokenType[] | Prisma.ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel>
+  not?: Prisma.NestedEnumFeedbackTokenTypeWithAggregatesFilter<$PrismaModel> | $Enums.FeedbackTokenType
+  _count?: Prisma.NestedIntFilter<$PrismaModel>
+  _min?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel>
+  _max?: Prisma.NestedEnumFeedbackTokenTypeFilter<$PrismaModel>
 }
 
 export type NestedEnumBookingChangeTypeFilter<$PrismaModel = never> = {
