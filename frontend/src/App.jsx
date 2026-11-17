@@ -41,6 +41,7 @@ import BookingApproval from "./pages/bookings/BookingApproval";
 import Complains from "./pages/bookings/Complains";
 import ComplainDetails from "./pages/bookings/ComplainDetails";
 import BookingComplaints from "./pages/resident-front-office/BookingComplaints";
+import BookingRating from "./pages/resident-front-office/BookingRating";
 import Ratings from "./pages/bookings/Ratings";
 
 function DefaultRedirect() {
@@ -66,6 +67,7 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/forgot-password" element={<ForgotPassword/>} />
             <Route path="/booking/:bookingId/complaint/:token" element={<BookingComplaints />} />
+            <Route path="/booking/:bookingId/rating/:token" element={<BookingRating />} />
 
             <Route element={<ProtectedRoute />}>
               <Route path="/unauthorized" element={<Unauthorized />} />

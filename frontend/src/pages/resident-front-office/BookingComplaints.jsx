@@ -85,7 +85,7 @@ export default function BookingComplaints() {
                 <h2 className="room-summary__name">{booking.roomName || "-"}</h2>
                 <p className="room-summary__location">{booking.bedName || ""} · {booking.bookingNumber}</p>
               </div>
-              <span className="booking-status booking-status--in-house">{booking.status.replaceAll("_", " ")}</span>
+              <span className={`booking-status booking-status--${String(booking.status).toLowerCase()}`}>{booking.status.replaceAll("_", " ")}</span>
             </section>
 
             <section className="table-card content">

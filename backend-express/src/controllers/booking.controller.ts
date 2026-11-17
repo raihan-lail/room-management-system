@@ -43,7 +43,9 @@ import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
 import {
   buildComplaintFeedbackUrl,
+  buildRatingFeedbackUrl,
   createComplaintFeedbackToken,
+  createRatingFeedbackToken,
 } from "../services/feedback-token.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 import { isValidEmail, normalizeEmail, normalizeHeader, parseGender, readString } from "../utils/excel.js";
@@ -2422,6 +2424,8 @@ export async function checkOutBooking(
   if (!actor) return;
 
   try {
+    let ratingToken: string | undefined;
+
     const booking = await prisma.$transaction(async (tx) => {
       const existing = await tx.booking.findFirst({
         where: {
@@ -2483,6 +2487,8 @@ export async function checkOutBooking(
         description: "Resident checked out and returned the key.",
       });
 
+      ratingToken = await createRatingFeedbackToken(tx, existing.id);
+
       return tx.booking.findUniqueOrThrow({
         where: { id: existing.id },
         include: {
@@ -2523,6 +2529,9 @@ export async function checkOutBooking(
           endedAt: booking.endedAt,
           checkedInAt: booking.checkedInAt,
           checkedOutAt: booking.checkedOutAt ?? new Date(),
+          ratingUrl: ratingToken
+            ? buildRatingFeedbackUrl(booking.id, ratingToken)
+            : undefined,
         });
 
         const emailResult = await sendEmail({

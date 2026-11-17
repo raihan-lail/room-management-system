@@ -235,7 +235,9 @@ flowchart TD
   Save --> End
 ```
 
-At check-in the system creates a random complaint token for the booking, stores only its SHA-256 hash in `FeedbackToken`, and includes a public link (`/booking/:bookingId/complaint/:token`) in the check-in welcome email. The public feedback endpoints resolve the booking from the token hash, require the link to be unexpired, and only accept submissions while the booking is `IN_HOUSE` or `HOME_LEAVE`. Submitted complaints are recorded like any other complaint and appear in the staff complaint views at `/bookings/complains`. The complaint API is mounted at `/api/complaint`; the rating route module is still not mounted in `server.ts`.
+At check-in the system creates a random complaint token for the booking, stores only its SHA-256 hash in `FeedbackToken`, and includes a public link (`/booking/:bookingId/complaint/:token`) in the check-in welcome email. The public feedback endpoints resolve the booking from the token hash, require the link to be unexpired, and only accept submissions while the booking is `IN_HOUSE` or `HOME_LEAVE`. Submitted complaints are recorded like any other complaint and appear in the staff complaint views at `/bookings/complains`.
+
+At check-out the system creates a single-use rating token and includes a public link (`/booking/:bookingId/rating/:token`) in the goodbye email. Submitting a rating marks the token as used inside the same transaction that stores the rating, so the link cannot be reused; only `CHECKED_OUT` or `ARCHIVED` bookings can be rated. Ratings are exposed to staff through the mounted `/api/rating` routes and the `/bookings/rating` page.
 
 ## Request and data flows
 

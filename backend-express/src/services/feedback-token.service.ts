@@ -8,20 +8,17 @@ export function hashFeedbackToken(token: string): string {
   return createHash("sha256").update(token).digest("hex");
 }
 
-/**
- * Creates a complaint feedback token for a booking and returns the raw token.
- * Only the hash is persisted, so the link cannot be recovered from the database.
- */
-export async function createComplaintFeedbackToken(
+async function createFeedbackToken(
   tx: Prisma.TransactionClient,
-  bookingId: string
+  bookingId: string,
+  type: FeedbackTokenType
 ): Promise<string> {
   const token = randomBytes(32).toString("hex");
 
   await tx.feedbackToken.create({
     data: {
       bookingId,
-      type: FeedbackTokenType.COMPLAINT,
+      type,
       tokenHash: hashFeedbackToken(token),
     },
   });
@@ -29,9 +26,31 @@ export async function createComplaintFeedbackToken(
   return token;
 }
 
-export function buildComplaintFeedbackUrl(
+/**
+ * Creates a complaint feedback token for a booking and returns the raw token.
+ * Only the hash is persisted, so the link cannot be recovered from the database.
+ */
+export function createComplaintFeedbackToken(
+  tx: Prisma.TransactionClient,
+  bookingId: string
+): Promise<string> {
+  return createFeedbackToken(tx, bookingId, FeedbackTokenType.COMPLAINT);
+}
+
+/**
+ * Creates a single-use rating feedback token for a booking.
+ */
+export function createRatingFeedbackToken(
+  tx: Prisma.TransactionClient,
+  bookingId: string
+): Promise<string> {
+  return createFeedbackToken(tx, bookingId, FeedbackTokenType.RATING);
+}
+
+function buildFeedbackUrl(
   bookingId: string,
-  token: string
+  token: string,
+  feedbackType: string
 ): string | undefined {
   const origin =
     process.env.APP_URL?.trim() ||
@@ -39,5 +58,19 @@ export function buildComplaintFeedbackUrl(
 
   if (!origin) return undefined;
 
-  return `${origin.replace(/\/+$/, "")}/booking/${encodeURIComponent(bookingId)}/complaint/${encodeURIComponent(token)}`;
+  return `${origin.replace(/\/+$/, "")}/booking/${encodeURIComponent(bookingId)}/${feedbackType}/${encodeURIComponent(token)}`;
+}
+
+export function buildComplaintFeedbackUrl(
+  bookingId: string,
+  token: string
+): string | undefined {
+  return buildFeedbackUrl(bookingId, token, "complaint");
+}
+
+export function buildRatingFeedbackUrl(
+  bookingId: string,
+  token: string
+): string | undefined {
+  return buildFeedbackUrl(bookingId, token, "rating");
 }
