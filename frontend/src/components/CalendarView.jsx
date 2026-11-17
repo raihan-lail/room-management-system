@@ -331,6 +331,7 @@ export default function CalendarView() {
   const pendingScrollAdjustRef = useRef(0);
   const backwardExtendPendingRef = useRef(false);
   const initialScrollDoneRef = useRef(false);
+  const previousStartDateRef = useRef("");
 
   useEffect(() => {
     dragRangeRef.current = dragRange;
@@ -345,28 +346,14 @@ export default function CalendarView() {
   }, []);
 
   /*
-   * Calendar bounds
+   * Calendar window. The From and To filters define
+   * the exact rendered range. Without them the window
+   * starts at today and ends at the scrollable
+   * calendar end.
    */
-  const calStart = todayString;
+  const windowStart = startDate || todayString;
 
-  const calEnd = calendarEnd;
-
-  /*
-   * Calendar window
-   */
-  const windowStart =
-    startDate &&
-    startDate >= calStart &&
-    startDate <= calEnd
-      ? startDate
-      : calStart;
-
-  let windowEnd =
-    endDate &&
-    endDate >= calStart &&
-    endDate <= calEnd
-      ? endDate
-      : calEnd;
+  let windowEnd = endDate || calendarEnd;
 
   if (windowEnd < windowStart) {
     windowEnd = windowStart;
@@ -377,9 +364,9 @@ export default function CalendarView() {
    * calendar scroll into dates before the window
    * start without moving the initial view.
    */
-  const rangeStart = !startDate
-    ? addDays(windowStart, -leadDays) || windowStart
-    : windowStart;
+  const rangeStart = startDate
+    ? windowStart
+    : addDays(windowStart, -leadDays) || windowStart;
 
   /*
    * Generate calendar dates
@@ -390,6 +377,41 @@ export default function CalendarView() {
       windowEnd
     );
   }, [rangeStart, windowEnd]);
+
+  /*
+   * The From filter anchors the left edge of the
+   * visible range; the To filter anchors the right
+   * edge. Without this the calendar would keep its
+   * previous scroll position when the range shrinks
+   * or moves.
+   */
+  useLayoutEffect(() => {
+    const container = calendarRef.current;
+
+    if (!container) {
+      return;
+    }
+
+    const hadStartDate = previousStartDateRef.current;
+    previousStartDateRef.current = startDate;
+
+    if (startDate) {
+      container.scrollLeft = 0;
+    } else if (hadStartDate) {
+      container.scrollLeft = leadDays * DAY_WIDTH;
+    }
+  }, [startDate, leadDays]);
+
+  useLayoutEffect(() => {
+    const container = calendarRef.current;
+
+    if (!container || !endDate) {
+      return;
+    }
+
+    container.scrollLeft =
+      container.scrollWidth;
+  }, [endDate]);
 
   useEffect(() => {
     let isCurrentRequest = true;
@@ -1548,8 +1570,6 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={calStart}
-              max={calEnd}
               value={startDate}
               onChange={(e) =>
                 setStartDate(e.target.value)
@@ -1562,8 +1582,6 @@ export default function CalendarView() {
 
             <input
               type="date"
-              min={calStart}
-              max={calEnd}
               value={endDate}
               onChange={(e) =>
                 setEndDate(e.target.value)
