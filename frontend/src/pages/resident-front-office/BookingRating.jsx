@@ -1,7 +1,6 @@
-import { useCallback, useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
-import MainLayout from "../../components/MainLayout";
-import apiRequest from "../../api/client";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { fetchRatingFeedback, submitRatingFeedback } from "../../api/ratings";
 
 const SCORE_OPTIONS = [
   { value: 1, label: "Bad" },
@@ -11,161 +10,113 @@ const SCORE_OPTIONS = [
   { value: 5, label: "Excellent" },
 ];
 
-const getResponseData = (response) => response?.data ?? response;
-const canRateBooking = (status) => ["CHECKED_OUT", "ARCHIVED"].includes(status);
-
 export default function BookingRating() {
-  const navigate = useNavigate();
-  const { bookingId } = useParams();
+  const { bookingId, token } = useParams();
   const [booking, setBooking] = useState(null);
-  const [existingRating, setExistingRating] = useState(null);
   const [score, setScore] = useState(0);
   const [details, setDetails] = useState("");
+  const [submittedScore, setSubmittedScore] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const loadRatingData = useCallback(async () => {
-    setLoading(true);
-    setError("");
-    try {
-      const [bookingResponse, ratingsResponse] = await Promise.all([
-        apiRequest(`/api/resident-portal/bookings/${bookingId}`),
-        apiRequest("/api/resident-portal/ratings"),
-      ]);
-      const bookingData = getResponseData(bookingResponse);
-      const ratingRows = getResponseData(ratingsResponse);
-      const foundRating = (Array.isArray(ratingRows) ? ratingRows : [])
-        .find((rating) => rating.bookingId === bookingId);
-      setBooking(bookingData);
-      setExistingRating(foundRating ?? null);
-    } catch (err) {
-      setError(err?.message || "Failed to load booking rating.");
-    } finally {
-      setLoading(false);
-    }
-  }, [bookingId]);
 
   useEffect(() => {
-  const timer = window.setTimeout(() => {
-    loadRatingData();
-  }, 0);
+    let active = true;
+    fetchRatingFeedback(bookingId, token)
+      .then((response) => { if (active) setBooking(response?.data ?? null); })
+      .catch((requestError) => { if (active) setError(requestError.message || "Failed to load rating link."); })
+      .finally(() => { if (active) setLoading(false); });
+    return () => { active = false; };
+  }, [bookingId, token]);
 
-  return () => window.clearTimeout(timer);
-}, [loadRatingData]);
-
-  const submitRating = async () => {
+  const submitRating = async (event) => {
+    event.preventDefault();
+    if (!score) return;
     setSubmitting(true);
     setError("");
     try {
-      await apiRequest(`/api/resident-portal/bookings/${bookingId}/rating`, {
-        method: "POST",
-        body: JSON.stringify({ score, details }),
-      });
-      setIsSubmitted(true);
-    } catch (err) {
-      setError(err?.message || "Failed to submit your rating.");
+      await submitRatingFeedback(bookingId, token, { score, details });
+      setSubmittedScore(score);
+      setBooking((current) => (current ? { ...current, alreadyRated: true } : current));
+    } catch (requestError) {
+      setError(requestError.message || "Failed to submit your rating.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const room = booking?.bed?.room?.name || "-";
-  const location = [
-    booking?.bed?.room?.floor?.location?.site?.name,
-    booking?.bed?.room?.floor?.location?.name,
-    booking?.bed?.room?.floor?.name,
-  ].filter(Boolean).join(" · ") || "-";
-
   return (
-    <MainLayout>
-      <div className="dashboard">
+    <div className="complaint-feedback-page">
+      <div className="complaint-feedback-container">
         <div className="dashboard-header">
           <div className="dashboard-header__text">
-            <h1 className="dashboard-header__title">
-              Booking {booking?.bookingNumber || "Rating"}
-            </h1>
-            <p className="dashboard-header__subtitle">Rate your experience</p>
+            <h1 className="dashboard-header__title">Rate your stay</h1>
+            <p className="dashboard-header__subtitle">Booking {booking?.bookingNumber || ""}</p>
           </div>
-          <button type="button" className="btn btn-neutral" onClick={() => navigate("/resident/history")}>
-            <i className="bi bi-arrow-left" aria-hidden="true" /> Back to History
-          </button>
         </div>
 
-        {loading ? (
-          <section className="table-card content"><p className="table-empty">Loading booking...</p></section>
-        ) : error && !booking ? (
+        {error && <p className="muted" role="alert">{error}</p>}
+        {loading ? <section className="table-card content">Loading booking...</section> : !booking ? (
+          <section className="table-card content">Rating link not found.</section>
+        ) : booking.alreadyRated ? (
           <section className="table-card content">
-            <p role="alert">{error}</p>
-            <button type="button" className="btn btn-primary" onClick={loadRatingData}>Try Again</button>
+            <div className="form-done">
+              <i className="bi bi-check-circle form-done__icon" aria-hidden="true" />
+              <p className="form-done__title">{submittedScore ? "Thank you for your feedback" : "Booking already rated"}</p>
+              <p className="form-done__caption">
+                {submittedScore
+                  ? `Your ${submittedScore} of 5 rating for room ${booking.roomName || "-"} has been recorded.`
+                  : "This rating link has already been used."}
+              </p>
+            </div>
+          </section>
+        ) : !booking.canRate ? (
+          <section className="table-card content">
+            <p>You can rate this booking after checking out.</p>
           </section>
         ) : (
           <>
             <section className="room-summary">
               <div className="room-summary__text">
                 <p className="room-summary__label">Room</p>
-                <h2 className="room-summary__name">{room}</h2>
-                <p className="room-summary__location"><i className="bi bi-geo-alt" aria-hidden="true" />{location}</p>
+                <h2 className="room-summary__name">{booking.roomName || "-"}</h2>
+                <p className="room-summary__location">{booking.bedName || ""} · {booking.bookingNumber}</p>
               </div>
-              <span className={`booking-status booking-status--${String(booking?.status || "unknown").toLowerCase()}`}>
-                {String(booking?.status || "-").replace(/_/g, " ")}
-              </span>
+              <span className={`booking-status booking-status--${String(booking.status).toLowerCase()}`}>{booking.status.replaceAll("_", " ")}</span>
             </section>
 
             <section className="table-card content">
-              {isSubmitted || existingRating ? (
-                <div className="form-done">
-                  <i className="bi bi-check-circle form-done__icon" aria-hidden="true" />
-                  <p className="form-done__title">{isSubmitted ? "Thank you for your feedback" : "Booking already rated"}</p>
-                  <p className="form-done__caption">
-                    Your {isSubmitted ? score : existingRating.score} of 5 rating for room {room} has been recorded.
-                  </p>
-                  <div className="form-done__actions">
-                    <button type="button" className="btn btn-primary" onClick={() => navigate("/resident/history")}>
-                      <i className="bi bi-clock-history" aria-hidden="true" /> Back to History
-                    </button>
+              <div className="detail-card__head">
+                <h2 className="detail-card__title">How Was Your Experience?</h2>
+                <p className="detail-card__caption">Choose a rating from 1 to 5 stars. This link can be used once.</p>
+              </div>
+              <form className="form-stack" onSubmit={submitRating}>
+                <fieldset className="rating-likert">
+                  <legend>Your rating</legend>
+                  <div className="rating-likert__options">
+                    {SCORE_OPTIONS.map((option) => (
+                      <label key={option.value} className={`rating-likert__option ${score === option.value ? "is-active" : ""}`}>
+                        <input type="radio" name="score" className="choice-input" value={option.value} checked={score === option.value} onChange={() => setScore(option.value)} />
+                        <i className={`bi ${score >= option.value ? "bi-star-fill" : "bi-star"} rating-likert__star`} aria-hidden="true" />
+                        <span className="rating-likert__label">{option.label}</span>
+                      </label>
+                    ))}
                   </div>
+                </fieldset>
+                <label className="form-field">
+                  <span>Anything you wanted to tell us?</span>
+                  <textarea rows="4" maxLength={2000} placeholder="Tell us what went well or what we should improve..." value={details} onChange={(event) => setDetails(event.target.value)} />
+                </label>
+                <div className="form-actions">
+                  <button type="submit" className="btn btn-primary" disabled={score === 0 || submitting}>
+                    {submitting ? "Submitting..." : "Submit Rating"}
+                  </button>
                 </div>
-              ) : !canRateBooking(booking?.status) ? (
-                <p className="table-empty">You can rate this booking after checking out.</p>
-              ) : (
-                <>
-                  <div className="detail-card__head">
-                    <h2 className="detail-card__title">How Was Your Experience?</h2>
-                    <p className="detail-card__caption">Choose a rating from 1 to 5 stars</p>
-                  </div>
-                  <div className="form-stack">
-                    {error && <p role="alert">{error}</p>}
-                    <fieldset className="rating-likert">
-                      <legend>Your rating</legend>
-                      <div className="rating-likert__options">
-                        {SCORE_OPTIONS.map((option) => (
-                          <label key={option.value} className={`rating-likert__option ${score === option.value ? "is-active" : ""}`}>
-                            <input type="radio" name="score" className="choice-input" value={option.value} checked={score === option.value} onChange={() => setScore(option.value)} />
-                            <i className={`bi ${score >= option.value ? "bi-star-fill" : "bi-star"} rating-likert__star`} aria-hidden="true" />
-                            <span className="rating-likert__label">{option.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </fieldset>
-                    <label className="form-field">
-                      <span>Anything you wanted to tell us?</span>
-                      <textarea rows="4" maxLength={2000} placeholder="Tell us what went well or what we should improve..." value={details} onChange={(event) => setDetails(event.target.value)} />
-                    </label>
-                    <div className="form-actions">
-                      <button type="button" className="btn btn-neutral" onClick={() => navigate("/resident/history")}>Cancel</button>
-                      <button type="button" className="btn btn-primary" disabled={score === 0 || submitting} onClick={submitRating}>
-                        {submitting ? "Submitting..." : "Submit Rating"}
-                      </button>
-                    </div>
-                  </div>
-                </>
-              )}
+              </form>
             </section>
           </>
         )}
       </div>
-    </MainLayout>
+    </div>
   );
 }

@@ -2165,6 +2165,27 @@ textarea,
 
   text-align: center;
 }
+
+.complaint-feedback-page {
+  min-height: 100vh;
+  width: 100%;
+
+  padding: 32px 16px;
+
+  background-color: #f4f6f8;
+}
+
+.complaint-feedback-container {
+  width: 100%;
+  max-width: 720px;
+
+  margin: 0 auto;
+
+  display: flex;
+  flex-direction: column;
+
+  gap: 16px;
+}
 /* =========================
    BUTTONS
 ========================= */
@@ -2175,7 +2196,7 @@ textarea,
 
   gap: 6px;
 
-  padding: 7px 12px;
+  padding: 11px 12px;
 
   border: 1px solid transparent;
   border-radius: 8px;
@@ -2677,7 +2698,7 @@ textarea,
   gap: 3px;
 
   min-width: 128px;
-  padding: 5px 9px;
+  padding: 1px 6px;
 
   background: #ffffff;
   border: 1px solid #e2e8f0;

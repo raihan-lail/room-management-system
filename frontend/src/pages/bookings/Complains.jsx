@@ -423,7 +423,7 @@ export default function Complains() {
                                 aria-hidden="true"
                               />
                               {unreadComplaintIds.includes(complain.id) && (
-                                <span className="side-nav-alert-dot" aria-label="Unread conversation activity" />
+                                <span className="side-nav-alert-dot" aria-label="Unread complaint activity" />
                               )}
                             </button>
                           </div>
