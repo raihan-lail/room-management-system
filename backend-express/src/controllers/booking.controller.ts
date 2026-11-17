@@ -38,6 +38,7 @@ import {
   buildCheckInWelcomeEmail,
 } from "../mails/check-in-welcome.js";
 import { buildCheckOutGoodbyeEmail } from "../mails/check-out-goodbye.js";
+import { buildBookingNearEndEmail } from "../mails/booking-near-end.js";
 import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
@@ -2576,6 +2577,117 @@ export async function checkOutBooking(
 
     console.error("Checkout error:", error);
     sendError(res, 500, "Failed to check out resident.");
+  }
+}
+
+export async function sendNearEndReminder(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const booking = await prisma.booking.findFirst({
+      where: {
+        id: req.params.id as string,
+        ...getSiteBookingFilter(actor),
+      },
+      include: {
+        resident: { include: { user: true } },
+        bed: {
+          include: {
+            room: {
+              include: {
+                floor: {
+                  include: {
+                    location: {
+                      include: { site: true },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!booking) {
+      sendError(res, 404, "Booking not found.");
+      return;
+    }
+
+    if (!IN_HOUSE_STATUSES.includes(booking.status)) {
+      sendError(
+        res,
+        409,
+        "Only in-house or home-leave bookings can receive a near-end reminder."
+      );
+      return;
+    }
+
+    if (!(await isEmailEnabled())) {
+      sendError(res, 409, "Email sending is disabled.");
+      return;
+    }
+
+    const recipientEmail = booking.resident.user.email;
+    const location = booking.bed.room.floor.location;
+
+    const email = buildBookingNearEndEmail({
+      residentName: booking.resident.fullName,
+      bookingNumber: booking.bookingNumber,
+      siteName: location.site.name,
+      locationName: location.name,
+      roomName: booking.bed.room.name,
+      bedName: booking.bed.name,
+      endedAt: booking.endedAt,
+    });
+
+    const emailResult = await sendEmail({
+      to: recipientEmail,
+      ...email,
+      type: "BOOKING_NEAR_END",
+      bookingId: booking.id,
+      siteId: location.site.id,
+    });
+
+    if (!emailResult.success) {
+      await notifyActor(req, {
+        title: "Near-end reminder not sent",
+        message: `The reminder to ${recipientEmail} for booking ${booking.bookingNumber} could not be sent.`,
+        type: "WARNING",
+      });
+
+      sendError(
+        res,
+        emailResult.skipped ? 409 : 502,
+        emailResult.skipped
+          ? "Email sending is disabled."
+          : "Failed to send near-end reminder."
+      );
+      return;
+    }
+
+    await auditBooking(req, actor, {
+      bookingId: booking.bookingNumber,
+      action: "booking_near_end_reminder_sent",
+      description: `Near-end reminder email sent to ${recipientEmail}.`,
+    });
+
+    await notifyActor(req, {
+      title: "Near-end reminder sent",
+      message: `Reminder sent to ${booking.resident.fullName} for booking ${booking.bookingNumber}.`,
+      type: "SUCCESS",
+    });
+
+    res.status(200).json({
+      message: "Reminder sent successfully.",
+    });
+  } catch (error) {
+    console.error("Send near-end reminder error:", error);
+    sendError(res, 500, "Failed to send near-end reminder.");
   }
 }
 
