@@ -21,6 +21,8 @@ import bookingRouter from "./routes/booking.route";
 import bookingApprovalRouter from "./routes/booking-approval.route";
 import dashboardRouter from "./routes/dashboard.route";
 import emailLogRouter from "./routes/email-log.route";
+import feedbackRouter from "./routes/feedback.route";
+import complaintRouter from "./routes/complaints.route";
 
 
 const app = express();
@@ -54,6 +56,8 @@ app.use("/api/booking", bookingRouter);
 app.use("/api/booking-approval", bookingApprovalRouter);
 app.use("/api/dashboard", dashboardRouter);
 app.use("/api/email-log", emailLogRouter);
+app.use("/api/feedback", feedbackRouter);
+app.use("/api/complaint", complaintRouter);
 
 
 

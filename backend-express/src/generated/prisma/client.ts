@@ -130,15 +130,15 @@ export type BookingEvent = Prisma.BookingEventModel
  */
 export type Complaint = Prisma.ComplaintModel
 /**
- * Model ComplaintMessage
- * 
- */
-export type ComplaintMessage = Prisma.ComplaintMessageModel
-/**
  * Model BookingRating
  * 
  */
 export type BookingRating = Prisma.BookingRatingModel
+/**
+ * Model FeedbackToken
+ * 
+ */
+export type FeedbackToken = Prisma.FeedbackTokenModel
 /**
  * Model BookingChangeRequest
  * 

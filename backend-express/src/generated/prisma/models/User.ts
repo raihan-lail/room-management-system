@@ -196,7 +196,6 @@ export type UserWhereInput = {
   auditLogs?: Prisma.AuditLogListRelationFilter
   emailLogs?: Prisma.EmailLogListRelationFilter
   bookingEvents?: Prisma.BookingEventListRelationFilter
-  complaintMessages?: Prisma.ComplaintMessageListRelationFilter
 }
 
 export type UserOrderByWithRelationInput = {
@@ -212,7 +211,6 @@ export type UserOrderByWithRelationInput = {
   auditLogs?: Prisma.AuditLogOrderByRelationAggregateInput
   emailLogs?: Prisma.EmailLogOrderByRelationAggregateInput
   bookingEvents?: Prisma.BookingEventOrderByRelationAggregateInput
-  complaintMessages?: Prisma.ComplaintMessageOrderByRelationAggregateInput
 }
 
 export type UserWhereUniqueInput = Prisma.AtLeast<{
@@ -231,7 +229,6 @@ export type UserWhereUniqueInput = Prisma.AtLeast<{
   auditLogs?: Prisma.AuditLogListRelationFilter
   emailLogs?: Prisma.EmailLogListRelationFilter
   bookingEvents?: Prisma.BookingEventListRelationFilter
-  complaintMessages?: Prisma.ComplaintMessageListRelationFilter
 }, "id" | "email">
 
 export type UserOrderByWithAggregationInput = {
@@ -271,7 +268,6 @@ export type UserCreateInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateInput = {
@@ -287,7 +283,6 @@ export type UserUncheckedCreateInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserUpdateInput = {
@@ -303,7 +298,6 @@ export type UserUpdateInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateInput = {
@@ -319,7 +313,6 @@ export type UserUncheckedUpdateInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateManyInput = {
@@ -442,20 +435,6 @@ export type UserUpdateOneWithoutBookingEventsNestedInput = {
   update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutBookingEventsInput, Prisma.UserUpdateWithoutBookingEventsInput>, Prisma.UserUncheckedUpdateWithoutBookingEventsInput>
 }
 
-export type UserCreateNestedOneWithoutComplaintMessagesInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutComplaintMessagesInput, Prisma.UserUncheckedCreateWithoutComplaintMessagesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutComplaintMessagesInput
-  connect?: Prisma.UserWhereUniqueInput
-}
-
-export type UserUpdateOneRequiredWithoutComplaintMessagesNestedInput = {
-  create?: Prisma.XOR<Prisma.UserCreateWithoutComplaintMessagesInput, Prisma.UserUncheckedCreateWithoutComplaintMessagesInput>
-  connectOrCreate?: Prisma.UserCreateOrConnectWithoutComplaintMessagesInput
-  upsert?: Prisma.UserUpsertWithoutComplaintMessagesInput
-  connect?: Prisma.UserWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.UserUpdateToOneWithWhereWithoutComplaintMessagesInput, Prisma.UserUpdateWithoutComplaintMessagesInput>, Prisma.UserUncheckedUpdateWithoutComplaintMessagesInput>
-}
-
 export type UserCreateNestedOneWithoutNotificationsInput = {
   create?: Prisma.XOR<Prisma.UserCreateWithoutNotificationsInput, Prisma.UserUncheckedCreateWithoutNotificationsInput>
   connectOrCreate?: Prisma.UserCreateOrConnectWithoutNotificationsInput
@@ -514,7 +493,6 @@ export type UserCreateWithoutEmployeeInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmployeeInput = {
@@ -529,7 +507,6 @@ export type UserUncheckedCreateWithoutEmployeeInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmployeeInput = {
@@ -560,7 +537,6 @@ export type UserUpdateWithoutEmployeeInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmployeeInput = {
@@ -575,7 +551,6 @@ export type UserUncheckedUpdateWithoutEmployeeInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutResidentInput = {
@@ -590,7 +565,6 @@ export type UserCreateWithoutResidentInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutResidentInput = {
@@ -605,7 +579,6 @@ export type UserUncheckedCreateWithoutResidentInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutResidentInput = {
@@ -636,7 +609,6 @@ export type UserUpdateWithoutResidentInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutResidentInput = {
@@ -651,7 +623,6 @@ export type UserUncheckedUpdateWithoutResidentInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutBookingEventsInput = {
@@ -666,7 +637,6 @@ export type UserCreateWithoutBookingEventsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutBookingEventsInput = {
@@ -681,7 +651,6 @@ export type UserUncheckedCreateWithoutBookingEventsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutBookingEventsInput = {
@@ -712,7 +681,6 @@ export type UserUpdateWithoutBookingEventsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutBookingEventsInput = {
@@ -727,83 +695,6 @@ export type UserUncheckedUpdateWithoutBookingEventsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
-}
-
-export type UserCreateWithoutComplaintMessagesInput = {
-  id?: string
-  email: string
-  password: string
-  isActive?: boolean
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  employee?: Prisma.EmployeeCreateNestedOneWithoutUserInput
-  resident?: Prisma.ResidentCreateNestedOneWithoutUserInput
-  notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
-  auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
-  emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
-  bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-}
-
-export type UserUncheckedCreateWithoutComplaintMessagesInput = {
-  id?: string
-  email: string
-  password: string
-  isActive?: boolean
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  employee?: Prisma.EmployeeUncheckedCreateNestedOneWithoutUserInput
-  resident?: Prisma.ResidentUncheckedCreateNestedOneWithoutUserInput
-  notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
-  auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
-  emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
-  bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-}
-
-export type UserCreateOrConnectWithoutComplaintMessagesInput = {
-  where: Prisma.UserWhereUniqueInput
-  create: Prisma.XOR<Prisma.UserCreateWithoutComplaintMessagesInput, Prisma.UserUncheckedCreateWithoutComplaintMessagesInput>
-}
-
-export type UserUpsertWithoutComplaintMessagesInput = {
-  update: Prisma.XOR<Prisma.UserUpdateWithoutComplaintMessagesInput, Prisma.UserUncheckedUpdateWithoutComplaintMessagesInput>
-  create: Prisma.XOR<Prisma.UserCreateWithoutComplaintMessagesInput, Prisma.UserUncheckedCreateWithoutComplaintMessagesInput>
-  where?: Prisma.UserWhereInput
-}
-
-export type UserUpdateToOneWithWhereWithoutComplaintMessagesInput = {
-  where?: Prisma.UserWhereInput
-  data: Prisma.XOR<Prisma.UserUpdateWithoutComplaintMessagesInput, Prisma.UserUncheckedUpdateWithoutComplaintMessagesInput>
-}
-
-export type UserUpdateWithoutComplaintMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.StringFieldUpdateOperationsInput | string
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  employee?: Prisma.EmployeeUpdateOneWithoutUserNestedInput
-  resident?: Prisma.ResidentUpdateOneWithoutUserNestedInput
-  notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
-  auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
-  emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
-  bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-}
-
-export type UserUncheckedUpdateWithoutComplaintMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  email?: Prisma.StringFieldUpdateOperationsInput | string
-  password?: Prisma.StringFieldUpdateOperationsInput | string
-  isActive?: Prisma.BoolFieldUpdateOperationsInput | boolean
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  employee?: Prisma.EmployeeUncheckedUpdateOneWithoutUserNestedInput
-  resident?: Prisma.ResidentUncheckedUpdateOneWithoutUserNestedInput
-  notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
-  auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
-  emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
-  bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
 }
 
 export type UserCreateWithoutNotificationsInput = {
@@ -818,7 +709,6 @@ export type UserCreateWithoutNotificationsInput = {
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutNotificationsInput = {
@@ -833,7 +723,6 @@ export type UserUncheckedCreateWithoutNotificationsInput = {
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutNotificationsInput = {
@@ -864,7 +753,6 @@ export type UserUpdateWithoutNotificationsInput = {
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutNotificationsInput = {
@@ -879,7 +767,6 @@ export type UserUncheckedUpdateWithoutNotificationsInput = {
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutAuditLogsInput = {
@@ -894,7 +781,6 @@ export type UserCreateWithoutAuditLogsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   emailLogs?: Prisma.EmailLogCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutAuditLogsInput = {
@@ -909,7 +795,6 @@ export type UserUncheckedCreateWithoutAuditLogsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   emailLogs?: Prisma.EmailLogUncheckedCreateNestedManyWithoutUserInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutAuditLogsInput = {
@@ -940,7 +825,6 @@ export type UserUpdateWithoutAuditLogsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   emailLogs?: Prisma.EmailLogUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutAuditLogsInput = {
@@ -955,7 +839,6 @@ export type UserUncheckedUpdateWithoutAuditLogsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   emailLogs?: Prisma.EmailLogUncheckedUpdateManyWithoutUserNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 export type UserCreateWithoutEmailLogsInput = {
@@ -970,7 +853,6 @@ export type UserCreateWithoutEmailLogsInput = {
   notifications?: Prisma.NotificationCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogCreateNestedManyWithoutActorInput
   bookingEvents?: Prisma.BookingEventCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageCreateNestedManyWithoutUserInput
 }
 
 export type UserUncheckedCreateWithoutEmailLogsInput = {
@@ -985,7 +867,6 @@ export type UserUncheckedCreateWithoutEmailLogsInput = {
   notifications?: Prisma.NotificationUncheckedCreateNestedManyWithoutUserInput
   auditLogs?: Prisma.AuditLogUncheckedCreateNestedManyWithoutActorInput
   bookingEvents?: Prisma.BookingEventUncheckedCreateNestedManyWithoutActorInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutUserInput
 }
 
 export type UserCreateOrConnectWithoutEmailLogsInput = {
@@ -1016,7 +897,6 @@ export type UserUpdateWithoutEmailLogsInput = {
   notifications?: Prisma.NotificationUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUpdateManyWithoutActorNestedInput
   bookingEvents?: Prisma.BookingEventUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUpdateManyWithoutUserNestedInput
 }
 
 export type UserUncheckedUpdateWithoutEmailLogsInput = {
@@ -1031,7 +911,6 @@ export type UserUncheckedUpdateWithoutEmailLogsInput = {
   notifications?: Prisma.NotificationUncheckedUpdateManyWithoutUserNestedInput
   auditLogs?: Prisma.AuditLogUncheckedUpdateManyWithoutActorNestedInput
   bookingEvents?: Prisma.BookingEventUncheckedUpdateManyWithoutActorNestedInput
-  complaintMessages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutUserNestedInput
 }
 
 
@@ -1044,7 +923,6 @@ export type UserCountOutputType = {
   auditLogs: number
   emailLogs: number
   bookingEvents: number
-  complaintMessages: number
 }
 
 export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
@@ -1052,7 +930,6 @@ export type UserCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.I
   auditLogs?: boolean | UserCountOutputTypeCountAuditLogsArgs
   emailLogs?: boolean | UserCountOutputTypeCountEmailLogsArgs
   bookingEvents?: boolean | UserCountOutputTypeCountBookingEventsArgs
-  complaintMessages?: boolean | UserCountOutputTypeCountComplaintMessagesArgs
 }
 
 /**
@@ -1093,13 +970,6 @@ export type UserCountOutputTypeCountBookingEventsArgs<ExtArgs extends runtime.Ty
   where?: Prisma.BookingEventWhereInput
 }
 
-/**
- * UserCountOutputType without action
- */
-export type UserCountOutputTypeCountComplaintMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ComplaintMessageWhereInput
-}
-
 
 export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -1114,7 +984,6 @@ export type UserSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = r
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   emailLogs?: boolean | Prisma.User$emailLogsArgs<ExtArgs>
   bookingEvents?: boolean | Prisma.User$bookingEventsArgs<ExtArgs>
-  complaintMessages?: boolean | Prisma.User$complaintMessagesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["user"]>
 
@@ -1153,7 +1022,6 @@ export type UserInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = 
   auditLogs?: boolean | Prisma.User$auditLogsArgs<ExtArgs>
   emailLogs?: boolean | Prisma.User$emailLogsArgs<ExtArgs>
   bookingEvents?: boolean | Prisma.User$bookingEventsArgs<ExtArgs>
-  complaintMessages?: boolean | Prisma.User$complaintMessagesArgs<ExtArgs>
   _count?: boolean | Prisma.UserCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type UserIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {}
@@ -1168,7 +1036,6 @@ export type $UserPayload<ExtArgs extends runtime.Types.Extensions.InternalArgs =
     auditLogs: Prisma.$AuditLogPayload<ExtArgs>[]
     emailLogs: Prisma.$EmailLogPayload<ExtArgs>[]
     bookingEvents: Prisma.$BookingEventPayload<ExtArgs>[]
-    complaintMessages: Prisma.$ComplaintMessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1577,7 +1444,6 @@ export interface Prisma__UserClient<T, Null = never, ExtArgs extends runtime.Typ
   auditLogs<T extends Prisma.User$auditLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$auditLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$AuditLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   emailLogs<T extends Prisma.User$emailLogsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$emailLogsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$EmailLogPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   bookingEvents<T extends Prisma.User$bookingEventsArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$bookingEventsArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$BookingEventPayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
-  complaintMessages<T extends Prisma.User$complaintMessagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.User$complaintMessagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComplaintMessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -2137,30 +2003,6 @@ export type User$bookingEventsArgs<ExtArgs extends runtime.Types.Extensions.Inte
   take?: number
   skip?: number
   distinct?: Prisma.BookingEventScalarFieldEnum | Prisma.BookingEventScalarFieldEnum[]
-}
-
-/**
- * User.complaintMessages
- */
-export type User$complaintMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ComplaintMessage
-   */
-  select?: Prisma.ComplaintMessageSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ComplaintMessage
-   */
-  omit?: Prisma.ComplaintMessageOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ComplaintMessageInclude<ExtArgs> | null
-  where?: Prisma.ComplaintMessageWhereInput
-  orderBy?: Prisma.ComplaintMessageOrderByWithRelationInput | Prisma.ComplaintMessageOrderByWithRelationInput[]
-  cursor?: Prisma.ComplaintMessageWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ComplaintMessageScalarFieldEnum | Prisma.ComplaintMessageScalarFieldEnum[]
 }
 
 /**

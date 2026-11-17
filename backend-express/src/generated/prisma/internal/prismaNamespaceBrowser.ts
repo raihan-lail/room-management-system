@@ -69,8 +69,8 @@ export const ModelName = {
   HomeLeave: 'HomeLeave',
   BookingEvent: 'BookingEvent',
   Complaint: 'Complaint',
-  ComplaintMessage: 'ComplaintMessage',
   BookingRating: 'BookingRating',
+  FeedbackToken: 'FeedbackToken',
   BookingChangeRequest: 'BookingChangeRequest',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
@@ -337,18 +337,6 @@ export const ComplaintScalarFieldEnum = {
 export type ComplaintScalarFieldEnum = (typeof ComplaintScalarFieldEnum)[keyof typeof ComplaintScalarFieldEnum]
 
 
-export const ComplaintMessageScalarFieldEnum = {
-  id: 'id',
-  complaintId: 'complaintId',
-  userId: 'userId',
-  message: 'message',
-  isInternal: 'isInternal',
-  createdAt: 'createdAt'
-} as const
-
-export type ComplaintMessageScalarFieldEnum = (typeof ComplaintMessageScalarFieldEnum)[keyof typeof ComplaintMessageScalarFieldEnum]
-
-
 export const BookingRatingScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
@@ -359,6 +347,19 @@ export const BookingRatingScalarFieldEnum = {
 } as const
 
 export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
+
+
+export const FeedbackTokenScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  type: 'type',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type FeedbackTokenScalarFieldEnum = (typeof FeedbackTokenScalarFieldEnum)[keyof typeof FeedbackTokenScalarFieldEnum]
 
 
 export const BookingChangeRequestScalarFieldEnum = {

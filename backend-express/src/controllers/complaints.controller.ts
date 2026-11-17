@@ -12,7 +12,7 @@ import {
 } from "../utils/actor.js";
 import { prisma } from "../lib/prisma.js";
 import { auditActor } from "../services/audit.service.js";
-import { notifyComplaintStaff, notifyUsers } from "../services/notification.service.js";
+import { notifyUsers } from "../services/notification.service.js";
 
 function getSiteComplaintFilter(
   actor: Awaited<ReturnType<typeof getActorOrRespond>> & {}
@@ -208,17 +208,6 @@ export async function getComplaintById(
           },
         },
         assignedTo: { select: { id: true, name: true } },
-        messages: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            user: {
-              select: {
-                employee: { select: { name: true } },
-                resident: { select: { fullName: true } },
-              },
-            },
-          },
-        },
       },
     });
 
@@ -457,100 +446,6 @@ export async function updateComplaintStatus(
     console.error("Update complaint status error:", error);
     res.status(500).json({
       message: "Failed to update complaint status.",
-    });
-  }
-}
-
-export async function createComplaintMessage(
-  req: AuthRequest,
-  res: Response
-): Promise<void> {
-  const actor = await getActorOrRespond(req, res);
-  if (!actor) return;
-
-  const { message, isInternal = false } = req.body;
-
-  if (typeof message !== "string" || !message.trim()) {
-    res.status(400).json({ message: "Message is required." });
-    return;
-  }
-
-  if (typeof isInternal !== "boolean") {
-    res.status(400).json({ message: "Invalid message visibility." });
-    return;
-  }
-
-  try {
-    const complaint = await prisma.complaint.findFirst({
-      where: {
-        id: req.params.id as string,
-        ...getSiteComplaintFilter(actor),
-      },
-      select: {
-        id: true,
-        status: true,
-        booking: { select: { resident: { select: { userId: true, siteId: true } } } },
-      },
-    });
-
-    if (!complaint) {
-      res.status(404).json({ message: "Complaint not found." });
-      return;
-    }
-
-    if (
-      complaint.status === ComplaintStatus.CLOSED ||
-      complaint.status === ComplaintStatus.REJECTED
-    ) {
-      res.status(400).json({
-        message: "This complaint no longer accepts messages.",
-      });
-      return;
-    }
-
-    const result = await prisma.complaintMessage.create({
-      data: {
-        complaintId: complaint.id,
-        userId: req.userId!,
-        message: message.trim(),
-        isInternal,
-      },
-    });
-
-    await auditActor(req, actor, {
-      action: "create",
-      resource: "complaint_message",
-      resourceId: result.id,
-      description: `Staff replied to complaint ${complaint.id}${isInternal ? " with an internal note" : ""}`,
-      after: result,
-    });
-    await notifyComplaintStaff(
-      complaint.booking.resident.siteId,
-      {
-        title: "New complaint conversation message",
-        message: `A staff member replied to complaint ${complaint.id}.`,
-        type: "INFO",
-        link: `/bookings/complains/${complaint.id}`,
-      },
-      req.userId
-    );
-    if (!isInternal) {
-      await notifyUsers([complaint.booking.resident.userId], {
-        title: "New complaint reply",
-        message: "The care team replied to your complaint.",
-        type: "INFO",
-        link: `/resident/complaints/${complaint.id}`,
-      });
-    }
-
-    res.status(201).json({
-      message: "Message added successfully.",
-      data: result,
-    });
-  } catch (error) {
-    console.error("Create complaint message error:", error);
-    res.status(500).json({
-      message: "Failed to add complaint message.",
     });
   }
 }

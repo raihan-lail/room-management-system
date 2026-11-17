@@ -70,6 +70,14 @@ export const ComplaintPriority = {
 export type ComplaintPriority = (typeof ComplaintPriority)[keyof typeof ComplaintPriority]
 
 
+export const FeedbackTokenType = {
+  COMPLAINT: 'COMPLAINT',
+  RATING: 'RATING'
+} as const
+
+export type FeedbackTokenType = (typeof FeedbackTokenType)[keyof typeof FeedbackTokenType]
+
+
 export const BookingChangeType = {
   EXTEND: 'EXTEND',
   CHANGE_DATES: 'CHANGE_DATES',

@@ -41,6 +41,10 @@ import { buildCheckOutGoodbyeEmail } from "../mails/check-out-goodbye.js";
 import { buildBookingNearEndEmail } from "../mails/booking-near-end.js";
 import { sendEmail } from "../services/email.service.js";
 import { isEmailEnabled } from "../services/setting.service.js";
+import {
+  buildComplaintFeedbackUrl,
+  createComplaintFeedbackToken,
+} from "../services/feedback-token.service.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 import { isValidEmail, normalizeEmail, normalizeHeader, parseGender, readString } from "../utils/excel.js";
 
@@ -1343,6 +1347,8 @@ export async function checkInBooking(
   if (!actor) return;
 
   try {
+    let complaintToken: string | undefined;
+
     const booking = await prisma.$transaction(async (tx) => {
       const existing = await tx.booking.findFirst({
         where: {
@@ -1413,6 +1419,8 @@ export async function checkInBooking(
         description: "Resident checked in.",
       });
 
+      complaintToken = await createComplaintFeedbackToken(tx, existing.id);
+
       return result;
     });
 
@@ -1430,6 +1438,9 @@ export async function checkInBooking(
           roomName: booking.bed.room.name,
           bedName: booking.bed.name,
           checkedInAt: booking.checkedInAt ?? new Date(),
+          complaintUrl: complaintToken
+            ? buildComplaintFeedbackUrl(booking.id, complaintToken)
+            : undefined,
         });
 
         const emailResult = await sendEmail({
