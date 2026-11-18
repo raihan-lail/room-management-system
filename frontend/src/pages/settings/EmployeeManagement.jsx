@@ -101,15 +101,13 @@ export default function EmployeeManagement() {
     Promise.all([
       apiRequest("/api/employee"),
       apiRequest("/api/site"),
-      apiRequest("/api/role"),
+      apiRequest("/api/role?allSites=true"),
     ])
       .then(([employeeData, siteData, roleData]) => {
         if (!isActive) return;
         setEmployees(employeeData.data ?? []);
         setSites(siteData.data ?? []);
-        setRoles(
-          (roleData.data ?? []).filter((role) => role.name !== "superadmin"),
-        );
+        setRoles((roleData.data ?? []).filter((role) => role.name !== "superadmin"));
       })
       .catch((err) => {
         if (!isActive) return;

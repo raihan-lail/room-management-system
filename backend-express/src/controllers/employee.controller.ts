@@ -9,6 +9,7 @@ import {
   getActorOrRespond,
   handlePrismaError,
   isGlobalSuperadmin,
+  isSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditInTransaction } from "../services/audit.service.js";
@@ -83,7 +84,7 @@ export async function createEmployee(
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const superadmin = isGlobalSuperadmin(actor);
+    const superadmin = isSuperadmin(actor);
     const {
       name,
       email,

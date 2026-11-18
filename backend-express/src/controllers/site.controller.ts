@@ -6,6 +6,7 @@ import {
   getActorOrRespond,
   handlePrismaError,
   isGlobalSuperadmin,
+  isSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
@@ -20,7 +21,7 @@ export async function listSites(
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const where = isGlobalSuperadmin(actor)
+    const where = isSuperadmin(actor)
       ? {}
       : actor.siteId
         ? { id: actor.siteId }

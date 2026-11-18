@@ -26,7 +26,7 @@ export default function ManagePermissions() {
       try {
         const [rolesResponse, employeesResponse, permissionsResponse] =
           await Promise.all([
-            apiRequest("/api/role"),
+            apiRequest("/api/role?allSites=true"),
             apiRequest("/api/employee"),
             apiRequest("/api/permission"),
           ]);
