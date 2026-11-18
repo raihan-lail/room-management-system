@@ -128,6 +128,7 @@ export default function FrontDesk() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState("");
   const [isSavingAction, setIsSavingAction] = useState(false);
+  const [sendingReminderId, setSendingReminderId] = useState(null);
   const [actionError, setActionError] = useState("");
   const [actionSuccess, setActionSuccess] = useState("");
   const [extendingRow, setExtendingRow] = useState(null);
@@ -358,6 +359,15 @@ export default function FrontDesk() {
       return false;
     } finally {
       setIsSavingAction(false);
+    }
+  };
+
+  const sendReminder = async (booking) => {
+    setSendingReminderId(booking.id);
+    try {
+      await performBookingAction(booking, "send-reminder");
+    } finally {
+      setSendingReminderId(null);
     }
   };
 
@@ -626,8 +636,10 @@ export default function FrontDesk() {
     if (segment === "near-end" && hasPermission("bookings.create")) {
       actions.push({
         label: "Send Reminder",
+        loadingLabel: "Sending...",
+        loading: sendingReminderId === booking.id,
         icon: "bi bi-envelope-paper",
-        onClick: () => performBookingAction(booking, "send-reminder"),
+        onClick: () => sendReminder(booking),
       });
 
       actions.push({
@@ -778,7 +790,7 @@ export default function FrontDesk() {
         </div>
 
         {/* TOOLBAR */}
-        <div className="bookings-toolbar form-actions">
+        <div className="bookings-toolbar form-actions frontdesk-toolbar">
           <label className="history-search">
             <i className="bi bi-search" aria-hidden="true" />
             <input
