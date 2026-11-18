@@ -58,6 +58,7 @@ export default function ComplainDetails() {
     setError("");
     try {
       await updateComplaintStatus(complainId, nextStatus, resolution);
+      window.dispatchEvent(new Event("notifications:updated"));
       setNextStatus("");
       setResolution("");
       await loadComplaint();

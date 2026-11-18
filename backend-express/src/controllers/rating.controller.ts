@@ -11,6 +11,7 @@ import {
   isGlobalSuperadmin,
   NO_MATCHING_ID,
 } from "../utils/actor.js";
+import { formatTimestamp } from "../helpers/date.helper.js";
 
 const RATING_BOOKING_STATUSES = ["CHECKED_OUT", "ARCHIVED"];
 const MAX_RATING_REVIEW_LENGTH = 2000;
@@ -326,7 +327,7 @@ export async function exportRatingsToExcel(req: AuthRequest, res: Response) {
       Resident: rating.booking.resident.fullName,
       Score: rating.score,
       Details: rating.details ?? "",
-      "Submitted At": rating.createdAt.toISOString(),
+      "Submitted At": formatTimestamp(rating.createdAt),
     }));
 
     const workbook = XLSX.utils.book_new();
