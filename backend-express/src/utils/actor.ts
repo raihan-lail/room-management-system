@@ -35,14 +35,20 @@ export async function getActor(userId: string) {
 
 export type Actor = NonNullable<Awaited<ReturnType<typeof getActor>>>;
 
+export type ScopedActor = Actor & { activeSiteId?: string };
+
 type MinimalRoleHolder = {
   roles: Array<{ role: { name: string; siteId: string | null } }>;
 };
 
-export function isGlobalSuperadmin(employee: MinimalRoleHolder): boolean {
+export function isGlobalSuperadmin(employee: MinimalRoleHolder & { activeSiteId?: string }): boolean {
   return employee.roles.some(
     ({ role }) => role.name === "superadmin" && role.siteId === null,
-  );
+  ) && !employee.activeSiteId;
+}
+
+export function isSuperadmin(employee: MinimalRoleHolder): boolean {
+  return employee.roles.some(({ role }) => role.name === "superadmin" && role.siteId === null);
 }
 
 /**
@@ -88,7 +94,7 @@ export function canGrantPermission(
   actor: Actor,
   permissionName: string,
 ): boolean {
-  if (isGlobalSuperadmin(actor)) return true;
+  if (isSuperadmin(actor)) return true;
   return getEffectivePermissions(actor).has(permissionName);
 }
 
@@ -108,7 +114,17 @@ export async function getActorOrRespond(
     return null;
   }
 
-  return actor;
+  const requestedSiteId = req.get("x-site-id");
+  if (requestedSiteId && isSuperadmin(actor)) {
+    const site = await prisma.site.findUnique({ where: { id: requestedSiteId }, select: { id: true } });
+    if (!site) {
+      res.status(400).json({ message: "Selected site is unavailable" });
+      return null;
+    }
+    return { ...actor, siteId: site.id, activeSiteId: site.id } as ScopedActor;
+  }
+
+  return actor as ScopedActor;
 }
 
 type PrismaErrorMessages = {

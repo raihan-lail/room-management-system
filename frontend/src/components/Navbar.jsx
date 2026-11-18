@@ -9,6 +9,7 @@ import {
   requestNotificationSocketTicket,
 } from "../api/notifications";
 import useAuth from "../contexts/useAuth";
+import apiRequest from "../api/client";
 
 const dateFormatter = new Intl.DateTimeFormat("en-US", {
   weekday: "long",
@@ -39,6 +40,25 @@ function formatNotificationTime(value) {
   return notificationTimeFormatter.format(date);
 }
 
+let cachedSites = null;
+
+function sitesAreEqual(previous, next) {
+  return (
+    previous.length === next.length &&
+    previous.every(
+      (site, index) =>
+        site.id === next[index].id && site.name === next[index].name
+    )
+  );
+}
+
+function loadSites() {
+  return apiRequest("/api/site").then((data) => {
+    cachedSites = Array.isArray(data?.data) ? data.data : [];
+    return cachedSites;
+  });
+}
+
 export default function Navbar({ onToggleSidebar }) {
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
@@ -46,17 +66,37 @@ export default function Navbar({ onToggleSidebar }) {
   const [notificationsLoading, setNotificationsLoading] = useState(false);
   const [notificationsError, setNotificationsError] = useState("");
   const [userDropdownOpen, setUserDropdownOpen] = useState(false);
+  const [sites, setSites] = useState(() => cachedSites || []);
 
   const notificationsContainerRef = useRef(null);
   const userDropdownRef = useRef(null);
   const notificationsRef = useRef([]);
   const [currentTime, setCurrentTime] = useState(() => new Date());
-  const { user, logout } = useAuth();
+  const { user, logout, isSuperadmin, activeSiteId, selectSite } = useAuth();
   const navigate = useNavigate();
 
   const employee = user?.employee;
   const resident = user?.resident;
   const isResident = user?.accountType === "resident";
+
+  useEffect(() => {
+    if (!isSuperadmin) return;
+
+    let isActive = true;
+
+    loadSites()
+      .then((list) => {
+        if (!isActive) return;
+        setSites((previous) => (sitesAreEqual(previous, list) ? previous : list));
+      })
+      .catch(() => {
+        if (isActive && !cachedSites) setSites([]);
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [isSuperadmin]);
   
   const userName =
     employee?.name || resident?.fullName || user?.email || "User";
@@ -65,8 +105,10 @@ export default function Navbar({ onToggleSidebar }) {
     : employee?.roles?.length
       ? employee.roles.join(", ")
       : "";
-  const siteName =
-    employee?.siteName ||
+  const selectedSite = sites.find((site) => site.id === activeSiteId);
+  const siteName = isSuperadmin
+    ? selectedSite?.name || "GLOBAL"
+    : employee?.siteName ||
     employee?.site?.name ||
     resident?.siteName ||
     "GLOBAL";
@@ -333,7 +375,21 @@ export default function Navbar({ onToggleSidebar }) {
 
         <i className="bi bi-geo-alt" aria-hidden="true" />
 
-        <span className="navbar__title">{siteName}</span>
+        {isSuperadmin ? (
+          <div className="navbar-site-select-wrapper">
+            <select
+              className="navbar-site-select"
+              aria-label="Choose site data scope"
+              value={activeSiteId}
+              onChange={(event) => selectSite(event.target.value)}
+            >
+              <option value="">GLOBAL</option>
+              {sites.map((site) => <option key={site.id} value={site.id}>{site.name}</option>)}
+            </select>
+
+            <i className="bi bi-chevron-down navbar-site-select__chevron" aria-hidden="true" />
+          </div>
+        ) : <span className="navbar__title">{siteName}</span>}
       </div>
 
       <div className="navbar__actions">

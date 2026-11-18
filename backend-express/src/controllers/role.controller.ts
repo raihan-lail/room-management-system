@@ -7,6 +7,7 @@ import {
   getActorOrRespond,
   getEffectivePermissions,
   isGlobalSuperadmin,
+  isSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor, auditInTransaction } from "../services/audit.service.js";
@@ -22,9 +23,10 @@ export async function listRoles(
         if (!actor) return;
 
         const globalAdmin = isGlobalSuperadmin(actor);
+        const includeAllSites = req.query.allSites === "true" && isSuperadmin(actor);
 
         const roles = await prisma.role.findMany({
-            where: globalAdmin
+            where: includeAllSites || globalAdmin
                 ? {}
                 : actor.siteId
                     ? { siteId: actor.siteId}
