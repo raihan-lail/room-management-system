@@ -64,7 +64,7 @@ const ACTION_SUCCESS_MESSAGES = {
   "check-out": (name) => `Resident ${name} checked out successfully.`,
   "home-leaves": (name) => `Home leave recorded for ${name}.`,
   "return-from-leave": (name) => `${name} returned from home leave.`,
-  "send-reminder": (name) => `Near-end reminder sent to ${name}.`,
+  "send-reminder": (name) => `Near-end reminder email sent to ${name}.`,
   cancel: (name) => `Booking cancellation request for ${name} successfully sent. `,
   extend: (name) => `Booking extention request for ${name} successfully sent.`,
 };
