@@ -15,6 +15,8 @@ const STATUS_OPTIONS = [
   "REJECTED",
 ];
 
+const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+
 const formatStatus = (status) => status.replaceAll("_", " ");
 
 export default function Complains() {
@@ -24,6 +26,7 @@ export default function Complains() {
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [complaints, setComplaints] = useState([]);
   const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -51,6 +54,7 @@ export default function Complains() {
         page: "1",
         limit: "100",
         ...(statusFilter ? { status: statusFilter } : {}),
+        ...(priorityFilter ? { priority: priorityFilter } : {}),
       })
         .then((result) => {
           if (active) setComplaints(result?.data ?? []);
@@ -69,7 +73,7 @@ export default function Complains() {
       active = false;
       window.clearTimeout(timer);
     };
-  }, [statusFilter]);
+  }, [statusFilter, priorityFilter]);
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -209,6 +213,11 @@ export default function Complains() {
     setCurrentPage(1);
   };
 
+  const handlePriorityFilterChange = (value) => {
+    setPriorityFilter(value);
+    setCurrentPage(1);
+  };
+
   /*
    * VIEW COMPLAINT
    */
@@ -272,6 +281,26 @@ export default function Complains() {
                 {STATUS_OPTIONS.map((status) => (
                   <option key={status} value={status}>
                     {formatStatus(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="calendar-date-filter">
+              <span>Priority</span>
+
+              <select
+                aria-label="Filter complaints by priority"
+                value={priorityFilter}
+                onChange={(event) =>
+                  handlePriorityFilterChange(event.target.value)
+                }
+              >
+                <option value="">All</option>
+
+                {PRIORITY_OPTIONS.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
                   </option>
                 ))}
               </select>
