@@ -1569,6 +1569,21 @@ textarea,
   align-items: center;
 }
 
+/*
+ * Every control in the front desk toolbar
+ * keeps one shared height so the row lines up.
+ */
+
+.frontdesk-toolbar .btn,
+.frontdesk-toolbar .history-search {
+  height: 36px;
+}
+
+.frontdesk-toolbar .btn {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
 .bookings-toolbar__filters {
   display: flex;
   align-items: center;
@@ -2220,6 +2235,16 @@ textarea,
   cursor: not-allowed;
 }
 
+.app-spinner {
+  animation: app-spin 0.8s linear infinite;
+}
+
+@keyframes app-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .btn-primary {
   background-color: var(--brand-bold);
   color: #ffffff;
@@ -2316,16 +2341,21 @@ textarea,
     color 0.15s ease;
 }
 
-.table-action-menu__item:hover {
+.table-action-menu__item:hover:not(:disabled) {
   background-color: var(--brand-soft);
   color: var(--brand-bold);
+}
+
+.table-action-menu__item:disabled {
+  cursor: default;
+  opacity: 0.7;
 }
 
 .table-action-menu__item--danger {
   color: var(--brand-danger);
 }
 
-.table-action-menu__item--danger:hover {
+.table-action-menu__item--danger:hover:not(:disabled) {
   background-color: var(--brand-danger-soft);
   color: var(--brand-danger);
 }

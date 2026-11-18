@@ -176,25 +176,45 @@ export default function TableRowActions({
               </button>
             )}
 
-            {actions.map((action) => (
-              <button
-                key={action.label}
-                type="button"
-                role="menuitem"
-                className={`table-action-menu__item${
-                  action.danger ? " table-action-menu__item--danger" : ""
-                }`}
-                onClick={() => {
-                  closeMenu();
-                  action.onClick();
-                }}
-              >
-                {action.icon && (
-                  <i className={action.icon} aria-hidden="true" />
-                )}
-                {action.label}
-              </button>
-            ))}
+            {actions.map((action) => {
+              const isBusy = Boolean(action.loading);
+
+              return (
+                <button
+                  key={action.label}
+                  type="button"
+                  role="menuitem"
+                  aria-busy={isBusy}
+                  disabled={isBusy}
+                  className={`table-action-menu__item${
+                    action.danger ? " table-action-menu__item--danger" : ""
+                  }`}
+                  onClick={async () => {
+                    /*
+                     * Async actions keep the menu open while they run
+                     * so their busy state stays visible, then close.
+                     */
+                    try {
+                      await action.onClick();
+                    } finally {
+                      closeMenu();
+                    }
+                  }}
+                >
+                  {isBusy ? (
+                    <i
+                      className="bi bi-arrow-repeat app-spinner"
+                      aria-hidden="true"
+                    />
+                  ) : (
+                    action.icon && (
+                      <i className={action.icon} aria-hidden="true" />
+                    )
+                  )}
+                  {isBusy ? action.loadingLabel ?? action.label : action.label}
+                </button>
+              );
+            })}
           </div>,
           document.body,
         )}
