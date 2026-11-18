@@ -1,13 +1,15 @@
 import { useCallback, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import MainLayout from "../../components/MainLayout";
-import { fetchComplaint, markComplaintNotificationsAsRead, updateComplaintStatus } from "../../api/complaints";
+import { fetchComplaint, markComplaintNotificationsAsRead, updateComplaintPriority, updateComplaintStatus } from "../../api/complaints";
 
 const STATUS_OPTIONS = {
   OPEN: ["IN_PROGRESS", "RESOLVED", "CLOSED", "REJECTED"],
   IN_PROGRESS: ["RESOLVED", "CLOSED", "REJECTED"],
   RESOLVED: ["CLOSED"],
 };
+
+const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
 
 const formatDate = (value) => value
   ? new Date(value).toLocaleString("en-GB")
@@ -19,8 +21,10 @@ export default function ComplainDetails() {
   const [complaint, setComplaint] = useState(null);
   const [nextStatus, setNextStatus] = useState("");
   const [resolution, setResolution] = useState("");
+  const [nextPriority, setNextPriority] = useState("");
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [savingPriority, setSavingPriority] = useState(false);
   const [error, setError] = useState("");
 
   const loadComplaint = useCallback(async () => {
@@ -71,6 +75,24 @@ export default function ComplainDetails() {
 
   const room = complaint?.booking?.bed?.room?.name;
 
+  const selectedPriority = nextPriority || complaint?.priority || "";
+
+  const changePriority = async (event) => {
+    event.preventDefault();
+    if (!selectedPriority || selectedPriority === complaint.priority) return;
+    setSavingPriority(true);
+    setError("");
+    try {
+      await updateComplaintPriority(complainId, selectedPriority);
+      setNextPriority("");
+      await loadComplaint();
+    } catch (requestError) {
+      setError(requestError.message || "Failed to update complaint priority.");
+    } finally {
+      setSavingPriority(false);
+    }
+  };
+
   return (
     <MainLayout>
       <div className="dashboard">
@@ -104,6 +126,23 @@ export default function ComplainDetails() {
               <div className="detail-card__head"><h2 className="detail-card__title">Description</h2></div>
               <div className="complain-notes"><p className="complain-notes__text">{complaint.description}</p></div>
               {complaint.resolution && <p className="detail-grid__value">Resolution: {complaint.resolution}</p>}
+            </section>
+
+            <section className="table-card content">
+              <div className="detail-card__head"><h2 className="detail-card__title">Update priority</h2></div>
+              <form className="form-stack" onSubmit={changePriority}>
+                <label className="form-field">
+                  <span>Complaint priority</span>
+                  <select value={selectedPriority} onChange={(event) => setNextPriority(event.target.value)}>
+                    {PRIORITY_OPTIONS.map((priority) => <option key={priority} value={priority}>{priority}</option>)}
+                  </select>
+                </label>
+                <div className="form-actions">
+                  <button className="btn btn-primary" type="submit" disabled={savingPriority || selectedPriority === complaint.priority}>
+                    Update priority
+                  </button>
+                </div>
+              </form>
             </section>
 
             {(STATUS_OPTIONS[complaint.status] || []).length > 0 && (

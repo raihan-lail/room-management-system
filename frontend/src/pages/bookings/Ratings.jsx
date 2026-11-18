@@ -380,9 +380,7 @@ export default function Ratings() {
                     Details
                   </th>
 
-                  <th>
-                    Action
-                  </th>
+                  
 
                 </tr>
               </thead>
@@ -451,22 +449,7 @@ export default function Ratings() {
                           {rating.details || "-"}
                         </td>
 
-                        {/* ACTION */}
-                        <td>
-                          <div className="table-actions">
-                            <button
-                              type="button"
-                              className="btn btn-neutral"
-                              title={`View rating ${rating.rating_id}`}
-                             
-                            >
-                              <i
-                                className="bi bi-eye"
-                                aria-hidden="true"
-                              />
-                            </button>
-                          </div>
-                        </td>
+                       
 
                       </tr>
                     )
