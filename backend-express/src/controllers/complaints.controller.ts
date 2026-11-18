@@ -449,3 +449,72 @@ export async function updateComplaintStatus(
     });
   }
 }
+
+export async function updateComplaintPriority(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  const { priority } = req.body;
+
+  if (
+    typeof priority !== "string" ||
+    !Object.values(ComplaintPriority).includes(priority as ComplaintPriority)
+  ) {
+    res.status(400).json({ message: "Invalid complaint priority." });
+    return;
+  }
+
+  try {
+    const scope = getSiteComplaintFilter(actor);
+
+    const complaint = await prisma.complaint.findFirst({
+      where: {
+        id: req.params.id as string,
+        ...scope,
+      },
+      select: {
+        id: true,
+        priority: true,
+        booking: { select: { resident: { select: { userId: true } } } },
+      },
+    });
+
+    if (!complaint) {
+      res.status(404).json({ message: "Complaint not found." });
+      return;
+    }
+
+    const updated = await prisma.complaint.update({
+      where: { id: complaint.id },
+      data: { priority: priority as ComplaintPriority },
+    });
+
+    await auditActor(req, actor, {
+      action: "update",
+      resource: "complaint",
+      resourceId: updated.id,
+      description: `Complaint priority changed from ${complaint.priority} to ${updated.priority}`,
+      before: { priority: complaint.priority },
+      after: { priority: updated.priority },
+    });
+    await notifyUsers([complaint.booking.resident.userId], {
+      title: "Complaint updated",
+      message: `Your complaint priority is now ${updated.priority.toLowerCase()}.`,
+      type: "INFO",
+      link: `/resident/complaints/${updated.id}`,
+    });
+
+    res.status(200).json({
+      message: "Complaint priority updated successfully.",
+      data: updated,
+    });
+  } catch (error) {
+    console.error("Update complaint priority error:", error);
+    res.status(500).json({
+      message: "Failed to update complaint priority.",
+    });
+  }
+}

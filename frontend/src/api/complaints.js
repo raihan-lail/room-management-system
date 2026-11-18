@@ -20,6 +20,13 @@ export function updateComplaintStatus(id, status, resolution) {
   });
 }
 
+export function updateComplaintPriority(id, priority) {
+  return apiRequest(`${staffComplaintsPath}/${encodeURIComponent(id)}/priority`, {
+    method: "PATCH",
+    body: JSON.stringify({ priority }),
+  });
+}
+
 export function fetchComplaintFeedback(bookingId, token) {
   return apiRequest(
     `${feedbackComplaintsPath}/${encodeURIComponent(bookingId)}/${encodeURIComponent(token)}`
