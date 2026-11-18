@@ -6,6 +6,7 @@ import { fetchNotifications } from "../api/notifications";
 
 
 const COMPLAINT_PATHS = new Set([
+  "/bookings/complaint",
   "/bookings/complains",
   "/resident/complaints",
 ]);
@@ -124,9 +125,17 @@ export default function Sidebar({
     let isMounted = true;
     const refreshComplaintAlerts = async () => {
       try {
-        const response = await fetchNotifications();
+        if (isResident) {
+          const response = await fetchNotifications();
+          if (isMounted) {
+            setHasComplaintAlerts(Number(response?.unreadComplaintCount ?? 0) > 0);
+          }
+          return;
+        }
+
+        const response = await apiRequest("/api/complaint?status=OPEN&page=1&limit=1");
         if (isMounted) {
-          setHasComplaintAlerts(Number(response?.unreadComplaintCount ?? 0) > 0);
+          setHasComplaintAlerts(Number(response?.pagination?.total ?? 0) > 0);
         }
       } catch {
         if (isMounted) setHasComplaintAlerts(false);
