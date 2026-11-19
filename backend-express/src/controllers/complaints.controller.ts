@@ -12,7 +12,7 @@ import {
 } from "../utils/actor.js";
 import { prisma } from "../lib/prisma.js";
 import { auditActor } from "../services/audit.service.js";
-import { notifyComplaintStaff, notifyUsers } from "../services/notification.service.js";
+import { notifyUsers } from "../services/notification.service.js";
 
 function getSiteComplaintFilter(
   actor: Awaited<ReturnType<typeof getActorOrRespond>> & {}
@@ -208,17 +208,6 @@ export async function getComplaintById(
           },
         },
         assignedTo: { select: { id: true, name: true } },
-        messages: {
-          orderBy: { createdAt: "asc" },
-          include: {
-            user: {
-              select: {
-                employee: { select: { name: true } },
-                resident: { select: { fullName: true } },
-              },
-            },
-          },
-        },
       },
     });
 
@@ -461,35 +450,35 @@ export async function updateComplaintStatus(
   }
 }
 
-export async function createComplaintMessage(
+export async function updateComplaintPriority(
   req: AuthRequest,
   res: Response
 ): Promise<void> {
   const actor = await getActorOrRespond(req, res);
   if (!actor) return;
 
-  const { message, isInternal = false } = req.body;
+  const { priority } = req.body;
 
-  if (typeof message !== "string" || !message.trim()) {
-    res.status(400).json({ message: "Message is required." });
-    return;
-  }
-
-  if (typeof isInternal !== "boolean") {
-    res.status(400).json({ message: "Invalid message visibility." });
+  if (
+    typeof priority !== "string" ||
+    !Object.values(ComplaintPriority).includes(priority as ComplaintPriority)
+  ) {
+    res.status(400).json({ message: "Invalid complaint priority." });
     return;
   }
 
   try {
+    const scope = getSiteComplaintFilter(actor);
+
     const complaint = await prisma.complaint.findFirst({
       where: {
         id: req.params.id as string,
-        ...getSiteComplaintFilter(actor),
+        ...scope,
       },
       select: {
         id: true,
-        status: true,
-        booking: { select: { resident: { select: { userId: true, siteId: true } } } },
+        priority: true,
+        booking: { select: { resident: { select: { userId: true } } } },
       },
     });
 
@@ -498,59 +487,34 @@ export async function createComplaintMessage(
       return;
     }
 
-    if (
-      complaint.status === ComplaintStatus.CLOSED ||
-      complaint.status === ComplaintStatus.REJECTED
-    ) {
-      res.status(400).json({
-        message: "This complaint no longer accepts messages.",
-      });
-      return;
-    }
-
-    const result = await prisma.complaintMessage.create({
-      data: {
-        complaintId: complaint.id,
-        userId: req.userId!,
-        message: message.trim(),
-        isInternal,
-      },
+    const updated = await prisma.complaint.update({
+      where: { id: complaint.id },
+      data: { priority: priority as ComplaintPriority },
     });
 
     await auditActor(req, actor, {
-      action: "create",
-      resource: "complaint_message",
-      resourceId: result.id,
-      description: `Staff replied to complaint ${complaint.id}${isInternal ? " with an internal note" : ""}`,
-      after: result,
+      action: "update",
+      resource: "complaint",
+      resourceId: updated.id,
+      description: `Complaint priority changed from ${complaint.priority} to ${updated.priority}`,
+      before: { priority: complaint.priority },
+      after: { priority: updated.priority },
     });
-    await notifyComplaintStaff(
-      complaint.booking.resident.siteId,
-      {
-        title: "New complaint conversation message",
-        message: `A staff member replied to complaint ${complaint.id}.`,
-        type: "INFO",
-        link: `/bookings/complains/${complaint.id}`,
-      },
-      req.userId
-    );
-    if (!isInternal) {
-      await notifyUsers([complaint.booking.resident.userId], {
-        title: "New complaint reply",
-        message: "The care team replied to your complaint.",
-        type: "INFO",
-        link: `/resident/complaints/${complaint.id}`,
-      });
-    }
+    await notifyUsers([complaint.booking.resident.userId], {
+      title: "Complaint updated",
+      message: `Your complaint priority is now ${updated.priority.toLowerCase()}.`,
+      type: "INFO",
+      link: `/resident/complaints/${updated.id}`,
+    });
 
-    res.status(201).json({
-      message: "Message added successfully.",
-      data: result,
+    res.status(200).json({
+      message: "Complaint priority updated successfully.",
+      data: updated,
     });
   } catch (error) {
-    console.error("Create complaint message error:", error);
+    console.error("Update complaint priority error:", error);
     res.status(500).json({
-      message: "Failed to add complaint message.",
+      message: "Failed to update complaint priority.",
     });
   }
 }

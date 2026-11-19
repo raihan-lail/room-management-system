@@ -7,12 +7,26 @@ import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
+const STATUS_OPTIONS = [
+  "OPEN",
+  "IN_PROGRESS",
+  "RESOLVED",
+  "CLOSED",
+  "REJECTED",
+];
+
+const PRIORITY_OPTIONS = ["LOW", "MEDIUM", "HIGH", "URGENT"];
+
+const formatStatus = (status) => status.replaceAll("_", " ");
+
 export default function Complains() {
   const navigate = useNavigate();
 
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(PAGE_SIZE);
   const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState("");
+  const [priorityFilter, setPriorityFilter] = useState("");
   const [complaints, setComplaints] = useState([]);
   const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,24 +34,46 @@ export default function Complains() {
 
   useEffect(() => {
     let active = true;
-    Promise.allSettled([
-      fetchComplaints({ page: "1", limit: "100" }),
-      fetchNotifications(),
-    ]).then(([complaintsResult, notificationsResult]) => {
-      if (!active) return;
-      if (complaintsResult.status === "fulfilled") {
-        setComplaints(complaintsResult.value?.data ?? []);
-      } else {
-        setError(complaintsResult.reason?.message || "Failed to load complaints.");
-      }
-      if (notificationsResult.status === "fulfilled") {
-        setUnreadComplaintIds(notificationsResult.value?.unreadComplaintIds ?? []);
-      }
-    }).finally(() => {
-      if (active) setLoading(false);
-    });
+    fetchNotifications()
+      .then((result) => {
+        if (!active) return;
+        setUnreadComplaintIds(result?.unreadComplaintIds ?? []);
+      })
+      .catch((requestError) => {
+        console.error("Failed to load complaint notifications:", requestError);
+      });
     return () => { active = false; };
   }, []);
+
+  useEffect(() => {
+    let active = true;
+    const timer = window.setTimeout(() => {
+      setLoading(true);
+      setError("");
+      fetchComplaints({
+        page: "1",
+        limit: "100",
+        ...(statusFilter ? { status: statusFilter } : {}),
+        ...(priorityFilter ? { priority: priorityFilter } : {}),
+      })
+        .then((result) => {
+          if (active) setComplaints(result?.data ?? []);
+        })
+        .catch((requestError) => {
+          if (!active) return;
+          setComplaints([]);
+          setError(requestError?.message || "Failed to load complaints.");
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    }, 0);
+
+    return () => {
+      active = false;
+      window.clearTimeout(timer);
+    };
+  }, [statusFilter, priorityFilter]);
 
   const [sortConfig, setSortConfig] = useState({
     key: null,
@@ -172,6 +208,16 @@ export default function Complains() {
     setCurrentPage(1);
   };
 
+  const handleStatusFilterChange = (value) => {
+    setStatusFilter(value);
+    setCurrentPage(1);
+  };
+
+  const handlePriorityFilterChange = (value) => {
+    setPriorityFilter(value);
+    setCurrentPage(1);
+  };
+
   /*
    * VIEW COMPLAINT
    */
@@ -220,9 +266,45 @@ export default function Complains() {
           </label>
 
           <div className="bookings-toolbar__actions">
-           
+            <label className="calendar-date-filter">
+              <span>Status</span>
 
-           
+              <select
+                aria-label="Filter complaints by status"
+                value={statusFilter}
+                onChange={(event) =>
+                  handleStatusFilterChange(event.target.value)
+                }
+              >
+                <option value="">All</option>
+
+                {STATUS_OPTIONS.map((status) => (
+                  <option key={status} value={status}>
+                    {formatStatus(status)}
+                  </option>
+                ))}
+              </select>
+            </label>
+
+            <label className="calendar-date-filter">
+              <span>Priority</span>
+
+              <select
+                aria-label="Filter complaints by priority"
+                value={priorityFilter}
+                onChange={(event) =>
+                  handlePriorityFilterChange(event.target.value)
+                }
+              >
+                <option value="">All</option>
+
+                {PRIORITY_OPTIONS.map((priority) => (
+                  <option key={priority} value={priority}>
+                    {priority}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
         </div>
 
@@ -423,7 +505,7 @@ export default function Complains() {
                                 aria-hidden="true"
                               />
                               {unreadComplaintIds.includes(complain.id) && (
-                                <span className="side-nav-alert-dot" aria-label="Unread conversation activity" />
+                                <span className="side-nav-alert-dot" aria-label="Unread complaint activity" />
                               )}
                             </button>
                           </div>

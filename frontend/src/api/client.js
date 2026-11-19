@@ -7,12 +7,14 @@ export default async function apiRequest(
   { headers, responseType, ...options } = {}
 ) {
   const isFormData = options.body instanceof FormData;
+  const activeSiteId = localStorage.getItem("activeSiteId");
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     credentials: "include",
     ...options,
     headers: {
       ...(isFormData ? {} : { "Content-Type": "application/json" }),
+      ...(activeSiteId ? { "X-Site-Id": activeSiteId } : {}),
       ...(headers || {}),
     },
   });

@@ -575,25 +575,6 @@ export async function getMyComplaintById(
             },
           },
         },
-        messages: {
-          where: { isInternal: false },
-          orderBy: { createdAt: "asc" },
-          select: {
-            id: true,
-            message: true,
-            createdAt: true,
-            user: {
-              select: {
-                employee: {
-                  select: { name: true },
-                },
-                resident: {
-                  select: { fullName: true },
-                },
-              },
-            },
-          },
-        },
       },
     });
 
@@ -611,88 +592,6 @@ export async function getMyComplaintById(
   }
 }
 
-export async function replyToMyComplaint(
-  req: AuthRequest,
-  res: Response
-): Promise<void> {
-  if (!req.userId) {
-    res.status(401).json({ message: "Authentication required." });
-    return;
-  }
-
-  const { message } = req.body;
-
-  if (typeof message !== "string" || !message.trim()) {
-    res.status(400).json({ message: "Message is required." });
-    return;
-  }
-  try {
-    const complaint = await prisma.complaint.findFirst({
-      where: {
-        id: req.params.id as string,
-        booking: {
-          resident: {
-            userId: req.userId,
-            user: { isActive: true },
-          },
-        },
-      },
-      select: {
-        id: true,
-        status: true,
-        booking: { select: { resident: { select: { fullName: true, siteId: true } } } },
-      },
-    });
-
-    if (!complaint) {
-      res.status(404).json({ message: "Complaint not found." });
-      return;
-    }
-
-    if (["CLOSED", "REJECTED"].includes(complaint.status)) {
-      res.status(400).json({
-        message: "This complaint no longer accepts replies.",
-      });
-      return;
-    }
-
-    const result = await prisma.complaintMessage.create({
-      data: {
-        complaintId: complaint.id,
-        userId: req.userId,
-        message: message.trim(),
-        isInternal: false,
-      },
-    });
-
-    await auditActor(req, {
-      userId: req.userId,
-      name: complaint.booking.resident.fullName,
-    }, {
-      action: "create",
-      resource: "complaint_message",
-      resourceId: result.id,
-      description: `Resident replied to complaint ${complaint.id}`,
-      after: result,
-    });
-    await notifyComplaintStaff(complaint.booking.resident.siteId, {
-      title: "New complaint conversation message",
-      message: `${complaint.booking.resident.fullName} replied to a complaint.`,
-      type: "INFO",
-      link: `/bookings/complains/${complaint.id}`,
-    }, req.userId);
-    res.status(201).json({
-      message: "Reply submitted successfully.",
-      data: result,
-    });
-  } catch (error) {
-    console.error("Resident complaint reply error:", error);
-    res.status(500).json({
-      message: "Failed to submit reply.",
-    });
-  }
-
-}
 const MAX_REVIEW_LENGTH = 2000;
 
 export async function createBookingRating(

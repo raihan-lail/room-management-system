@@ -220,11 +220,12 @@ The Front Desk views support a start-to-end date range filter. Arrival and depar
 
 ```mermaid
 flowchart TD
-  Stay[Booking / stay] --> Complaint{Complaint raised?}
+  Stay[Booking / stay] --> CheckIn[Resident checked in]
+  CheckIn --> Token[Create hashed complaint token and email link]
+  Token --> Complaint{Complaint submitted from link?}
   Complaint -->|Yes| Open[Create complaint linked to booking]
   Open --> Assign[Optionally assign to employee]
-  Assign --> Thread[Exchange complaint messages]
-  Thread --> Resolve[Record resolution and update status]
+  Assign --> Resolve[Record resolution and update status]
   Resolve --> Close[Close or reject complaint]
   Complaint -->|No or after stay| Complete[Stay completed]
   Close --> Complete
@@ -234,7 +235,9 @@ flowchart TD
   Save --> End
 ```
 
-The schema supports complaints, assignment, message threads, resolution details, and one rating per booking. Complaint and rating route modules exist in the repository but are not mounted in `server.ts` at the time of writing; the data model therefore does not by itself imply that these flows are reachable through the running API.
+At check-in the system creates a random complaint token for the booking, stores only its SHA-256 hash in `FeedbackToken`, and includes a public link (`/booking/:bookingId/complaint/:token`) in the check-in welcome email. The public feedback endpoints resolve the booking from the token hash, require the link to be unexpired, and only accept submissions while the booking is `IN_HOUSE` or `HOME_LEAVE`. Submitted complaints are recorded like any other complaint and appear in the staff complaint views at `/bookings/complains`. Staff can change a complaint's priority (`PATCH /api/complaint/:id/priority`) and status (`PATCH /api/complaint/:id/status`) from the complaint details page, and filter the complaints table by status and priority.
+
+At check-out the system creates a single-use rating token and includes a public link (`/booking/:bookingId/rating/:token`) in the goodbye email. Submitting a rating marks the token as used inside the same transaction that stores the rating, so the link cannot be reused; only `CHECKED_OUT` or `ARCHIVED` bookings can be rated. Ratings are exposed to staff through the mounted `/api/rating` routes and the `/bookings/rating` page.
 
 ## Request and data flows
 
@@ -294,7 +297,7 @@ flowchart LR
 
 Booking records connect residents to beds and preserve lifecycle timestamps and status. Home-leave records and booking events capture related lifecycle information. Email, notification, and audit records provide operational history. Specific side effects depend on the endpoint and action.
 
-Booking creation sends a confirmation email, and check-in sends a welcome email describing the site, location, room, and bed, with the welcome book and guide attachments from `backend-express/public/attachment`. All outbound email is gated by the global `email_enabled` system setting, which staff toggle from the Email Logs page.
+Booking creation sends a confirmation email, and check-in sends a welcome email describing the site, location, room, and bed, with the welcome book and guide attachments from `backend-express/public/attachment`. Check-out sends a goodbye email with a stay summary including total days. From the Near End Date tab, frontdesk staff can send a near-end reminder email asking the resident to contact reception to extend. All outbound email is gated by the global `email_enabled` system setting, which staff toggle from the Email Logs page.
 
 ### Notification connection
 

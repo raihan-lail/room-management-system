@@ -38,6 +38,14 @@ function normalizeUser(raw) {
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [status, setStatus] = useState("loading");
+  const [activeSiteId, setActiveSiteId] = useState(() => localStorage.getItem("activeSiteId") || "");
+
+  const selectSite = useCallback((siteId) => {
+    if (siteId) localStorage.setItem("activeSiteId", siteId);
+    else localStorage.removeItem("activeSiteId");
+    setActiveSiteId(siteId || "");
+    window.location.reload();
+  }, []);
 
   useEffect(() => {
     let isActive = true;
@@ -127,8 +135,8 @@ export function AuthProvider({ children }) {
   const isResident = user?.accountType === "resident";
 
   const value = useMemo(
-    () => ({ user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident }),
-    [user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident]
+    () => ({ user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident, activeSiteId, selectSite }),
+    [user, status, login, logout, refresh, hasPermission, hasAnyPermission, isSuperadmin, isResident, activeSiteId, selectSite]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

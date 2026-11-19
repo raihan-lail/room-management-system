@@ -27,8 +27,6 @@ model User {
 
 
   bookingEvents BookingEvent[] @relation("BookingEventActor")
-  complaintMessages ComplaintMessage[]
-
 }
 
 model Site {
@@ -304,6 +302,8 @@ model Booking {
   complaints  Complaint[]
 
   changeRequests BookingChangeRequest[]
+  feedbackTokens FeedbackToken[]
+
 
   events      BookingEvent[]
   rating      BookingRating?
@@ -387,9 +387,6 @@ model Complaint {
   booking     Booking @relation(fields: [bookingId], references: [id])
   assignedTo  Employee? @relation("ComplaintAssignee", fields: [assignedToId], references: [id], onDelete: SetNull)
 
-  messages     ComplaintMessage[]
-
-
   @@index([status, createdAt])
   @@index([bookingId])
   @@index([assignedToId, status])
@@ -397,19 +394,7 @@ model Complaint {
 
 }
 
-model ComplaintMessage {
-  id          String   @id @default(cuid())
-  complaintId String
-  userId      String
-  message     String
-  isInternal  Boolean  @default(false)
-  createdAt   DateTime @default(now())
 
-  complaint   Complaint @relation(fields: [complaintId], references: [id], onDelete: Cascade)
-  user        User      @relation(fields: [userId], references: [id], onDelete: Restrict)
-
-  @@index([complaintId, createdAt])
-}
 
 model BookingRating {
   id        String   @id @default(cuid())
@@ -425,6 +410,29 @@ model BookingRating {
 
   @@index([score])
   @@index([createdAt])
+}
+
+enum FeedbackTokenType {
+  COMPLAINT
+  RATING
+}
+
+model FeedbackToken {
+  id          String            @id @default(cuid())
+  bookingId   String
+  type        FeedbackTokenType
+
+  tokenHash   String            @unique
+
+  expiresAt   DateTime?
+  usedAt      DateTime?
+
+  createdAt   DateTime          @default(now())
+
+  booking Booking @relation(fields: [bookingId], references: [id], onDelete: Restrict)
+
+  @@index([bookingId, type])
+  @@index([expiresAt])
 }
 
 

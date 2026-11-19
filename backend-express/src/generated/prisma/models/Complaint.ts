@@ -248,7 +248,6 @@ export type ComplaintWhereInput = {
   updatedAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
   assignedTo?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.EmployeeWhereInput> | null
-  messages?: Prisma.ComplaintMessageListRelationFilter
 }
 
 export type ComplaintOrderByWithRelationInput = {
@@ -267,7 +266,6 @@ export type ComplaintOrderByWithRelationInput = {
   updatedAt?: Prisma.SortOrder
   booking?: Prisma.BookingOrderByWithRelationInput
   assignedTo?: Prisma.EmployeeOrderByWithRelationInput
-  messages?: Prisma.ComplaintMessageOrderByRelationAggregateInput
 }
 
 export type ComplaintWhereUniqueInput = Prisma.AtLeast<{
@@ -289,7 +287,6 @@ export type ComplaintWhereUniqueInput = Prisma.AtLeast<{
   updatedAt?: Prisma.DateTimeFilter<"Complaint"> | Date | string
   booking?: Prisma.XOR<Prisma.BookingScalarRelationFilter, Prisma.BookingWhereInput>
   assignedTo?: Prisma.XOR<Prisma.EmployeeNullableScalarRelationFilter, Prisma.EmployeeWhereInput> | null
-  messages?: Prisma.ComplaintMessageListRelationFilter
 }, "id">
 
 export type ComplaintOrderByWithAggregationInput = {
@@ -344,7 +341,6 @@ export type ComplaintCreateInput = {
   updatedAt?: Date | string
   booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
   assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
-  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateInput = {
@@ -361,7 +357,6 @@ export type ComplaintUncheckedCreateInput = {
   closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUpdateInput = {
@@ -378,7 +373,6 @@ export type ComplaintUpdateInput = {
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
   assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
-  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateInput = {
@@ -395,7 +389,6 @@ export type ComplaintUncheckedUpdateInput = {
   closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintCreateManyInput = {
@@ -502,11 +495,6 @@ export type ComplaintMinOrderByAggregateInput = {
   updatedAt?: Prisma.SortOrder
 }
 
-export type ComplaintScalarRelationFilter = {
-  is?: Prisma.ComplaintWhereInput
-  isNot?: Prisma.ComplaintWhereInput
-}
-
 export type ComplaintCreateNestedManyWithoutAssignedToInput = {
   create?: Prisma.XOR<Prisma.ComplaintCreateWithoutAssignedToInput, Prisma.ComplaintUncheckedCreateWithoutAssignedToInput> | Prisma.ComplaintCreateWithoutAssignedToInput[] | Prisma.ComplaintUncheckedCreateWithoutAssignedToInput[]
   connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutAssignedToInput | Prisma.ComplaintCreateOrConnectWithoutAssignedToInput[]
@@ -599,20 +587,6 @@ export type EnumComplaintPriorityFieldUpdateOperationsInput = {
   set?: $Enums.ComplaintPriority
 }
 
-export type ComplaintCreateNestedOneWithoutMessagesInput = {
-  create?: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutMessagesInput
-  connect?: Prisma.ComplaintWhereUniqueInput
-}
-
-export type ComplaintUpdateOneRequiredWithoutMessagesNestedInput = {
-  create?: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
-  connectOrCreate?: Prisma.ComplaintCreateOrConnectWithoutMessagesInput
-  upsert?: Prisma.ComplaintUpsertWithoutMessagesInput
-  connect?: Prisma.ComplaintWhereUniqueInput
-  update?: Prisma.XOR<Prisma.XOR<Prisma.ComplaintUpdateToOneWithWhereWithoutMessagesInput, Prisma.ComplaintUpdateWithoutMessagesInput>, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
-}
-
 export type ComplaintCreateWithoutAssignedToInput = {
   id?: string
   title: string
@@ -626,7 +600,6 @@ export type ComplaintCreateWithoutAssignedToInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
-  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateWithoutAssignedToInput = {
@@ -642,7 +615,6 @@ export type ComplaintUncheckedCreateWithoutAssignedToInput = {
   closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintCreateOrConnectWithoutAssignedToInput = {
@@ -703,7 +675,6 @@ export type ComplaintCreateWithoutBookingInput = {
   createdAt?: Date | string
   updatedAt?: Date | string
   assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
-  messages?: Prisma.ComplaintMessageCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintUncheckedCreateWithoutBookingInput = {
@@ -719,7 +690,6 @@ export type ComplaintUncheckedCreateWithoutBookingInput = {
   closedAt?: Date | string | null
   createdAt?: Date | string
   updatedAt?: Date | string
-  messages?: Prisma.ComplaintMessageUncheckedCreateNestedManyWithoutComplaintInput
 }
 
 export type ComplaintCreateOrConnectWithoutBookingInput = {
@@ -746,86 +716,6 @@ export type ComplaintUpdateWithWhereUniqueWithoutBookingInput = {
 export type ComplaintUpdateManyWithWhereWithoutBookingInput = {
   where: Prisma.ComplaintScalarWhereInput
   data: Prisma.XOR<Prisma.ComplaintUpdateManyMutationInput, Prisma.ComplaintUncheckedUpdateManyWithoutBookingInput>
-}
-
-export type ComplaintCreateWithoutMessagesInput = {
-  id?: string
-  title: string
-  category: string
-  description: string
-  status?: $Enums.ComplaintStatus
-  priority?: $Enums.ComplaintPriority
-  resolvedAt?: Date | string | null
-  resolution?: string | null
-  closedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-  booking: Prisma.BookingCreateNestedOneWithoutComplaintsInput
-  assignedTo?: Prisma.EmployeeCreateNestedOneWithoutComplaintsAssignedInput
-}
-
-export type ComplaintUncheckedCreateWithoutMessagesInput = {
-  id?: string
-  bookingId: string
-  title: string
-  category: string
-  description: string
-  status?: $Enums.ComplaintStatus
-  priority?: $Enums.ComplaintPriority
-  assignedToId?: string | null
-  resolvedAt?: Date | string | null
-  resolution?: string | null
-  closedAt?: Date | string | null
-  createdAt?: Date | string
-  updatedAt?: Date | string
-}
-
-export type ComplaintCreateOrConnectWithoutMessagesInput = {
-  where: Prisma.ComplaintWhereUniqueInput
-  create: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
-}
-
-export type ComplaintUpsertWithoutMessagesInput = {
-  update: Prisma.XOR<Prisma.ComplaintUpdateWithoutMessagesInput, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
-  create: Prisma.XOR<Prisma.ComplaintCreateWithoutMessagesInput, Prisma.ComplaintUncheckedCreateWithoutMessagesInput>
-  where?: Prisma.ComplaintWhereInput
-}
-
-export type ComplaintUpdateToOneWithWhereWithoutMessagesInput = {
-  where?: Prisma.ComplaintWhereInput
-  data: Prisma.XOR<Prisma.ComplaintUpdateWithoutMessagesInput, Prisma.ComplaintUncheckedUpdateWithoutMessagesInput>
-}
-
-export type ComplaintUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
-  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
-  assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
-}
-
-export type ComplaintUncheckedUpdateWithoutMessagesInput = {
-  id?: Prisma.StringFieldUpdateOperationsInput | string
-  bookingId?: Prisma.StringFieldUpdateOperationsInput | string
-  title?: Prisma.StringFieldUpdateOperationsInput | string
-  category?: Prisma.StringFieldUpdateOperationsInput | string
-  description?: Prisma.StringFieldUpdateOperationsInput | string
-  status?: Prisma.EnumComplaintStatusFieldUpdateOperationsInput | $Enums.ComplaintStatus
-  priority?: Prisma.EnumComplaintPriorityFieldUpdateOperationsInput | $Enums.ComplaintPriority
-  assignedToId?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  resolvedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  resolution?: Prisma.NullableStringFieldUpdateOperationsInput | string | null
-  closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-  createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
 }
 
 export type ComplaintCreateManyAssignedToInput = {
@@ -856,7 +746,6 @@ export type ComplaintUpdateWithoutAssignedToInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   booking?: Prisma.BookingUpdateOneRequiredWithoutComplaintsNestedInput
-  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateWithoutAssignedToInput = {
@@ -872,7 +761,6 @@ export type ComplaintUncheckedUpdateWithoutAssignedToInput = {
   closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateManyWithoutAssignedToInput = {
@@ -918,7 +806,6 @@ export type ComplaintUpdateWithoutBookingInput = {
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   assignedTo?: Prisma.EmployeeUpdateOneWithoutComplaintsAssignedNestedInput
-  messages?: Prisma.ComplaintMessageUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateWithoutBookingInput = {
@@ -934,7 +821,6 @@ export type ComplaintUncheckedUpdateWithoutBookingInput = {
   closedAt?: Prisma.NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   createdAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
   updatedAt?: Prisma.DateTimeFieldUpdateOperationsInput | Date | string
-  messages?: Prisma.ComplaintMessageUncheckedUpdateManyWithoutComplaintNestedInput
 }
 
 export type ComplaintUncheckedUpdateManyWithoutBookingInput = {
@@ -953,35 +839,6 @@ export type ComplaintUncheckedUpdateManyWithoutBookingInput = {
 }
 
 
-/**
- * Count Type ComplaintCountOutputType
- */
-
-export type ComplaintCountOutputType = {
-  messages: number
-}
-
-export type ComplaintCountOutputTypeSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  messages?: boolean | ComplaintCountOutputTypeCountMessagesArgs
-}
-
-/**
- * ComplaintCountOutputType without action
- */
-export type ComplaintCountOutputTypeDefaultArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ComplaintCountOutputType
-   */
-  select?: Prisma.ComplaintCountOutputTypeSelect<ExtArgs> | null
-}
-
-/**
- * ComplaintCountOutputType without action
- */
-export type ComplaintCountOutputTypeCountMessagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  where?: Prisma.ComplaintMessageWhereInput
-}
-
 
 export type ComplaintSelect<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
   id?: boolean
@@ -999,8 +856,6 @@ export type ComplaintSelect<ExtArgs extends runtime.Types.Extensions.InternalArg
   updatedAt?: boolean
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
   assignedTo?: boolean | Prisma.Complaint$assignedToArgs<ExtArgs>
-  messages?: boolean | Prisma.Complaint$messagesArgs<ExtArgs>
-  _count?: boolean | Prisma.ComplaintCountOutputTypeDefaultArgs<ExtArgs>
 }, ExtArgs["result"]["complaint"]>
 
 export type ComplaintSelectCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = runtime.Types.Extensions.GetSelect<{
@@ -1059,8 +914,6 @@ export type ComplaintOmit<ExtArgs extends runtime.Types.Extensions.InternalArgs 
 export type ComplaintInclude<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
   assignedTo?: boolean | Prisma.Complaint$assignedToArgs<ExtArgs>
-  messages?: boolean | Prisma.Complaint$messagesArgs<ExtArgs>
-  _count?: boolean | Prisma.ComplaintCountOutputTypeDefaultArgs<ExtArgs>
 }
 export type ComplaintIncludeCreateManyAndReturn<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
   booking?: boolean | Prisma.BookingDefaultArgs<ExtArgs>
@@ -1076,7 +929,6 @@ export type $ComplaintPayload<ExtArgs extends runtime.Types.Extensions.InternalA
   objects: {
     booking: Prisma.$BookingPayload<ExtArgs>
     assignedTo: Prisma.$EmployeePayload<ExtArgs> | null
-    messages: Prisma.$ComplaintMessagePayload<ExtArgs>[]
   }
   scalars: runtime.Types.Extensions.GetPayloadResult<{
     id: string
@@ -1488,7 +1340,6 @@ export interface Prisma__ComplaintClient<T, Null = never, ExtArgs extends runtim
   readonly [Symbol.toStringTag]: "PrismaPromise"
   booking<T extends Prisma.BookingDefaultArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.BookingDefaultArgs<ExtArgs>>): Prisma.Prisma__BookingClient<runtime.Types.Result.GetResult<Prisma.$BookingPayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | Null, Null, ExtArgs, GlobalOmitOptions>
   assignedTo<T extends Prisma.Complaint$assignedToArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Complaint$assignedToArgs<ExtArgs>>): Prisma.Prisma__EmployeeClient<runtime.Types.Result.GetResult<Prisma.$EmployeePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
-  messages<T extends Prisma.Complaint$messagesArgs<ExtArgs> = {}>(args?: Prisma.Subset<T, Prisma.Complaint$messagesArgs<ExtArgs>>): Prisma.PrismaPromise<runtime.Types.Result.GetResult<Prisma.$ComplaintMessagePayload<ExtArgs>, T, "findMany", GlobalOmitOptions> | Null>
   /**
    * Attaches callbacks for the resolution and/or rejection of the Promise.
    * @param onfulfilled The callback to execute when the Promise is resolved.
@@ -1948,30 +1799,6 @@ export type Complaint$assignedToArgs<ExtArgs extends runtime.Types.Extensions.In
    */
   include?: Prisma.EmployeeInclude<ExtArgs> | null
   where?: Prisma.EmployeeWhereInput
-}
-
-/**
- * Complaint.messages
- */
-export type Complaint$messagesArgs<ExtArgs extends runtime.Types.Extensions.InternalArgs = runtime.Types.Extensions.DefaultArgs> = {
-  /**
-   * Select specific fields to fetch from the ComplaintMessage
-   */
-  select?: Prisma.ComplaintMessageSelect<ExtArgs> | null
-  /**
-   * Omit specific fields from the ComplaintMessage
-   */
-  omit?: Prisma.ComplaintMessageOmit<ExtArgs> | null
-  /**
-   * Choose, which related nodes to fetch as well
-   */
-  include?: Prisma.ComplaintMessageInclude<ExtArgs> | null
-  where?: Prisma.ComplaintMessageWhereInput
-  orderBy?: Prisma.ComplaintMessageOrderByWithRelationInput | Prisma.ComplaintMessageOrderByWithRelationInput[]
-  cursor?: Prisma.ComplaintMessageWhereUniqueInput
-  take?: number
-  skip?: number
-  distinct?: Prisma.ComplaintMessageScalarFieldEnum | Prisma.ComplaintMessageScalarFieldEnum[]
 }
 
 /**

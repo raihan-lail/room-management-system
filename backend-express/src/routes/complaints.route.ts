@@ -1,5 +1,11 @@
 import { Router } from "express";
-import { assignComplaint, createComplaintMessage, getComplaintById, listComplaints, updateComplaintStatus } from "../controllers/complaints.controller";
+import {
+  assignComplaint,
+  getComplaintById,
+  listComplaints,
+  updateComplaintPriority,
+  updateComplaintStatus,
+} from "../controllers/complaints.controller";
 import { authenticate } from "../middleware/auth.middleware";
 import { requirePermission } from "../middleware/permission.middleware";
 
@@ -11,6 +17,6 @@ complaintRouter.get("/", requirePermission("complaints"), listComplaints);
 complaintRouter.get("/:id", requirePermission("complaints"), getComplaintById);
 complaintRouter.patch("/:id/assign", requirePermission("complaints"), assignComplaint);
 complaintRouter.patch("/:id/status", requirePermission("complaints"), updateComplaintStatus);
-complaintRouter.post("/:id/messages", requirePermission("complaints"), createComplaintMessage);
+complaintRouter.patch("/:id/priority", requirePermission("complaints"), updateComplaintPriority);
 
 export default complaintRouter;
