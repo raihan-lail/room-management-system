@@ -241,8 +241,19 @@ export default function BookingDetailsModal({
                 className="btn btn-primary"
                 onClick={onConfirm}
                 disabled={isSubmitting || !booking}
+                aria-busy={isSubmitting}
               >
-                {isSubmitting ? "Processing..." : confirmLabel}
+                {isSubmitting ? (
+                  <>
+                    <i
+                      className="bi bi-arrow-repeat app-spinner"
+                      aria-hidden="true"
+                    />
+                    Processing...
+                  </>
+                ) : (
+                  confirmLabel
+                )}
               </button>
             )}
           </div>

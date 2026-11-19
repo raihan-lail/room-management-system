@@ -10,6 +10,7 @@ interface CheckInWelcomeEmailInput {
   roomName: string;
   bedName: string;
   checkedInAt: Date;
+  complaintUrl?: string;
 }
 
 export const CHECK_IN_EMAIL_ATTACHMENTS: EmailAttachment[] = [
@@ -40,6 +41,19 @@ export function buildCheckInWelcomeEmail(
   const bedName = escapeHtml(input.bedName);
 
   const checkedInAt = formatEmailDate(input.checkedInAt);
+
+  const complaintSection = input.complaintUrl
+    ? `
+            <tr>
+              <td style="padding:20px 32px 0;">
+                <p style="margin:0 0 6px;font-size:12px;font-weight:700;letter-spacing:0.8px;text-transform:uppercase;color:#5a6275;">Complaints</p>
+                <p style="margin:0 0 12px;font-size:13px;line-height:1.6;color:#1a1f2e;">
+                  If something is not right with your room or stay, let us know by submitting a complaint.
+                </p>
+                <a href="${escapeHtml(input.complaintUrl)}" style="display:inline-block;padding:11px 18px;background-color:#273896;border-radius:6px;color:#ffffff;font-size:13px;font-weight:600;text-decoration:none;">Submit a complaint</a>
+              </td>
+            </tr>`
+    : "";
 
   const details: Array<[string, string]> = [
     ["Booking ID", bookingNumber],
@@ -106,6 +120,8 @@ export function buildCheckInWelcomeEmail(
               </td>
             </tr>
 
+            ${complaintSection}
+
             <tr>
               <td style="padding:24px 32px 0;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background-color:#f7f8fb;border:1px solid #dfe3ea;border-radius:6px;">
@@ -147,6 +163,13 @@ export function buildCheckInWelcomeEmail(
     "",
     "We have attached a welcome book and a guide to help you settle in.",
     "",
+    ...(input.complaintUrl
+      ? [
+          "To submit a complaint about your stay, open this link:",
+          input.complaintUrl,
+          "",
+        ]
+      : []),
     "If you need any assistance during your stay, please contact the reception or site staff.",
     "",
     "This is an automated message from the Camp Management System. Please do not reply to this email.",

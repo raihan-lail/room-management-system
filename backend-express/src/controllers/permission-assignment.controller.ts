@@ -6,7 +6,7 @@ import {
   canGrantPermission,
   findManageableEmployee,
   getActorOrRespond,
-  isGlobalSuperadmin,
+  isSuperadmin,
 } from "../utils/actor.js";
 import { notifyActor } from "../services/notification.service.js";
 import { auditActor } from "../services/audit.service.js";
@@ -20,7 +20,7 @@ export async function getRolePermissions(
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const superadmin = isGlobalSuperadmin(actor);
+    const superadmin = isSuperadmin(actor);
 
     const role = await prisma.role.findFirst({
       where: superadmin
@@ -68,7 +68,7 @@ export async function enableRolePermission(
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const superadmin = isGlobalSuperadmin(actor);
+    const superadmin = isSuperadmin(actor);
 
     const role = await prisma.role.findFirst({
       where: superadmin
@@ -151,7 +151,7 @@ export async function disableRolePermission(
     const actor = await getActorOrRespond(req, res);
     if (!actor) return;
 
-    const superadmin = isGlobalSuperadmin(actor);
+    const superadmin = isSuperadmin(actor);
 
     const role = await prisma.role.findFirst({
       where: superadmin

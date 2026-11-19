@@ -415,8 +415,8 @@ export const ModelName = {
   HomeLeave: 'HomeLeave',
   BookingEvent: 'BookingEvent',
   Complaint: 'Complaint',
-  ComplaintMessage: 'ComplaintMessage',
   BookingRating: 'BookingRating',
+  FeedbackToken: 'FeedbackToken',
   BookingChangeRequest: 'BookingChangeRequest',
   Notification: 'Notification',
   AuditLog: 'AuditLog',
@@ -437,7 +437,7 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
     omit: GlobalOmitOptions
   }
   meta: {
-    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "complaintMessage" | "bookingRating" | "bookingChangeRequest" | "notification" | "auditLog" | "emailLog" | "systemSetting"
+    modelProps: "user" | "site" | "employee" | "role" | "permission" | "employeeRole" | "rolePermission" | "employeePermission" | "location" | "floor" | "room" | "bed" | "roomAllocation" | "resident" | "booking" | "homeLeave" | "bookingEvent" | "complaint" | "bookingRating" | "feedbackToken" | "bookingChangeRequest" | "notification" | "auditLog" | "emailLog" | "systemSetting"
     txIsolationLevel: TransactionIsolationLevel
   }
   model: {
@@ -1773,80 +1773,6 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         }
       }
     }
-    ComplaintMessage: {
-      payload: Prisma.$ComplaintMessagePayload<ExtArgs>
-      fields: Prisma.ComplaintMessageFieldRefs
-      operations: {
-        findUnique: {
-          args: Prisma.ComplaintMessageFindUniqueArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload> | null
-        }
-        findUniqueOrThrow: {
-          args: Prisma.ComplaintMessageFindUniqueOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        findFirst: {
-          args: Prisma.ComplaintMessageFindFirstArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload> | null
-        }
-        findFirstOrThrow: {
-          args: Prisma.ComplaintMessageFindFirstOrThrowArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        findMany: {
-          args: Prisma.ComplaintMessageFindManyArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
-        }
-        create: {
-          args: Prisma.ComplaintMessageCreateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        createMany: {
-          args: Prisma.ComplaintMessageCreateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        createManyAndReturn: {
-          args: Prisma.ComplaintMessageCreateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
-        }
-        delete: {
-          args: Prisma.ComplaintMessageDeleteArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        update: {
-          args: Prisma.ComplaintMessageUpdateArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        deleteMany: {
-          args: Prisma.ComplaintMessageDeleteManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateMany: {
-          args: Prisma.ComplaintMessageUpdateManyArgs<ExtArgs>
-          result: BatchPayload
-        }
-        updateManyAndReturn: {
-          args: Prisma.ComplaintMessageUpdateManyAndReturnArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>[]
-        }
-        upsert: {
-          args: Prisma.ComplaintMessageUpsertArgs<ExtArgs>
-          result: runtime.Types.Utils.PayloadToResult<Prisma.$ComplaintMessagePayload>
-        }
-        aggregate: {
-          args: Prisma.ComplaintMessageAggregateArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.AggregateComplaintMessage>
-        }
-        groupBy: {
-          args: Prisma.ComplaintMessageGroupByArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ComplaintMessageGroupByOutputType>[]
-        }
-        count: {
-          args: Prisma.ComplaintMessageCountArgs<ExtArgs>
-          result: runtime.Types.Utils.Optional<Prisma.ComplaintMessageCountAggregateOutputType> | number
-        }
-      }
-    }
     BookingRating: {
       payload: Prisma.$BookingRatingPayload<ExtArgs>
       fields: Prisma.BookingRatingFieldRefs
@@ -1918,6 +1844,80 @@ export type TypeMap<ExtArgs extends runtime.Types.Extensions.InternalArgs = runt
         count: {
           args: Prisma.BookingRatingCountArgs<ExtArgs>
           result: runtime.Types.Utils.Optional<Prisma.BookingRatingCountAggregateOutputType> | number
+        }
+      }
+    }
+    FeedbackToken: {
+      payload: Prisma.$FeedbackTokenPayload<ExtArgs>
+      fields: Prisma.FeedbackTokenFieldRefs
+      operations: {
+        findUnique: {
+          args: Prisma.FeedbackTokenFindUniqueArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload> | null
+        }
+        findUniqueOrThrow: {
+          args: Prisma.FeedbackTokenFindUniqueOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        findFirst: {
+          args: Prisma.FeedbackTokenFindFirstArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload> | null
+        }
+        findFirstOrThrow: {
+          args: Prisma.FeedbackTokenFindFirstOrThrowArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        findMany: {
+          args: Prisma.FeedbackTokenFindManyArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>[]
+        }
+        create: {
+          args: Prisma.FeedbackTokenCreateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        createMany: {
+          args: Prisma.FeedbackTokenCreateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        createManyAndReturn: {
+          args: Prisma.FeedbackTokenCreateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>[]
+        }
+        delete: {
+          args: Prisma.FeedbackTokenDeleteArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        update: {
+          args: Prisma.FeedbackTokenUpdateArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        deleteMany: {
+          args: Prisma.FeedbackTokenDeleteManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateMany: {
+          args: Prisma.FeedbackTokenUpdateManyArgs<ExtArgs>
+          result: BatchPayload
+        }
+        updateManyAndReturn: {
+          args: Prisma.FeedbackTokenUpdateManyAndReturnArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>[]
+        }
+        upsert: {
+          args: Prisma.FeedbackTokenUpsertArgs<ExtArgs>
+          result: runtime.Types.Utils.PayloadToResult<Prisma.$FeedbackTokenPayload>
+        }
+        aggregate: {
+          args: Prisma.FeedbackTokenAggregateArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.AggregateFeedbackToken>
+        }
+        groupBy: {
+          args: Prisma.FeedbackTokenGroupByArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeedbackTokenGroupByOutputType>[]
+        }
+        count: {
+          args: Prisma.FeedbackTokenCountArgs<ExtArgs>
+          result: runtime.Types.Utils.Optional<Prisma.FeedbackTokenCountAggregateOutputType> | number
         }
       }
     }
@@ -2573,18 +2573,6 @@ export const ComplaintScalarFieldEnum = {
 export type ComplaintScalarFieldEnum = (typeof ComplaintScalarFieldEnum)[keyof typeof ComplaintScalarFieldEnum]
 
 
-export const ComplaintMessageScalarFieldEnum = {
-  id: 'id',
-  complaintId: 'complaintId',
-  userId: 'userId',
-  message: 'message',
-  isInternal: 'isInternal',
-  createdAt: 'createdAt'
-} as const
-
-export type ComplaintMessageScalarFieldEnum = (typeof ComplaintMessageScalarFieldEnum)[keyof typeof ComplaintMessageScalarFieldEnum]
-
-
 export const BookingRatingScalarFieldEnum = {
   id: 'id',
   bookingId: 'bookingId',
@@ -2595,6 +2583,19 @@ export const BookingRatingScalarFieldEnum = {
 } as const
 
 export type BookingRatingScalarFieldEnum = (typeof BookingRatingScalarFieldEnum)[keyof typeof BookingRatingScalarFieldEnum]
+
+
+export const FeedbackTokenScalarFieldEnum = {
+  id: 'id',
+  bookingId: 'bookingId',
+  type: 'type',
+  tokenHash: 'tokenHash',
+  expiresAt: 'expiresAt',
+  usedAt: 'usedAt',
+  createdAt: 'createdAt'
+} as const
+
+export type FeedbackTokenScalarFieldEnum = (typeof FeedbackTokenScalarFieldEnum)[keyof typeof FeedbackTokenScalarFieldEnum]
 
 
 export const BookingChangeRequestScalarFieldEnum = {
@@ -2881,6 +2882,20 @@ export type ListEnumComplaintPriorityFieldRefInput<$PrismaModel> = FieldRefInput
 
 
 /**
+ * Reference to a field of type 'FeedbackTokenType'
+ */
+export type EnumFeedbackTokenTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeedbackTokenType'>
+    
+
+
+/**
+ * Reference to a field of type 'FeedbackTokenType[]'
+ */
+export type ListEnumFeedbackTokenTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'FeedbackTokenType[]'>
+    
+
+
+/**
  * Reference to a field of type 'BookingChangeType'
  */
 export type EnumBookingChangeTypeFieldRefInput<$PrismaModel> = FieldRefInputType<$PrismaModel, 'BookingChangeType'>
@@ -3104,8 +3119,8 @@ export type GlobalOmitConfig = {
   homeLeave?: Prisma.HomeLeaveOmit
   bookingEvent?: Prisma.BookingEventOmit
   complaint?: Prisma.ComplaintOmit
-  complaintMessage?: Prisma.ComplaintMessageOmit
   bookingRating?: Prisma.BookingRatingOmit
+  feedbackToken?: Prisma.FeedbackTokenOmit
   bookingChangeRequest?: Prisma.BookingChangeRequestOmit
   notification?: Prisma.NotificationOmit
   auditLog?: Prisma.AuditLogOmit
