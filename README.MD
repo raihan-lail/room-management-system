@@ -1,4 +1,4 @@
-# Room Management System
+# Camp Management System
 
 A camp/room management system covering rooms, allocations, residents, bookings,
 complaints, ratings, employees, roles and permissions.
