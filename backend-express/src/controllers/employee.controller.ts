@@ -292,6 +292,7 @@ export async function updateEmployee(
         id: true,
         userId: true,
         siteId: true,
+        roles: { select: { roleId: true } },
       },
     });
 
@@ -399,6 +400,10 @@ export async function updateEmployee(
       const invalidRole = roles.some((role) => {
         if (role.name === "superadmin") return true;
         if (superadmin) return false;
+
+        // Existing assignments may predate the current site-scope rules. Keep
+        // them editable without allowing the actor to assign new cross-site roles.
+        if (target.roles.some(({ roleId }) => roleId === role.id)) return false;
 
         return !actor.siteId || role.siteId !== actor.siteId;
       });
