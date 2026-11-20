@@ -180,7 +180,7 @@ export async function updateRole(
         const actor = await getActorOrRespond(req, res);
         if (!actor) return;
 
-        const { name, description} = req.body as RoleInput;
+        const { name, description, siteId} = req.body as RoleInput;
         const globalAdmin = isGlobalSuperadmin(actor);
 
         const existing = await prisma.role.findUnique({
@@ -206,11 +206,37 @@ export async function updateRole(
             return;
         }
 
+        if (siteId !== undefined && siteId !== null && typeof siteId !== "string") {
+            res.status(400).json({ message: "Invalid siteId"});
+            return;
+        }
+
+        if (!globalAdmin && siteId !== undefined && siteId !== actor.siteId) {
+            res.status(403).json({ message: "you cannot assign a role to another site"});
+            return;
+        }
+
+        const targetSiteId = globalAdmin
+            ? siteId === undefined ? existing.siteId : siteId || null
+            : existing.siteId;
+
+        if (targetSiteId) {
+            const site = await prisma.site.findUnique({
+                where: { id: targetSiteId },
+                select: { id: true },
+            });
+            if (!site) {
+                res.status(400).json({ message: "Invalid siteId"});
+                return;
+            }
+        }
+
         const role =  await prisma.role.update({
             where: { id: existing.id},
             data: {
                 ...(name !== undefined ? {name: name.trim() }: {}),
                 ...(description !== undefined ? { description: description?.trim() || null}:{}),
+                ...(siteId !== undefined ? { siteId: targetSiteId } : {}),
 
             },
         });

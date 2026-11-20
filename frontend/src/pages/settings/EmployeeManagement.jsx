@@ -9,7 +9,7 @@ import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
-function buildEmployeeSchema({ isEdit, siteOptions, roleOptions }) {
+function buildEmployeeSchema({ isEdit, siteOptions, roles }) {
   return {
     entity: "Employee",
     title: "Add Employee",
@@ -48,7 +48,12 @@ function buildEmployeeSchema({ isEdit, siteOptions, roleOptions }) {
         name: "roleId",
         label: "Role",
         type: "select",
-        options: roleOptions,
+        options: (values) => [
+          { value: "", label: "Select role" },
+          ...roles
+            .filter((role) => !role.siteId || role.siteId === values.siteId)
+            .map((role) => ({ value: role.id, label: role.name })),
+        ],
         required: true,
       },
     ],
@@ -131,22 +136,14 @@ export default function EmployeeManagement() {
     [sites],
   );
 
-  const roleOptions = useMemo(
-    () => [
-      { value: "", label: "Select role" },
-      ...roles.map((role) => ({ value: role.id, label: role.name })),
-    ],
-    [roles],
-  );
-
   const addSchema = useMemo(
-    () => buildEmployeeSchema({ isEdit: false, siteOptions, roleOptions }),
-    [siteOptions, roleOptions],
+    () => buildEmployeeSchema({ isEdit: false, siteOptions, roles }),
+    [siteOptions, roles],
   );
 
   const editSchema = useMemo(
-    () => buildEmployeeSchema({ isEdit: true, siteOptions, roleOptions }),
-    [siteOptions, roleOptions],
+    () => buildEmployeeSchema({ isEdit: true, siteOptions, roles }),
+    [siteOptions, roles],
   );
 
   const handleAddEmployee = async (values) => {
