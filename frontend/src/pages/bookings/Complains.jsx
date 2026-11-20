@@ -4,6 +4,7 @@ import MainLayout from "../../components/MainLayout";
 import { fetchComplaints } from "../../api/complaints";
 import { fetchNotifications } from "../../api/notifications";
 import PageSizeSelect from "../../components/PageSizeSelect";
+import ExportModal from "../../components/modals/ExportModal";
 
 const PAGE_SIZE = 10;
 
@@ -31,6 +32,7 @@ export default function Complains() {
   const [unreadComplaintIds, setUnreadComplaintIds] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [isExportModalOpen, setIsExportModalOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -305,6 +307,15 @@ export default function Complains() {
                 ))}
               </select>
             </label>
+
+            <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={() => setIsExportModalOpen(true)}
+            >
+              <i className="bi bi-file-earmark-excel" aria-hidden="true" />
+              Export Excel
+            </button>
           </div>
         </div>
 
@@ -582,6 +593,48 @@ export default function Complains() {
           </div>
         </section>
       </div>
+
+      {isExportModalOpen && (
+        <ExportModal
+          title="Export Complaints"
+          endpoint="/api/complaint/export"
+          filename="complaints.xlsx"
+          entityLabel="complaints"
+          initialFilters={{
+            search,
+            status: statusFilter,
+            priority: priorityFilter,
+          }}
+          filterFields={[
+            {
+              name: "search",
+              label: "Search",
+              placeholder: "Booking ID, resident name, or type",
+            },
+            {
+              name: "status",
+              label: "Status",
+              type: "select",
+              placeholderOption: "Any status",
+              options: STATUS_OPTIONS.map((status) => ({
+                value: status,
+                label: formatStatus(status),
+              })),
+            },
+            {
+              name: "priority",
+              label: "Priority",
+              type: "select",
+              placeholderOption: "Any priority",
+              options: PRIORITY_OPTIONS.map((priority) => ({
+                value: priority,
+                label: priority,
+              })),
+            },
+          ]}
+          onClose={() => setIsExportModalOpen(false)}
+        />
+      )}
     </MainLayout>
   );
 }
