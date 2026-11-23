@@ -12,7 +12,7 @@ export default function ForgotPassword() {
           <div className="login-heading">
             <h1 className="login-title">Forgot Password</h1>
             <p className="login-subtitle">
-              Enter your email so we can send verification email to you.
+              Enter your email so we can send verification email to you. Or contact superadmin to reset password.
             </p>
           </div>
 
