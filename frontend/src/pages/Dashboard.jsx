@@ -28,15 +28,16 @@ export default function Dashboard() {
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(today);
   const [statusDate, setStatusDate] = useState(today);
+  const [activityDate, setActivityDate] = useState(today);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
-    const params = new URLSearchParams({ startDate, endDate, statusDate });
+    const params = new URLSearchParams({ startDate, endDate, statusDate, activityDate });
     apiRequest(`/api/dashboard?${params}`)
       .then((result) => { setData(result); setError(""); })
       .catch((requestError) => setError(requestError.message || "Failed to load dashboard data."));
-  }, [startDate, endDate, statusDate]);
+  }, [startDate, endDate, statusDate, activityDate]);
 
   const sharedOptions = useMemo(() => ({
     responsive: true,
@@ -136,7 +137,7 @@ export default function Dashboard() {
             </div> : <p className="dashboard-activity-empty" aria-live="polite">No check-ins or check-outs for this date.</p>}
           </section>
           <section className="dashboard-chart dashboard-chart--weekly">
-            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Daily Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Seven days through the selected date</p></div></div>
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Daily Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Seven days through the selected date</p></div><label className="calendar-date-filter"><span>Date</span><input type="date" value={activityDate} max={today} onChange={(event) => setActivityDate(event.target.value)} /></label></div>
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="bar" data={weeklyActivityData} options={weeklyBarOptions} />}</div>
           </section>
         </div>
