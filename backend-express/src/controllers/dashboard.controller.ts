@@ -52,6 +52,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
     }
 
     const selectedDayEnd = dayEnd(statusDate);
+    const weekStart = new Date(statusDate.getTime() - 6 * DAY_MS);
     const trendStart = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
     const trendEnd = dayEnd(endDate > today ? today : endDate);
     const trendMonthCount = Math.max(1, (endDate.getUTCFullYear() - trendStart.getUTCFullYear()) * 12 + endDate.getUTCMonth() - trendStart.getUTCMonth() + 1);
@@ -62,7 +63,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
       room: roomSiteFilter(actor),
     };
 
-    const [totalRooms, totalBeds, occupiedBeds, totalCheckIns, totalCheckOuts, trendBookings, snapshotRooms, bookingStatusCounts] = await Promise.all([
+    const [totalRooms, totalBeds, occupiedBeds, totalCheckIns, totalCheckOuts, trendBookings, snapshotRooms, bookingStatusCounts, dailyActivityBookings] = await Promise.all([
       prisma.room.count({ where: roomFilter }),
       prisma.bed.count({ where: bedFilter }),
       prisma.bed.count({
@@ -148,6 +149,21 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
         },
         _count: { _all: true },
       }),
+      prisma.booking.findMany({
+        where: {
+          ...bookingSiteFilter,
+          OR: [
+            { checkedInAt: { gte: weekStart, lt: new Date(statusDate.getTime() + DAY_MS) } },
+            { checkedOutAt: { gte: weekStart, lt: new Date(statusDate.getTime() + DAY_MS) } },
+          ],
+        },
+        select: {
+          id: true,
+          resident: { select: { fullName: true } },
+          checkedInAt: true,
+          checkedOutAt: true,
+        },
+      }),
     ]);
 
     const trend = Array.from({ length: trendMonthCount }, (_, index) => {
@@ -163,6 +179,24 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
     });
 
     const bedStatuses: Record<string, number> = Object.fromEntries(BED_STATUS_ORDER.map((status) => [status, 0]));
+    const dayActivity = dailyActivityBookings.flatMap((booking) => [
+      booking.checkedInAt && booking.checkedInAt >= statusDate && booking.checkedInAt <= selectedDayEnd
+        ? { id: `${booking.id}-check-in`, residentName: booking.resident.fullName, type: "Check-in", at: booking.checkedInAt }
+        : null,
+      booking.checkedOutAt && booking.checkedOutAt >= statusDate && booking.checkedOutAt <= selectedDayEnd
+        ? { id: `${booking.id}-check-out`, residentName: booking.resident.fullName, type: "Check-out", at: booking.checkedOutAt }
+        : null,
+    ]).filter((event) => event !== null).sort((a, b) => b.at.getTime() - a.at.getTime());
+    const weeklyActivity = Array.from({ length: 7 }, (_, index) => {
+      const date = new Date(weekStart.getTime() + index * DAY_MS);
+      const nextDate = new Date(date.getTime() + DAY_MS);
+      return {
+        date: date.toISOString().slice(0, 10),
+        label: date.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" }),
+        checkIns: dailyActivityBookings.filter((booking) => booking.checkedInAt && booking.checkedInAt >= date && booking.checkedInAt < nextDate).length,
+        checkOuts: dailyActivityBookings.filter((booking) => booking.checkedOutAt && booking.checkedOutAt >= date && booking.checkedOutAt < nextDate).length,
+      };
+    });
     for (const room of snapshotRooms) {
       for (const bed of room.beds) {
         const roomBookings = bed.bookings;
@@ -207,6 +241,8 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
       trend,
       bedStatuses: BED_STATUS_ORDER.map((status) => ({ status, count: bedStatuses[status] })),
       bookingStatuses: BOOKING_STATUS_ORDER.map((status) => ({ status, count: bookingStatusCounts.find((entry) => entry.status === status)?._count._all ?? 0 })),
+      dayActivity,
+      weeklyActivity,
     });
   } catch (error) {
     console.error("getDashboardData:", error);

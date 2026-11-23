@@ -20,9 +20,9 @@ function ChartCanvas({ type, data, options }) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const yearAgo = new Date();
-yearAgo.setUTCMonth(yearAgo.getUTCMonth() - 11, 1);
-const defaultStart = yearAgo.toISOString().slice(0, 10);
+const halfYearAgo = new Date();
+halfYearAgo.setUTCMonth(halfYearAgo.getUTCMonth() - 5, 1);
+const defaultStart = halfYearAgo.toISOString().slice(0, 10);
 
 export default function Dashboard() {
   const [startDate, setStartDate] = useState(defaultStart);
@@ -56,6 +56,10 @@ export default function Dashboard() {
     plugins: { ...sharedOptions.plugins, legend: { display: false } },
     scales: { x: { grid: { display: false }, border: { display: false } }, y: { beginAtZero: true, grid: { color: chartColors.border }, border: { display: false }, ticks: { precision: 0 } } },
   }), [sharedOptions]);
+  const weeklyBarOptions = useMemo(() => ({
+    ...sharedOptions,
+    scales: { x: { grid: { display: false }, border: { display: false } }, y: { beginAtZero: true, grid: { color: chartColors.border }, border: { display: false }, ticks: { precision: 0 } } },
+  }), [sharedOptions]);
   const pieOptions = useMemo(() => ({ ...sharedOptions, plugins: { ...sharedOptions.plugins, legend: { ...sharedOptions.plugins.legend, position: "bottom" } } }), [sharedOptions]);
 
   const trendData = useMemo(() => ({
@@ -70,7 +74,13 @@ export default function Dashboard() {
     labels: data?.bookingStatuses.map((item) => item.status.replaceAll("_", " ")) ?? [],
     datasets: [{ label: "Bookings", data: data?.bookingStatuses.map((item) => item.count) ?? [], backgroundColor: [chartColors.primary, chartColors.primaryMid, chartColors.primarySoft, chartColors.muted, chartColors.brandSoft], borderColor: "#ffffff", borderWidth: 2 }],
   }), [data]);
-
+  const weeklyActivityData = useMemo(() => ({
+    labels: data?.weeklyActivity.map((item) => item.label) ?? [],
+    datasets: [
+      { label: "Check-ins", data: data?.weeklyActivity.map((item) => item.checkIns) ?? [], backgroundColor: chartColors.primary, borderRadius: 0, categoryPercentage: 0.8, barPercentage: 1 },
+      { label: "Check-outs", data: data?.weeklyActivity.map((item) => item.checkOuts) ?? [], backgroundColor: chartColors.primaryMid, borderRadius: 0, categoryPercentage: 0.8, barPercentage: 1 },
+    ],
+  }), [data]);
   const summary = data?.summary;
   const stats = [
     ["Total Rooms / Beds", `${summary?.totalRooms ?? "—"} / ${summary?.totalBeds ?? "—"}`, "bi-door-open"],
@@ -98,19 +108,36 @@ export default function Dashboard() {
 
         {error && <p role="alert">{error}</p>}
         <div className="dashboard-charts">
-          <section className="dashboard-chart dashboard-chart--wide">
+          <section className="dashboard-chart dashboard-chart--trend">
             <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Occupancy Trend</h2><p className="dashboard-chart__caption">Occupied beds as a percentage of all beds</p></div>
               <div className="dashboard-date-filters"><label className="calendar-date-filter"><span>From</span><input type="date" value={startDate} max={endDate} onChange={(event) => setStartDate(event.target.value)} /></label><label className="calendar-date-filter"><span>To</span><input type="date" value={endDate} min={startDate} max={today} onChange={(event) => setEndDate(event.target.value)} /></label></div>
             </div>
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="line" data={trendData} options={lineOptions} />}</div>
           </section>
-          <section className="dashboard-chart">
+          <section className="dashboard-chart dashboard-chart--booking">
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Booking Status</h2><p className="dashboard-chart__caption">All time booking status distribution</p></div></div>
+            <div className="dashboard-chart__canvas">{data && <ChartCanvas type="pie" data={bookingData} options={pieOptions} />}</div>
+          </section>
+          <section className="dashboard-chart dashboard-chart--bed">
             <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Bed Status</h2><p className="dashboard-chart__caption">Beds by status on the selected date</p></div><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label></div>
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="bar" data={bedData} options={barOptions} />}</div>
           </section>
-          <section className="dashboard-chart">
-            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Booking Status</h2><p className="dashboard-chart__caption">All time booking status distribution</p></div></div>
-            <div className="dashboard-chart__canvas">{data && <ChartCanvas type="pie" data={bookingData} options={pieOptions} />}</div>
+          <section className="dashboard-chart dashboard-chart--activity">
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Latest activity for the selected day</p></div><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label></div>
+            {data?.dayActivity?.length ? <div className="dashboard-activity-list" aria-live="polite">
+              <table className="dashboard-activity-table">
+                <thead><tr><th scope="col">Event</th><th scope="col">Resident</th><th scope="col">Time</th></tr></thead>
+                <tbody>{data.dayActivity.map((event) => <tr key={event.id}>
+                  <td className={event.type === "Check-in" ? "is-check-in" : "is-check-out"}>{event.type}</td>
+                  <td className="dashboard-activity-table__name">{event.residentName}</td>
+                  <td><time dateTime={event.at}>{new Date(event.at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</time></td>
+                </tr>)}</tbody>
+              </table>
+            </div> : <p className="dashboard-activity-empty" aria-live="polite">No check-ins or check-outs for this date.</p>}
+          </section>
+          <section className="dashboard-chart dashboard-chart--weekly">
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Daily Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Seven days through the selected date</p></div></div>
+            <div className="dashboard-chart__canvas">{data && <ChartCanvas type="bar" data={weeklyActivityData} options={weeklyBarOptions} />}</div>
           </section>
         </div>
       </div>
