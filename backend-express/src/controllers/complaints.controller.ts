@@ -5,14 +5,17 @@ import {
 } from "../generated/prisma/client.js";
 
 import type { Response } from "express";
+import * as XLSX from "xlsx";
 import type { AuthRequest } from "../middleware/auth.middleware.js";
 import {
   getActorOrRespond,
   isGlobalSuperadmin,
 } from "../utils/actor.js";
+import type { Actor } from "../utils/actor.js";
 import { prisma } from "../lib/prisma.js";
 import { auditActor } from "../services/audit.service.js";
-import { notifyUsers } from "../services/notification.service.js";
+import { notifyActor, notifyUsers } from "../services/notification.service.js";
+import { formatTimestamp } from "../helpers/date.helper.js";
 
 function getSiteComplaintFilter(
   actor: Awaited<ReturnType<typeof getActorOrRespond>> & {}
@@ -36,6 +39,79 @@ function getSiteComplaintFilter(
   };
 }
 
+function buildComplaintWhere(
+  actor: Actor,
+  query: AuthRequest["query"]
+): { where: Prisma.ComplaintWhereInput } | { error: string } {
+  const where: Prisma.ComplaintWhereInput = {
+    AND: [getSiteComplaintFilter(actor)],
+  };
+
+  if (query.status !== undefined) {
+    if (
+      typeof query.status !== "string" ||
+      !Object.values(ComplaintStatus).includes(query.status as ComplaintStatus)
+    ) {
+      return { error: "Invalid complaint status." };
+    }
+
+    where.status = query.status as ComplaintStatus;
+  }
+
+  if (query.priority !== undefined) {
+    if (
+      typeof query.priority !== "string" ||
+      !Object.values(ComplaintPriority).includes(
+        query.priority as ComplaintPriority
+      )
+    ) {
+      return { error: "Invalid complaint priority." };
+    }
+
+    where.priority = query.priority as ComplaintPriority;
+  }
+
+  if (query.category !== undefined) {
+    if (typeof query.category !== "string" || !query.category.trim()) {
+      return { error: "Invalid complaint category." };
+    }
+
+    where.category = {
+      equals: query.category.trim(),
+      mode: "insensitive",
+    };
+  }
+
+  if (query.assignedToId !== undefined) {
+    if (typeof query.assignedToId !== "string") {
+      return { error: "Invalid assignedToId." };
+    }
+
+    where.assignedToId = query.assignedToId;
+  }
+
+  if (query.unassigned === "true") {
+    where.assignedToId = null;
+  }
+
+  if (typeof query.search === "string" && query.search.trim()) {
+    const search = query.search.trim();
+
+    where.OR = [
+      { id: { contains: search, mode: "insensitive" } },
+      { category: { contains: search, mode: "insensitive" } },
+      { booking: { bookingNumber: { contains: search, mode: "insensitive" } } },
+      {
+        booking: {
+          resident: { fullName: { contains: search, mode: "insensitive" } },
+        },
+      },
+    ];
+  }
+
+  return { where };
+}
+
 export async function listComplaints(
   req: AuthRequest,
   res: Response
@@ -57,65 +133,14 @@ export async function listComplaints(
       )
     );
 
-    const where: Prisma.ComplaintWhereInput = {
-      AND: [getSiteComplaintFilter(actor)],
-    };
+    const filters = buildComplaintWhere(actor, req.query);
 
-    if (req.query.status !== undefined) {
-      if (
-        typeof req.query.status !== "string" ||
-        !Object.values(ComplaintStatus).includes(
-          req.query.status as ComplaintStatus
-        )
-      ) {
-        res.status(400).json({ message: "Invalid complaint status." });
-        return;
-      }
-
-      where.status = req.query.status as ComplaintStatus;
+    if ("error" in filters) {
+      res.status(400).json({ message: filters.error });
+      return;
     }
 
-    if (req.query.priority !== undefined) {
-      if (
-        typeof req.query.priority !== "string" ||
-        !Object.values(ComplaintPriority).includes(
-          req.query.priority as ComplaintPriority
-        )
-      ) {
-        res.status(400).json({ message: "Invalid complaint priority." });
-        return;
-      }
-
-      where.priority = req.query.priority as ComplaintPriority;
-    }
-
-    if (req.query.category !== undefined) {
-      if (
-        typeof req.query.category !== "string" ||
-        !req.query.category.trim()
-      ) {
-        res.status(400).json({ message: "Invalid complaint category." });
-        return;
-      }
-
-      where.category = {
-        equals: req.query.category.trim(),
-        mode: "insensitive",
-      };
-    }
-
-    if (req.query.assignedToId !== undefined) {
-      if (typeof req.query.assignedToId !== "string") {
-        res.status(400).json({ message: "Invalid assignedToId." });
-        return;
-      }
-
-      where.assignedToId = req.query.assignedToId;
-    }
-
-    if (req.query.unassigned === "true") {
-      where.assignedToId = null;
-    }
+    const where = filters.where;
 
     const [total, complaints] = await prisma.$transaction([
       prisma.complaint.count({ where }),
@@ -175,6 +200,127 @@ export async function listComplaints(
     res.status(500).json({
       message: "Failed to retrieve complaints.",
     });
+  }
+}
+
+export async function exportComplaints(
+  req: AuthRequest,
+  res: Response
+): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  const filters = buildComplaintWhere(actor, req.query);
+
+  if ("error" in filters) {
+    res.status(400).json({ message: filters.error });
+    return;
+  }
+
+  try {
+    const complaints = await prisma.complaint.findMany({
+      where: filters.where,
+      orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
+      include: {
+        booking: {
+          select: {
+            bookingNumber: true,
+            resident: { select: { fullName: true } },
+            bed: {
+              select: {
+                name: true,
+                room: {
+                  select: {
+                    name: true,
+                    floor: {
+                      select: {
+                        name: true,
+                        location: {
+                          select: {
+                            name: true,
+                            site: { select: { name: true } },
+                          },
+                        },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        assignedTo: { select: { name: true } },
+      },
+    });
+
+    if (complaints.length === 0) {
+      res.status(400).json({
+        message: "No complaints match the selected filters. Nothing to export.",
+      });
+      return;
+    }
+
+    const rows = complaints.map((complaint) => ({
+      "Complaint ID": complaint.id,
+      "Booking ID": complaint.booking.bookingNumber,
+      Site: complaint.booking.bed.room.floor.location.site.name,
+      Location: complaint.booking.bed.room.floor.location.name,
+      Floor: complaint.booking.bed.room.floor.name,
+      Room: complaint.booking.bed.room.name,
+      Bed: complaint.booking.bed.name,
+      Resident: complaint.booking.resident.fullName,
+      Type: complaint.category,
+      Title: complaint.title,
+      Description: complaint.description,
+      Status: complaint.status.replaceAll("_", " "),
+      Priority: complaint.priority,
+      "Assigned To": complaint.assignedTo?.name ?? "",
+      Resolution: complaint.resolution ?? "",
+      "Submitted At": formatTimestamp(complaint.createdAt),
+      "Resolved At": formatTimestamp(complaint.resolvedAt),
+      "Closed At": formatTimestamp(complaint.closedAt),
+    }));
+
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 28 }, { wch: 18 }, { wch: 24 }, { wch: 24 }, { wch: 18 },
+      { wch: 16 }, { wch: 16 }, { wch: 28 }, { wch: 20 }, { wch: 40 },
+      { wch: 48 }, { wch: 14 }, { wch: 12 }, { wch: 24 }, { wch: 40 },
+      { wch: 22 }, { wch: 22 }, { wch: 22 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Complaints");
+    const buffer = XLSX.write(workbook, {
+      type: "buffer",
+      bookType: "xlsx",
+    });
+    const filename = `complaints-${new Date().toISOString().slice(0, 10)}.xlsx`;
+
+    await notifyActor(req, {
+      title: "Complaint data export successfully",
+      message: `${complaints.length} complaints exported successfully`,
+      type: "SUCCESS",
+    });
+    await auditActor(req, actor, {
+      action: "Export",
+      resource: "complaint",
+      description: `Exported ${complaints.length} complaints to an Excel file.`,
+    });
+
+    res.setHeader(
+      "Content-Type",
+      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+    );
+    res.setHeader(
+      "Content-Disposition",
+      `attachment; filename="${filename}"`
+    );
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("exportComplaints:", error);
+    if (res.headersSent) return;
+    res.status(500).json({ message: "Failed to export complaints." });
   }
 }
 

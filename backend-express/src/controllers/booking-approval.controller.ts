@@ -95,7 +95,7 @@ export async function createBookingChangeRequest(req: AuthRequest, res: Response
     if (reason !== undefined && typeof reason !== "string") { res.status(400).json({ message: "reason must be a string." }); return; }
     const booking = await prisma.booking.findFirst({ where: { id: bookingId, ...getSiteBookingFilter(actor) } });
     if (!booking) { res.status(404).json({ message: "Booking not found." }); return; }
-    if (booking.status !== BookingStatus.CONFIRMED && booking.status !== BookingStatus.IN_HOUSE) { res.status(409).json({ message: "Only confirmed or in-house bookings can be changed." }); return; }
+  
     const pending = await prisma.bookingChangeRequest.findFirst({ where: { bookingId, status: BookingChangeStatus.PENDING } });
     if (pending) { res.status(409).json({ message: "This booking already has a pending change request." }); return; }
     const oldData = { residentId: booking.residentId, bedId: booking.bedId, startedAt: booking.startedAt.toISOString(), endedAt: booking.endedAt.toISOString(), notes: booking.notes };

@@ -11,10 +11,9 @@ import PageSizeSelect from "../../components/PageSizeSelect";
 
 const PAGE_SIZE = 10;
 
-const roleSchema = addFormSchemas.role;
-
 export default function RoleManagement() {
   const [roleList, setRoleList] = useState([]);
+  const [sites, setSites] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState("");
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -27,10 +26,11 @@ export default function RoleManagement() {
   useEffect(() => {
     let isActive = true;
 
-    apiRequest("/api/role")
-      .then((data) => {
+    Promise.all([apiRequest("/api/role?allSites=true"), apiRequest("/api/site")])
+      .then(([data, siteData]) => {
         if (!isActive) return;
         setRoleList(data.data ?? []);
+        setSites(siteData.data ?? []);
       })
       .catch((err) => {
         if (!isActive) return;
@@ -46,6 +46,25 @@ export default function RoleManagement() {
     };
   }, []);
 
+  const siteOptions = useMemo(
+    () => [
+      { value: "", label: "Global" },
+      ...sites.map((site) => ({ value: site.id, label: site.name })),
+    ],
+    [sites],
+  );
+  const siteNames = useMemo(
+    () => new Map(sites.map((site) => [site.id, site.name])),
+    [sites],
+  );
+  const roleSchema = useMemo(() => ({
+    ...addFormSchemas.role,
+    fields: [
+      ...addFormSchemas.role.fields,
+      { name: "siteId", label: "Site", type: "select", options: siteOptions },
+    ],
+  }), [siteOptions]);
+
   const handleAddRole = async (values) => {
     setError("");
 
@@ -55,6 +74,7 @@ export default function RoleManagement() {
         body: JSON.stringify({
           name: values.name,
           description: values.description || null,
+          siteId: values.siteId || null,
         }),
       });
 
@@ -74,6 +94,7 @@ export default function RoleManagement() {
         body: JSON.stringify({
           name: values.name,
           description: values.description || null,
+          siteId: values.siteId || null,
         }),
       });
 
@@ -103,11 +124,11 @@ export default function RoleManagement() {
     if (!query) return roleList;
 
     return roleList.filter((role) =>
-      [role.name, role.description].some((value) =>
+      [role.name, role.description, siteNames.get(role.siteId)].some((value) =>
         (value || "").toString().toLowerCase().includes(query),
       ),
     );
-  }, [roleList, search]);
+  }, [roleList, search, siteNames]);
 
   const totalPages = Math.max(
     1,
@@ -182,6 +203,7 @@ export default function RoleManagement() {
                 <tr>
                   <th className="table-col-no">No</th>
                   <th>Name</th>
+                  <th>Site</th>
                   <th>Description</th>
                   <th>Action</th>
                 </tr>
@@ -190,13 +212,13 @@ export default function RoleManagement() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="4" className="muted">
+                    <td colSpan="5" className="muted">
                       Loading roles...
                     </td>
                   </tr>
                 ) : filteredRoles.length === 0 ? (
                   <tr>
-                    <td colSpan="4" className="muted">
+                    <td colSpan="5" className="muted">
                       No role found.
                     </td>
                   </tr>
@@ -211,6 +233,9 @@ export default function RoleManagement() {
 
                       <td>
                         {role.name || "-"}
+                      </td>
+                      <td>
+                        {siteNames.get(role.siteId) || "GLOBAL"}
                       </td>
 
                       <td>{role.description || "-"}</td>

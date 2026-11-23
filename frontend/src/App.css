@@ -1240,7 +1240,7 @@ textarea,
 
 .dashboard-charts {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(10, minmax(0, 1fr));
 
   gap: 16px;
 }
@@ -1261,7 +1261,23 @@ textarea,
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
 }
 
-.dashboard-chart--wide {
+.dashboard-chart--trend {
+  grid-column: span 6;
+}
+
+.dashboard-chart--booking {
+  grid-column: span 4;
+}
+
+.dashboard-chart--activity {
+  grid-column: span 5;
+}
+
+.dashboard-chart--bed {
+  grid-column: span 5;
+}
+
+.dashboard-chart--weekly {
   grid-column: 1 / -1;
 }
 
@@ -1308,6 +1324,71 @@ textarea,
   height: 280px;
 
   min-width: 0;
+}
+
+.dashboard-activity-list {
+  min-height: 0;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.dashboard-activity-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.dashboard-activity-table th,
+.dashboard-activity-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  line-height: 16px;
+}
+
+.dashboard-activity-table th {
+  position: sticky;
+  top: 0;
+  background: #ffffff;
+  color: #64748b;
+  font-weight: 600;
+}
+
+.dashboard-activity-table tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.dashboard-activity-table td:first-child {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.dashboard-activity-table td.is-check-in {
+  color: var(--brand-bold);
+}
+
+.dashboard-activity-table td.is-check-out {
+  color: var(--brand-danger);
+}
+
+.dashboard-activity-table__name {
+  max-width: 0;
+  overflow: hidden;
+  color: #111827;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-activity-table time {
+  color: #64748b;
+  white-space: nowrap;
+}
+
+.dashboard-activity-empty {
+  margin: 0;
+  padding: 16px 0;
+  color: #64748b;
+  font-size: 11px;
 }
 
 .table-wrapper {
@@ -3980,7 +4061,11 @@ textarea,
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .dashboard-chart--wide {
+  .dashboard-chart--trend,
+  .dashboard-chart--booking,
+  .dashboard-chart--bed,
+  .dashboard-chart--activity,
+  .dashboard-chart--weekly {
     grid-column: auto;
   }
 
