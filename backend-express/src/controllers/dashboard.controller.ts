@@ -39,20 +39,23 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
     const requestedStart = parseDateParam(req.query.startDate);
     const requestedEnd = parseDateParam(req.query.endDate);
     const requestedStatusDate = parseDateParam(req.query.statusDate);
+    const requestedActivityDate = parseDateParam(req.query.activityDate);
 
-    if (requestedStart === null || requestedEnd === null || requestedStatusDate === null) {
+    if (requestedStart === null || requestedEnd === null || requestedStatusDate === null || requestedActivityDate === null) {
       return res.status(400).json({ message: "Dates must use YYYY-MM-DD format." });
     }
 
     const startDate = requestedStart ?? defaultStart;
     const endDate = requestedEnd ?? today;
     const statusDate = requestedStatusDate ?? today;
+    const activityDate = requestedActivityDate ?? today;
     if (startDate > endDate) {
       return res.status(400).json({ message: "startDate cannot be later than endDate." });
     }
 
     const selectedDayEnd = dayEnd(statusDate);
     const weekStart = new Date(statusDate.getTime() - 6 * DAY_MS);
+    const activityWeekStart = new Date(activityDate.getTime() - 6 * DAY_MS);
     const trendStart = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
     const trendEnd = dayEnd(endDate > today ? today : endDate);
     const trendMonthCount = Math.max(1, (endDate.getUTCFullYear() - trendStart.getUTCFullYear()) * 12 + endDate.getUTCMonth() - trendStart.getUTCMonth() + 1);
@@ -63,7 +66,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
       room: roomSiteFilter(actor),
     };
 
-    const [totalRooms, totalBeds, occupiedBeds, totalCheckIns, totalCheckOuts, trendBookings, snapshotRooms, bookingStatusCounts, dailyActivityBookings] = await Promise.all([
+    const [totalRooms, totalBeds, occupiedBeds, totalCheckIns, totalCheckOuts, trendBookings, snapshotRooms, bookingStatusCounts, dailyActivityBookings, weeklyActivityBookings] = await Promise.all([
       prisma.room.count({ where: roomFilter }),
       prisma.bed.count({ where: bedFilter }),
       prisma.bed.count({
@@ -164,6 +167,16 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
           checkedOutAt: true,
         },
       }),
+      prisma.booking.findMany({
+        where: {
+          ...bookingSiteFilter,
+          OR: [
+            { checkedInAt: { gte: activityWeekStart, lt: new Date(activityDate.getTime() + DAY_MS) } },
+            { checkedOutAt: { gte: activityWeekStart, lt: new Date(activityDate.getTime() + DAY_MS) } },
+          ],
+        },
+        select: { checkedInAt: true, checkedOutAt: true },
+      }),
     ]);
 
     const trend = Array.from({ length: trendMonthCount }, (_, index) => {
@@ -188,13 +201,13 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
         : null,
     ]).filter((event) => event !== null).sort((a, b) => b.at.getTime() - a.at.getTime());
     const weeklyActivity = Array.from({ length: 7 }, (_, index) => {
-      const date = new Date(weekStart.getTime() + index * DAY_MS);
+      const date = new Date(activityWeekStart.getTime() + index * DAY_MS);
       const nextDate = new Date(date.getTime() + DAY_MS);
       return {
         date: date.toISOString().slice(0, 10),
         label: date.toLocaleDateString("en", { weekday: "short", timeZone: "UTC" }),
-        checkIns: dailyActivityBookings.filter((booking) => booking.checkedInAt && booking.checkedInAt >= date && booking.checkedInAt < nextDate).length,
-        checkOuts: dailyActivityBookings.filter((booking) => booking.checkedOutAt && booking.checkedOutAt >= date && booking.checkedOutAt < nextDate).length,
+        checkIns: weeklyActivityBookings.filter((booking) => booking.checkedInAt && booking.checkedInAt >= date && booking.checkedInAt < nextDate).length,
+        checkOuts: weeklyActivityBookings.filter((booking) => booking.checkedOutAt && booking.checkedOutAt >= date && booking.checkedOutAt < nextDate).length,
       };
     });
     for (const room of snapshotRooms) {
