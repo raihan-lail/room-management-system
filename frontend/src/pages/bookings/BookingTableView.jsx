@@ -36,6 +36,12 @@ const MEAL_TYPE_LABELS = {
   OTHER: "Other",
 };
 
+const APPROVAL_SUCCESS_MESSAGES = {
+  cancel: "Booking cancellation request is sent.",
+  extend: "Booking extension request is sent.",
+  archive: "Booking archive request is sent.",
+};
+
 const SORT_GETTERS = {
   booking_id: (booking) => booking.id,
   room: (booking) => booking.bed?.room?.name,
@@ -141,6 +147,7 @@ export default function BookingTableView() {
   const [cancellingBooking, setCancellingBooking] = useState(null);
   const [cancelReason, setCancelReason] = useState("");
   const [actionError, setActionError] = useState("");
+  const [actionSuccess, setActionSuccess] = useState("");
   const [isSavingAction, setIsSavingAction] = useState(false);
 
   const exportFilterFields = useMemo(() => [
@@ -216,6 +223,14 @@ export default function BookingTableView() {
     return () => window.clearTimeout(timer);
   }, [loadBookings]);
 
+  useEffect(() => {
+    if (!actionSuccess) return undefined;
+
+    const timer = window.setTimeout(() => setActionSuccess(""), 5000);
+
+    return () => window.clearTimeout(timer);
+  }, [actionSuccess]);
+
   const sortedBookings = useMemo(() => {
     const getValue = SORT_GETTERS[sortConfig.key];
 
@@ -289,6 +304,11 @@ export default function BookingTableView() {
     setCurrentPage(1);
   }, [currentPage, loadBookings]);
 
+  const handleChangeRequested = useCallback(async () => {
+    setActionSuccess("Booking change request is sent.");
+    await handleBookingChanged();
+  }, [handleBookingChanged]);
+
   const performBookingAction = async (booking, action, body) => {
     setIsSavingAction(true);
     setActionError("");
@@ -297,6 +317,8 @@ export default function BookingTableView() {
         method: "POST",
         ...(body ? { body: JSON.stringify(body) } : {}),
       });
+      const successMessage = APPROVAL_SUCCESS_MESSAGES[action];
+      if (successMessage) setActionSuccess(successMessage);
       await handleBookingChanged();
       setExtendingBooking(null);
       setArchivingBooking(null);
@@ -506,6 +528,11 @@ export default function BookingTableView() {
 
         {/* TABLE CARD */}
         <section className="table-card content">
+          {actionSuccess && (
+            <div className="frontdesk-overdue-alert" role="status">
+              {actionSuccess}
+            </div>
+          )}
           {actionError && !extendingBooking && !cancellingBooking && (
             <div className="frontdesk-overdue-alert" role="alert">{actionError}</div>
           )}
@@ -784,7 +811,7 @@ export default function BookingTableView() {
         <BookingEditModal
           booking={editingBooking}
           onClose={() => setEditingBooking(null)}
-          onUpdated={handleBookingChanged}
+          onUpdated={handleChangeRequested}
         />
       )}
 
