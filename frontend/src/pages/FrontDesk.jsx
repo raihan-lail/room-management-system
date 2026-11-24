@@ -837,12 +837,12 @@ aria-label={
           )}
           {overdueArrivalCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
-              {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
+              {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the start date
             </div>
           )}
           {overdueDepartureCount > 0 && (
             <div className="frontdesk-overdue-alert" role="alert">
-              {overdueDepartureCount} departure{overdueDepartureCount === 1 ? " has" : "s have"} passed the ended_at date
+              {overdueDepartureCount} departure{overdueDepartureCount === 1 ? " has" : "s have"} passed the end date
             </div>
           )}
           <div className="office-table-wrapper">
