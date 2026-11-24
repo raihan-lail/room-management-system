@@ -887,6 +887,14 @@ div.notification-item {
 }
 
 @media (max-width: 480px) {
+  .navbar {
+    padding: 8px 10px;
+  }
+
+  .navbar-date-time {
+    display: none;
+  }
+
   .notifications-dropdown {
     top: 60px;
     right: 8px;
@@ -5442,12 +5450,12 @@ textarea,
   }
 
   /*
-   * The navbar can no longer hold every item on
-   * one line, so it wraps and the brand keeps its
-   * full width to keep the toggle clickable.
+   * Keep the navbar on a single row. The brand area
+   * shrinks first so the actions stay reachable, and
+   * long site names are truncated instead of wrapping.
    */
   .navbar {
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
 
     gap: 8px;
 
@@ -5459,7 +5467,32 @@ textarea,
   }
 
   .navbar__brand {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+
+    min-width: 0;
+  }
+
+  .navbar__title {
+    flex: 1 1 auto;
+
+    min-width: 0;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .navbar-site-select-wrapper {
+    flex: 1 1 auto;
+
+    min-width: 0;
+  }
+
+  .navbar-site-select {
+    width: 100%;
+    min-width: 0;
+    max-width: none;
   }
 
   .navbar__actions {
