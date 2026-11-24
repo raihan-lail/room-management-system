@@ -34,18 +34,6 @@ const MEAL_TYPE_LABELS = Object.fromEntries(
   MEAL_TYPE_OPTIONS.map((option) => [option.value, option.label]),
 );
 
-const SORT_GETTERS = {
-  fullName: (resident) => resident.fullName,
-  email: (resident) => resident.user?.email,
-  phone: (resident) => resident.phone,
-  gender: (resident) => resident.gender,
-  nationality: (resident) => resident.nationality,
-  mealType: (resident) => resident.mealType,
-  company: (resident) => resident.company,
-  department: (resident) => resident.department,
-  title: (resident) => resident.title,
-};
-
 function getResidentList(response) {
   return Array.isArray(response?.residents) ? response.residents : [];
 }
@@ -219,6 +207,11 @@ export default function GuestManagement() {
         search: search.trim(),
       });
 
+      if (sortConfig.key) {
+        params.set("sortBy", sortConfig.key);
+        params.set("sortOrder", sortConfig.direction);
+      }
+
       const response = await apiRequest(`/api/resident?${params.toString()}`);
       const pageInfo = getPagination(response, currentPage, pageSize);
 
@@ -235,7 +228,13 @@ export default function GuestManagement() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, search]);
+  }, [
+    currentPage,
+    pageSize,
+    search,
+    sortConfig.key,
+    sortConfig.direction,
+  ]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -392,29 +391,8 @@ export default function GuestManagement() {
       key,
       direction: prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
+    setCurrentPage(1);
   };
-
-  // Sorting applies to the current server-returned page.
-  const sortedResidents = useMemo(() => {
-    const getValue = SORT_GETTERS[sortConfig.key];
-
-    if (!getValue) return residents;
-
-    return [...residents].sort((a, b) => {
-      const aValue = (getValue(a) ?? "").toString().toLowerCase();
-      const bValue = (getValue(b) ?? "").toString().toLowerCase();
-
-      if (aValue < bValue) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-
-      if (aValue > bValue) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-
-      return 0;
-    });
-  }, [residents, sortConfig]);
 
   const startRow =
     pagination.total === 0
@@ -596,14 +574,14 @@ export default function GuestManagement() {
                       Loading residents...
                     </td>
                   </tr>
-                ) : sortedResidents.length === 0 ? (
+                ) : residents.length === 0 ? (
                   <tr>
                     <td colSpan="11" className="muted">
                       No residents found.
                     </td>
                   </tr>
                 ) : (
-                  sortedResidents.map((resident, index) => (
+                  residents.map((resident, index) => (
                     <tr key={resident.id}>
                       <td className="table-col-no">{startRow + index}</td>
 

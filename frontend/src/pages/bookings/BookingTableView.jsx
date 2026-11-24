@@ -42,23 +42,6 @@ const APPROVAL_SUCCESS_MESSAGES = {
   archive: "Booking archive request is sent.",
 };
 
-const SORT_GETTERS = {
-  booking_id: (booking) => booking.id,
-  room: (booking) => booking.bed?.room?.name,
-  bed: (booking) => booking.bed?.name,
-  guest: (booking) => booking.resident?.fullName,
-  gender: (booking) => booking.resident?.gender,
-  country: (booking) => booking.resident?.nationality,
-  department: (booking) => booking.resident?.department,
-  meal_type: (booking) => booking.resident?.mealType,
-  booked_at: (booking) => booking.createdAt,
-  started_at: (booking) => booking.startedAt,
-  ended_at: (booking) => booking.endedAt,
-  duration: (booking) => bookingDuration(booking.startedAt, booking.endedAt),
-  status: (booking) => booking.status,
-  notes: (booking) => booking.notes,
-};
-
 function formatDate(value) {
   if (!value) return "-";
 
@@ -197,6 +180,11 @@ export default function BookingTableView() {
         );
       }
 
+      if (sortConfig.key) {
+        params.set("sortBy", sortConfig.key);
+        params.set("sortOrder", sortConfig.direction);
+      }
+
       const response = await apiRequest(`/api/booking?${params.toString()}`);
       const pageInfo = getPagination(response, currentPage, pageSize);
 
@@ -213,7 +201,16 @@ export default function BookingTableView() {
     } finally {
       setIsLoading(false);
     }
-  }, [currentPage, pageSize, search, statusFilter, startedAtFrom, startedAtTo]);
+  }, [
+    currentPage,
+    pageSize,
+    search,
+    statusFilter,
+    startedAtFrom,
+    startedAtTo,
+    sortConfig.key,
+    sortConfig.direction,
+  ]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -231,33 +228,6 @@ export default function BookingTableView() {
     return () => window.clearTimeout(timer);
   }, [actionSuccess]);
 
-  const sortedBookings = useMemo(() => {
-    const getValue = SORT_GETTERS[sortConfig.key];
-
-    if (!getValue) return bookings;
-
-    return [...bookings].sort((a, b) => {
-      if (sortConfig.key === "duration") {
-        const aDuration = getValue(a) ?? -1;
-        const bDuration = getValue(b) ?? -1;
-        return (aDuration - bDuration) * (sortConfig.direction === "asc" ? 1 : -1);
-      }
-
-      const aValue = (getValue(a) ?? "").toString().toLowerCase();
-      const bValue = (getValue(b) ?? "").toString().toLowerCase();
-
-      if (aValue < bValue) {
-        return sortConfig.direction === "asc" ? -1 : 1;
-      }
-
-      if (aValue > bValue) {
-        return sortConfig.direction === "asc" ? 1 : -1;
-      }
-
-      return 0;
-    });
-  }, [bookings, sortConfig]);
-
   const startRow =
     pagination.total === 0
       ? 0
@@ -273,6 +243,7 @@ export default function BookingTableView() {
       direction:
         prev.key === key && prev.direction === "asc" ? "desc" : "asc",
     }));
+    setCurrentPage(1);
   };
 
   const handleSearchChange = (value) => {
@@ -673,14 +644,14 @@ export default function BookingTableView() {
                       Loading bookings...
                     </td>
                   </tr>
-                ) : sortedBookings.length === 0 ? (
+                ) : bookings.length === 0 ? (
                   <tr>
                     <td colSpan={15} className="muted">
                       No bookings found.
                     </td>
                   </tr>
                 ) : (
-                  sortedBookings.map((booking) => (
+                  bookings.map((booking) => (
                     <tr key={booking.id}>
                       <td>
                         <strong>{booking.bookingNumber || "-"}</strong>

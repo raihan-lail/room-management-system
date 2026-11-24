@@ -24,6 +24,28 @@ import {
   singleParam,
 } from "../helpers/room.helper.js";
 
+const ROOM_SORT_KEYS = new Set(["name", "location"]);
+
+function getRoomOrderBy(
+  sortBy: string,
+  sortOrder: Prisma.SortOrder,
+): Prisma.RoomOrderByWithRelationInput[] | null {
+  const tieBreaker: Prisma.RoomOrderByWithRelationInput = { id: "asc" };
+
+  switch (sortBy) {
+    case "name":
+      return [{ name: sortOrder }, tieBreaker];
+    case "location":
+      return [
+        { floor: { location: { name: sortOrder } } },
+        { name: "asc" },
+        tieBreaker,
+      ];
+    default:
+      return null;
+  }
+}
+
 export async function listRooms(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
@@ -51,6 +73,29 @@ export async function listRooms(req: AuthRequest, res: Response) {
     const isBookable = booleanParam(req.query.isBookable);
 
     const search = singleParam(req.query.search);
+
+    const sortBy =
+      typeof req.query.sortBy === "string" ? req.query.sortBy.trim() : "";
+    const sortOrderParam =
+      typeof req.query.sortOrder === "string"
+        ? req.query.sortOrder.trim()
+        : "";
+
+    if (sortBy && !ROOM_SORT_KEYS.has(sortBy)) {
+      return res.status(400).json({ message: "Invalid sort field." });
+    }
+
+    if (
+      sortOrderParam &&
+      sortOrderParam !== "asc" &&
+      sortOrderParam !== "desc"
+    ) {
+      return res.status(400).json({ message: "Invalid sort order." });
+    }
+
+    const sortOrder: Prisma.SortOrder =
+      sortOrderParam === "desc" ? "desc" : "asc";
+    const orderBy = sortBy ? getRoomOrderBy(sortBy, sortOrder) : null;
 
     const where: Prisma.RoomWhereInput = {
       ...roomSiteFilter(actor),
@@ -121,7 +166,7 @@ export async function listRooms(req: AuthRequest, res: Response) {
           beds: true,
           _count: { select: { beds: true } },
         },
-        orderBy: [{ name: "asc" }],
+        orderBy: orderBy ?? [{ name: "asc" }],
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),
