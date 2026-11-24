@@ -1153,6 +1153,16 @@ textarea,
   white-space: nowrap;
 }
 
+.dashboard-chart--bed .dashboard-date-filters {
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 6px;
+}
+
+.dashboard-chart--bed .dashboard-date-filters .calendar-date-filter {
+  flex: 0 0 auto;
+}
+
 
 /* Dashboard KPI cards */
 

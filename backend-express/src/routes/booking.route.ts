@@ -2,7 +2,7 @@ import { Router } from "express";
 import { authenticate } from "../middleware/auth.middleware.js";
 import { requirePermission } from "../middleware/permission.middleware.js";
 import { requestBookingArchive, requestBookingCancellation, requestBookingExtension } from "../controllers/booking-approval.controller.js";
-import { checkInBooking, checkOutBooking, createBooking, exportBookingsToExcel, exportHomeLeavesToExcel, getBookingById, importBookingsForExistingResidents, importBookingsFromExcel, listBookings, listHomeLeaves, returnFromHomeLeave, sendNearEndReminder, startHomeLeave } from "../controllers/booking.controller";
+import { checkInBooking, checkOutBooking, createBooking, exportBookingsToExcel, exportDailyCheckInOutToExcel, exportHomeLeavesToExcel, getBookingById, importBookingsForExistingResidents, importBookingsFromExcel, listBookings, listHomeLeaves, returnFromHomeLeave, sendNearEndReminder, startHomeLeave } from "../controllers/booking.controller";
 import { upload } from "../utils/excel.js";
 
 const bookingRouter = Router();
@@ -13,6 +13,7 @@ bookingRouter.get("/", requirePermission("bookings.read"), listBookings);
 bookingRouter.post("/import", requirePermission("bookings.import"), upload.single("file"), importBookingsFromExcel);
 bookingRouter.post("/import/existing-residents", requirePermission("bookings.import"), upload.single("file"), importBookingsForExistingResidents);
 bookingRouter.get("/export", requirePermission("bookings.export"), exportBookingsToExcel);
+bookingRouter.get("/daily-activity/export", requirePermission("bookings.export"), exportDailyCheckInOutToExcel);
 bookingRouter.get("/home-leaves/export", requirePermission("home.leaves"), exportHomeLeavesToExcel);
 bookingRouter.get("/home-leaves", requirePermission("home.leaves"), listHomeLeaves);
 bookingRouter.get("/:id", requirePermission("bookings.read"), getBookingById );
