@@ -24,6 +24,48 @@ import {
   residentSiteScope,
 } from "../helpers/resident.helper.js";
 
+const RESIDENT_SORT_KEYS = new Set([
+  "fullName",
+  "email",
+  "phone",
+  "gender",
+  "nationality",
+  "mealType",
+  "company",
+  "department",
+  "title",
+]);
+
+function getResidentOrderBy(
+  sortBy: string,
+  sortOrder: Prisma.SortOrder,
+): Prisma.ResidentOrderByWithRelationInput[] | null {
+  const tieBreaker: Prisma.ResidentOrderByWithRelationInput = { id: "asc" };
+
+  switch (sortBy) {
+    case "fullName":
+      return [{ fullName: sortOrder }, tieBreaker];
+    case "email":
+      return [{ user: { email: sortOrder } }, tieBreaker];
+    case "phone":
+      return [{ phone: sortOrder }, tieBreaker];
+    case "gender":
+      return [{ gender: sortOrder }, tieBreaker];
+    case "nationality":
+      return [{ nationality: sortOrder }, tieBreaker];
+    case "mealType":
+      return [{ mealType: sortOrder }, tieBreaker];
+    case "company":
+      return [{ company: sortOrder }, tieBreaker];
+    case "department":
+      return [{ department: sortOrder }, tieBreaker];
+    case "title":
+      return [{ title: sortOrder }, tieBreaker];
+    default:
+      return null;
+  }
+}
+
 export async function listResidents(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
@@ -45,6 +87,29 @@ export async function listResidents(req: AuthRequest, res: Response) {
       typeof req.query.search === "string"
         ? req.query.search.trim()
         : "";
+
+    const sortBy =
+      typeof req.query.sortBy === "string" ? req.query.sortBy.trim() : "";
+    const sortOrderParam =
+      typeof req.query.sortOrder === "string"
+        ? req.query.sortOrder.trim()
+        : "";
+
+    if (sortBy && !RESIDENT_SORT_KEYS.has(sortBy)) {
+      return res.status(400).json({ message: "Invalid sort field." });
+    }
+
+    if (
+      sortOrderParam &&
+      sortOrderParam !== "asc" &&
+      sortOrderParam !== "desc"
+    ) {
+      return res.status(400).json({ message: "Invalid sort order." });
+    }
+
+    const sortOrder: Prisma.SortOrder =
+      sortOrderParam === "desc" ? "desc" : "asc";
+    const orderBy = sortBy ? getResidentOrderBy(sortBy, sortOrder) : null;
 
     const siteId =
       typeof req.query.siteId === "string" ? req.query.siteId : undefined;
@@ -84,7 +149,7 @@ export async function listResidents(req: AuthRequest, res: Response) {
             select: { id: true, name: true },
           },
         },
-        orderBy: { fullName: "asc" },
+        orderBy: orderBy ?? { fullName: "asc" },
         skip: (page - 1) * pageSize,
         take: pageSize,
       }),

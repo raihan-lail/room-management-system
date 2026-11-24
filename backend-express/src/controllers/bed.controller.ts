@@ -21,6 +21,35 @@ import {
 } from "../helpers/bed.helper.js";
 import { formatTimestamp, formatTimestapWithoutHours } from "../helpers/date.helper.js";
 
+const BED_SORT_KEYS = new Set(["name", "location", "status"]);
+
+function getBedOrderBy(
+  sortBy: string,
+  sortOrder: Prisma.SortOrder,
+): Prisma.BedOrderByWithRelationInput[] | null {
+  const roomName: Prisma.BedOrderByWithRelationInput = {
+    room: { name: "asc" },
+  };
+  const bedName: Prisma.BedOrderByWithRelationInput = { name: "asc" };
+  const tieBreaker: Prisma.BedOrderByWithRelationInput = { id: "asc" };
+
+  switch (sortBy) {
+    case "name":
+      return [{ room: { name: sortOrder } }, bedName, tieBreaker];
+    case "location":
+      return [
+        { room: { floor: { location: { name: sortOrder } } } },
+        roomName,
+        bedName,
+        tieBreaker,
+      ];
+    case "status":
+      return [{ status: sortOrder }, roomName, bedName, tieBreaker];
+    default:
+      return null;
+  }
+}
+
 export async function listBeds(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
@@ -48,6 +77,29 @@ export async function listBeds(req: AuthRequest, res: Response) {
     const dateParam = singleParam(req.query.date);
     const startDateParam = singleParam(req.query.startDate);
     const endDateParam = singleParam(req.query.endDate);
+
+    const sortBy =
+      typeof req.query.sortBy === "string" ? req.query.sortBy.trim() : "";
+    const sortOrderParam =
+      typeof req.query.sortOrder === "string"
+        ? req.query.sortOrder.trim()
+        : "";
+
+    if (sortBy && !BED_SORT_KEYS.has(sortBy)) {
+      return res.status(400).json({ message: "Invalid sort field." });
+    }
+
+    if (
+      sortOrderParam &&
+      sortOrderParam !== "asc" &&
+      sortOrderParam !== "desc"
+    ) {
+      return res.status(400).json({ message: "Invalid sort order." });
+    }
+
+    const sortOrder: Prisma.SortOrder =
+      sortOrderParam === "desc" ? "desc" : "asc";
+    const orderBy = sortBy ? getBedOrderBy(sortBy, sortOrder) : null;
 
     if (
       statusParam &&
