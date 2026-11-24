@@ -28,6 +28,11 @@ function monthLabel(date: Date) {
   return date.toLocaleDateString("en", { month: "short", year: "numeric", timeZone: "UTC" });
 }
 
+function trendLabel(date: Date, period: string) {
+  if (period === "monthly") return monthLabel(date);
+  return date.toLocaleDateString("en", { month: "short", day: "numeric", timeZone: "UTC" });
+}
+
 export async function getDashboardData(req: AuthRequest, res: Response) {
   try {
     const actor = await getActorOrRespond(req, res);
@@ -40,9 +45,13 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
     const requestedEnd = parseDateParam(req.query.endDate);
     const requestedStatusDate = parseDateParam(req.query.statusDate);
     const requestedActivityDate = parseDateParam(req.query.activityDate);
+    const trendPeriod = req.query.trendPeriod ?? "daily";
 
     if (requestedStart === null || requestedEnd === null || requestedStatusDate === null || requestedActivityDate === null) {
       return res.status(400).json({ message: "Dates must use YYYY-MM-DD format." });
+    }
+    if (typeof trendPeriod !== "string" || !["daily", "weekly", "monthly"].includes(trendPeriod)) {
+      return res.status(400).json({ message: "trendPeriod must be daily, weekly, or monthly." });
     }
 
     const startDate = requestedStart ?? defaultStart;
@@ -56,9 +65,12 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
     const selectedDayEnd = dayEnd(statusDate);
     const weekStart = new Date(statusDate.getTime() - 6 * DAY_MS);
     const activityWeekStart = new Date(activityDate.getTime() - 6 * DAY_MS);
-    const trendStart = new Date(Date.UTC(startDate.getUTCFullYear(), startDate.getUTCMonth(), 1));
+    const trendStart = startDate;
     const trendEnd = dayEnd(endDate > today ? today : endDate);
-    const trendMonthCount = Math.max(1, (endDate.getUTCFullYear() - trendStart.getUTCFullYear()) * 12 + endDate.getUTCMonth() - trendStart.getUTCMonth() + 1);
+    const trendStepDays = trendPeriod === "daily" ? 1 : trendPeriod === "weekly" ? 7 : 0;
+    const trendBucketCount = trendPeriod === "monthly"
+      ? Math.max(1, (endDate.getUTCFullYear() - startDate.getUTCFullYear()) * 12 + endDate.getUTCMonth() - startDate.getUTCMonth() + 1)
+      : Math.floor((endDate.getTime() - startDate.getTime()) / (trendStepDays * DAY_MS)) + 1;
     const bookingSiteFilter = getSiteBookingFilter(actor);
     const roomFilter: Prisma.RoomWhereInput = roomSiteFilter(actor);
     const bedFilter: Prisma.BedWhereInput = {
@@ -110,6 +122,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
         where: roomFilter,
         select: {
           id: true,
+          floor: { select: { id: true, name: true, floorNumber: true, location: { select: { id: true, name: true } } } },
           allocation: { select: { id: true } },
           beds: {
             where: { isActive: true },
@@ -179,16 +192,20 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
       }),
     ]);
 
-    const trend = Array.from({ length: trendMonthCount }, (_, index) => {
-      const month = new Date(Date.UTC(trendStart.getUTCFullYear(), trendStart.getUTCMonth() + index, 1));
-      const monthEnd = dayEnd(new Date(Date.UTC(month.getUTCFullYear(), month.getUTCMonth() + 1, 1)));
-      const asOf = monthEnd > trendEnd ? trendEnd : monthEnd;
+    const trend = Array.from({ length: trendBucketCount }, (_, index) => {
+      const bucketStart = new Date(trendStart);
+      if (trendPeriod === "monthly") bucketStart.setUTCMonth(bucketStart.getUTCMonth() + index);
+      else bucketStart.setUTCDate(bucketStart.getUTCDate() + index * trendStepDays);
+      const bucketEnd = trendPeriod === "monthly"
+        ? dayEnd(new Date(Date.UTC(bucketStart.getUTCFullYear(), bucketStart.getUTCMonth() + 1, 1)))
+        : dayEnd(new Date(bucketStart.getTime() + (trendStepDays - 1) * DAY_MS));
+      const asOf = bucketEnd > trendEnd ? trendEnd : bucketEnd;
       const active = trendBookings.filter((booking) =>
         booking.checkedInAt && booking.checkedInAt <= asOf &&
         (!booking.checkedOutAt || booking.checkedOutAt > asOf),
       );
       const occupiedBedIds = new Set(active.map((booking) => booking.bedId));
-      return { month: monthLabel(month), occupancyRate: totalBeds ? Number(((occupiedBedIds.size / totalBeds) * 100).toFixed(1)) : 0 };
+      return { label: trendLabel(bucketStart, trendPeriod), occupancyRate: totalBeds ? Number(((occupiedBedIds.size / totalBeds) * 100).toFixed(1)) : 0 };
     });
 
     const bedStatuses: Record<string, number> = Object.fromEntries(BED_STATUS_ORDER.map((status) => [status, 0]));
@@ -210,6 +227,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
         checkOuts: weeklyActivityBookings.filter((booking) => booking.checkedOutAt && booking.checkedOutAt >= date && booking.checkedOutAt < nextDate).length,
       };
     });
+    const bedStatusSnapshot: { locationId: string; locationName: string; floorId: string; floorName: string; status: string }[] = [];
     for (const room of snapshotRooms) {
       for (const bed of room.beds) {
         const roomBookings = bed.bookings;
@@ -233,6 +251,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
           : isBooked ? "Booked"
             : room.allocation ? "Allocated" : "Vacant";
         bedStatuses[status] += 1;
+        bedStatusSnapshot.push({ locationId: room.floor.location.id, locationName: room.floor.location.name, floorId: room.floor.id, floorName: room.floor.name, status });
       }
     }
 
@@ -253,6 +272,7 @@ export async function getDashboardData(req: AuthRequest, res: Response) {
       },
       trend,
       bedStatuses: BED_STATUS_ORDER.map((status) => ({ status, count: bedStatuses[status] })),
+      bedStatusSnapshot,
       bookingStatuses: BOOKING_STATUS_ORDER.map((status) => ({ status, count: bookingStatusCounts.find((entry) => entry.status === status)?._count._all ?? 0 })),
       dayActivity,
       weeklyActivity,
