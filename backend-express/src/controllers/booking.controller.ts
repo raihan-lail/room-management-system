@@ -135,6 +135,79 @@ function getHistoricalFrontDeskTabFilter(
   }
 }
 
+const BOOKING_SORT_KEYS = new Set([
+  "booking_id",
+  "room",
+  "bed",
+  "guest",
+  "gender",
+  "country",
+  "department",
+  "meal_type",
+  "booked_at",
+  "started_at",
+  "ended_at",
+  "duration",
+  "status",
+  "notes",
+]);
+
+function getBookingOrderBy(
+  sortBy: string,
+  sortOrder: Prisma.SortOrder,
+): Prisma.BookingOrderByWithRelationInput[] | null {
+  const tieBreaker: Prisma.BookingOrderByWithRelationInput = { id: "asc" };
+
+  switch (sortBy) {
+    case "booking_id":
+      return [{ id: sortOrder }];
+    case "room":
+      return [{ bed: { room: { name: sortOrder } } }, tieBreaker];
+    case "bed":
+      return [{ bed: { name: sortOrder } }, tieBreaker];
+    case "guest":
+      return [{ resident: { fullName: sortOrder } }, tieBreaker];
+    case "gender":
+      return [{ resident: { gender: sortOrder } }, tieBreaker];
+    case "country":
+      return [{ resident: { nationality: sortOrder } }, tieBreaker];
+    case "department":
+      return [{ resident: { department: sortOrder } }, tieBreaker];
+    case "meal_type":
+      return [{ resident: { mealType: sortOrder } }, tieBreaker];
+    case "booked_at":
+      return [{ createdAt: sortOrder }, tieBreaker];
+    case "started_at":
+      return [{ startedAt: sortOrder }, tieBreaker];
+    case "ended_at":
+      return [{ endedAt: sortOrder }, tieBreaker];
+    case "status":
+      return [{ status: sortOrder }, tieBreaker];
+    case "notes":
+      return [{ notes: sortOrder }, tieBreaker];
+    default:
+      return null;
+  }
+}
+
+function bookingDurationInDays(booking: {
+  startedAt: Date;
+  endedAt: Date;
+}): number {
+  const start = Date.UTC(
+    booking.startedAt.getUTCFullYear(),
+    booking.startedAt.getUTCMonth(),
+    booking.startedAt.getUTCDate(),
+  );
+  const end = Date.UTC(
+    booking.endedAt.getUTCFullYear(),
+    booking.endedAt.getUTCMonth(),
+    booking.endedAt.getUTCDate(),
+  );
+
+  return Math.round((end - start) / 86400000);
+}
+
 export async function listBookings(
   req: AuthRequest,
   res: Response
@@ -156,6 +229,34 @@ export async function listBookings(
       typeof req.query.search === "string"
         ? req.query.search.trim()
         : "";
+
+    const sortBy =
+      typeof req.query.sortBy === "string" ? req.query.sortBy.trim() : "";
+    const sortOrderParam =
+      typeof req.query.sortOrder === "string"
+        ? req.query.sortOrder.trim()
+        : "";
+
+    if (sortBy && !BOOKING_SORT_KEYS.has(sortBy)) {
+      sendError(res, 400, "Invalid sort field.");
+      return;
+    }
+
+    if (
+      sortOrderParam &&
+      sortOrderParam !== "asc" &&
+      sortOrderParam !== "desc"
+    ) {
+      sendError(res, 400, "Invalid sort order.");
+      return;
+    }
+
+    const sortOrder: Prisma.SortOrder =
+      sortOrderParam === "desc" ? "desc" : "asc";
+    const sortOrderBy =
+      sortBy && sortBy !== "duration"
+        ? getBookingOrderBy(sortBy, sortOrder)
+        : null;
 
     const where: Prisma.BookingWhereInput = {
       AND: [getSiteBookingFilter(actor)],
@@ -426,57 +527,113 @@ export async function listBookings(
       ];
     }
 
-    const [total, bookings] = await prisma.$transaction([
-      prisma.booking.count({ where }),
-      prisma.booking.findMany({
-        where,
-        skip,
-        take: limit,
-        orderBy: [
-          { startedAt: "asc" },
-          { createdAt: "desc" },
-        ],
-        include: {
-          resident: {
+    const bookingInclude: Prisma.BookingInclude = {
+      resident: {
+        select: {
+          id: true,
+          fullName: true,
+          phone: true,
+          gender: true,
+          nationality: true,
+          mealType: true,
+          company: true,
+          department: true,
+          title: true,
+          user: {
             select: {
-              id: true,
-              fullName: true,
-              phone: true,
-              gender: true,
-              nationality: true,
-              mealType: true,
-              company: true,
-              department: true,
-              title: true,
-              user: {
-                select: {
-                  email: true,
-                  isActive: true,
-                },
-              },
+              email: true,
+              isActive: true,
             },
           },
-          bed: {
+        },
+      },
+      bed: {
+        include: {
+          room: {
             include: {
-              room: {
+              floor: {
                 include: {
-                  floor: {
+                  location: {
                     include: {
-                      location: {
-                        include: {
-                          site: true,
-                        },
-                      },
+                      site: true,
                     },
                   },
                 },
               },
             },
           },
-          homeLeaves: {
-            orderBy: { startedAt: "desc" },
-          },
         },
+      },
+      homeLeaves: {
+        orderBy: { startedAt: "desc" },
+      },
+    };
+
+    /*
+     * Duration is a computed value, so Prisma cannot order by
+     * it directly. Fetch only the dates, sort the full filtered
+     * set, then load the requested page in the sorted order.
+     */
+    if (sortBy === "duration") {
+      const durationRows = await prisma.booking.findMany({
+        where,
+        select: {
+          id: true,
+          startedAt: true,
+          endedAt: true,
+        },
+      });
+      const direction = sortOrder === "asc" ? 1 : -1;
+
+      durationRows.sort((a, b) => {
+        const difference =
+          bookingDurationInDays(a) - bookingDurationInDays(b);
+
+        if (difference !== 0) return difference * direction;
+        return a.id.localeCompare(b.id);
+      });
+
+      const total = durationRows.length;
+      const pageIds = durationRows
+        .slice(skip, skip + limit)
+        .map((row) => row.id);
+      const pageBookings = pageIds.length
+        ? await prisma.booking.findMany({
+            where: { id: { in: pageIds } },
+            include: bookingInclude,
+          })
+        : [];
+      const bookingById = new Map(
+        pageBookings.map((booking) => [booking.id, booking]),
+      );
+      const bookings = pageIds.flatMap((id) => {
+        const booking = bookingById.get(id);
+        return booking ? [booking] : [];
+      });
+
+      res.status(200).json({
+        data: bookings,
+        pagination: {
+          page,
+          limit,
+          total,
+          totalPages: Math.ceil(total / limit),
+        },
+      });
+      return;
+    }
+
+    const [total, bookings] = await prisma.$transaction([
+      prisma.booking.count({ where }),
+      prisma.booking.findMany({
+        where,
+        skip,
+        take: limit,
+        orderBy: sortOrderBy ?? [
+          { startedAt: "asc" },
+          { createdAt: "desc" },
+        ],
+        include: bookingInclude,
       }),
     ]);
 
