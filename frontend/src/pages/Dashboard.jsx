@@ -20,24 +20,26 @@ function ChartCanvas({ type, data, options }) {
 }
 
 const today = new Date().toISOString().slice(0, 10);
-const halfYearAgo = new Date();
-halfYearAgo.setUTCMonth(halfYearAgo.getUTCMonth() - 5, 1);
-const defaultStart = halfYearAgo.toISOString().slice(0, 10);
+const defaultStart = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().slice(0, 10);
 
 export default function Dashboard() {
   const [startDate, setStartDate] = useState(defaultStart);
   const [endDate, setEndDate] = useState(today);
+  const [trendPeriod, setTrendPeriod] = useState("daily");
   const [statusDate, setStatusDate] = useState(today);
+  const [bedLocation, setBedLocation] = useState("");
+  const [bedFloor, setBedFloor] = useState("");
   const [activityDate, setActivityDate] = useState(today);
   const [data, setData] = useState(null);
   const [error, setError] = useState("");
+  const [exportingActivity, setExportingActivity] = useState(false);
 
   useEffect(() => {
-    const params = new URLSearchParams({ startDate, endDate, statusDate, activityDate });
+    const params = new URLSearchParams({ startDate, endDate, statusDate, activityDate, trendPeriod });
     apiRequest(`/api/dashboard?${params}`)
       .then((result) => { setData(result); setError(""); })
       .catch((requestError) => setError(requestError.message || "Failed to load dashboard data."));
-  }, [startDate, endDate, statusDate, activityDate]);
+  }, [startDate, endDate, statusDate, activityDate, trendPeriod]);
 
   const sharedOptions = useMemo(() => ({
     responsive: true,
@@ -63,14 +65,57 @@ export default function Dashboard() {
   }), [sharedOptions]);
   const pieOptions = useMemo(() => ({ ...sharedOptions, plugins: { ...sharedOptions.plugins, legend: { ...sharedOptions.plugins.legend, position: "bottom" } } }), [sharedOptions]);
 
+  const bedLocations = useMemo(() => [...new Map((data?.bedStatusSnapshot ?? []).map((bed) => [bed.locationId, { id: bed.locationId, name: bed.locationName }])).values()].sort((a, b) => a.name.localeCompare(b.name)), [data]);
+  const bedFloors = useMemo(() => [...new Map((data?.bedStatusSnapshot ?? []).filter((bed) => !bedLocation || bed.locationId === bedLocation).map((bed) => [bed.floorId, { id: bed.floorId, name: bed.floorName }])).values()].sort((a, b) => a.name.localeCompare(b.name)), [data, bedLocation]);
+  const filteredBedStatuses = useMemo(() => {
+    const counts = Object.fromEntries((data?.bedStatuses ?? []).map(({ status }) => [status, 0]));
+    (data?.bedStatusSnapshot ?? []).filter((bed) => (!bedLocation || bed.locationId === bedLocation) && (!bedFloor || bed.floorId === bedFloor)).forEach((bed) => { counts[bed.status] += 1; });
+    return Object.entries(counts).map(([status, count]) => ({ status, count }));
+  }, [data, bedLocation, bedFloor]);
+
+  const changeTrendPeriod = (period) => {
+    const end = new Date(`${today}T00:00:00.000Z`);
+    const start = new Date(end);
+    if (period === "daily") start.setUTCDate(start.getUTCDate() - 7);
+    if (period === "weekly") start.setUTCDate(start.getUTCDate() - 7 * 11);
+    if (period === "monthly") {
+      start.setUTCDate(1);
+      start.setUTCMonth(start.getUTCMonth() - 11);
+    }
+    setTrendPeriod(period);
+    setStartDate(start.toISOString().slice(0, 10));
+    setEndDate(today);
+  };
+
+  const exportDailyActivity = async () => {
+    if (exportingActivity) return;
+    setExportingActivity(true);
+    setError("");
+    try {
+      const file = await apiRequest(`/api/booking/daily-activity/export?date=${statusDate}`, { responseType: "blob" });
+      const url = URL.createObjectURL(file);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = `check-ins-check-outs-${statusDate}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (requestError) {
+      setError(requestError.message || "Failed to export daily check-ins and check-outs.");
+    } finally {
+      setExportingActivity(false);
+    }
+  };
+
   const trendData = useMemo(() => ({
-    labels: data?.trend.map((item) => item.month) ?? [],
+    labels: data?.trend.map((item) => item.label) ?? [],
     datasets: [{ label: "Occupancy", data: data?.trend.map((item) => item.occupancyRate) ?? [], borderColor: chartColors.primary, backgroundColor: chartColors.primaryFade, fill: true, tension: 0.25, borderWidth: 2, pointRadius: 3 }],
   }), [data]);
   const bedData = useMemo(() => ({
-    labels: data?.bedStatuses.map((item) => item.status) ?? [],
-    datasets: [{ label: "Beds", data: data?.bedStatuses.map((item) => item.count) ?? [], backgroundColor: [chartColors.primary, chartColors.primaryMid, chartColors.primarySoft, chartColors.brandSoft, chartColors.muted], borderRadius: 4, maxBarThickness: 46 }],
-  }), [data]);
+    labels: filteredBedStatuses.map((item) => item.status),
+    datasets: [{ label: "Beds", data: filteredBedStatuses.map((item) => item.count), backgroundColor: [chartColors.primary, chartColors.primaryMid, chartColors.primarySoft, chartColors.brandSoft, chartColors.muted], borderRadius: 4, maxBarThickness: 46 }],
+  }), [filteredBedStatuses]);
   const bookingData = useMemo(() => ({
     labels: data?.bookingStatuses.map((item) => item.status.replaceAll("_", " ")) ?? [],
     datasets: [{ label: "Bookings", data: data?.bookingStatuses.map((item) => item.count) ?? [], backgroundColor: [chartColors.primary, chartColors.primaryMid, chartColors.primarySoft, chartColors.muted, chartColors.brandSoft], borderColor: "#ffffff", borderWidth: 2 }],
@@ -85,7 +130,7 @@ export default function Dashboard() {
   const summary = data?.summary;
   const stats = [
     ["Total Rooms / Beds", `${summary?.totalRooms ?? "—"} / ${summary?.totalBeds ?? "—"}`, "bi-door-open"],
-    ["Available Beds", summary?.availableBeds ?? "—", "bi-check2-square"],
+    ["Occupied Beds / Available Beds", `${summary?.occupiedBeds ?? "—"} / ${summary?.totalBeds ?? "—"}`, "bi-check2-square"],
     ["Occupancy Rate", `${summary?.occupancyRate ?? "—"}%`, "bi-graph-up-arrow"],
     ["Today's Check In / Check Out", `${summary?.totalCheckIns ?? "—"} / ${summary?.totalCheckOuts ?? "—"}`, "bi-calendar-check"],
   ];
@@ -111,7 +156,7 @@ export default function Dashboard() {
         <div className="dashboard-charts">
           <section className="dashboard-chart dashboard-chart--trend">
             <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Occupancy Trend</h2><p className="dashboard-chart__caption">Occupied beds as a percentage of all beds</p></div>
-              <div className="dashboard-date-filters"><label className="calendar-date-filter"><span>From</span><input type="date" value={startDate} max={endDate} onChange={(event) => setStartDate(event.target.value)} /></label><label className="calendar-date-filter"><span>To</span><input type="date" value={endDate} min={startDate} max={today} onChange={(event) => setEndDate(event.target.value)} /></label></div>
+              <label className="calendar-date-filter"><span>View</span><select value={trendPeriod} onChange={(event) => changeTrendPeriod(event.target.value)}><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="monthly">Monthly</option></select></label>
             </div>
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="line" data={trendData} options={lineOptions} />}</div>
           </section>
@@ -120,11 +165,11 @@ export default function Dashboard() {
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="pie" data={bookingData} options={pieOptions} />}</div>
           </section>
           <section className="dashboard-chart dashboard-chart--bed">
-            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Bed Status</h2><p className="dashboard-chart__caption">Beds by status on the selected date</p></div><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label></div>
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Bed Status</h2><p className="dashboard-chart__caption">Beds by status on the selected date</p></div><div className="dashboard-date-filters"><label className="calendar-date-filter"><span>Location</span><select value={bedLocation} onChange={(event) => { setBedLocation(event.target.value); setBedFloor(""); }}><option value="">All locations</option>{bedLocations.map((location) => <option key={location.id} value={location.id}>{location.name}</option>)}</select></label><label className="calendar-date-filter"><span>Floor</span><select value={bedFloor} onChange={(event) => setBedFloor(event.target.value)}><option value="">All floors</option>{bedFloors.map((floor) => <option key={floor.id} value={floor.id}>{floor.name}</option>)}</select></label><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label></div></div>
             <div className="dashboard-chart__canvas">{data && <ChartCanvas type="bar" data={bedData} options={barOptions} />}</div>
           </section>
           <section className="dashboard-chart dashboard-chart--activity">
-            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Latest activity for the selected day</p></div><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label></div>
+            <div className="dashboard-chart__head"><div className="dashboard-chart__text"><h2 className="dashboard-chart__title">Check-ins &amp; Check-outs</h2><p className="dashboard-chart__caption">Latest activity for the selected day</p></div><div className="dashboard-date-filters"><label className="calendar-date-filter"><span>Date</span><input type="date" value={statusDate} max={today} onChange={(event) => setStatusDate(event.target.value)} /></label><button type="button" className="btn btn-neutral" onClick={exportDailyActivity} disabled={exportingActivity}>{exportingActivity ? "Exporting…" : "Export Excel"}</button></div></div>
             {data?.dayActivity?.length ? <div className="dashboard-activity-list" aria-live="polite">
               <table className="dashboard-activity-table">
                 <thead><tr><th scope="col">Event</th><th scope="col">Resident</th><th scope="col">Time</th></tr></thead>

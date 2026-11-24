@@ -925,6 +925,8 @@ export async function exportBookingsToExcel(
         resident: {
           select: {
             fullName: true,
+            phone: true,
+            user: { select: { email: true } },
             nationality: true,
             mealType: true,
             gender: true,
@@ -949,6 +951,9 @@ export async function exportBookingsToExcel(
       "Bed": booking.bed.name,
       "Booking Status": booking.status,
       "Resident Name": booking.resident.fullName,
+      "Email": booking.resident.user.email,
+      "Phone": booking.resident.phone,
+      
       Nationality: booking.resident.nationality ?? "",
       "Meal Type": booking.resident.mealType,
       Gender: booking.resident.gender,
@@ -993,6 +998,83 @@ export async function exportBookingsToExcel(
     if (res.headersSent) return;
 
     sendError(res, 500, "Failed to export bookings.");
+  }
+}
+
+export async function exportDailyCheckInOutToExcel(req: AuthRequest, res: Response): Promise<void> {
+  const actor = await getActorOrRespond(req, res);
+  if (!actor) return;
+
+  try {
+    const date = typeof req.query.date === "string" ? req.query.date : "";
+    const dateRange = getSiteDateRange(date);
+    if (!dateRange || dateRange.start.toISOString().slice(0, 10) !== date) {
+      sendError(res, 400, "A valid date is required. Use YYYY-MM-DD.");
+      return;
+    }
+
+    const bookings = await prisma.booking.findMany({
+      where: {
+        AND: [
+          getSiteBookingFilter(actor),
+          { OR: [
+            { checkedInAt: { gte: dateRange.start, lt: dateRange.end } },
+            { checkedOutAt: { gte: dateRange.start, lt: dateRange.end } },
+          ] },
+        ],
+      },
+      include: {
+        resident: { select: { fullName: true, phone:true, user: { select: { email: true } },  nationality: true, mealType: true, gender: true, company: true, department: true, title: true } },
+        bed: { include: { room: { select: { name: true } } } },
+      },
+      orderBy: [{ checkedInAt: "asc" }, { checkedOutAt: "asc" }],
+    });
+
+    if (!bookings.length) {
+      sendError(res, 400, "No check-ins or check-outs match the selected date.");
+      return;
+    }
+
+    const rows = bookings.map((booking) => ({
+      "Booking ID": booking.bookingNumber,
+      Room: booking.bed.room.name,
+      Bed: booking.bed.name,
+      "Booking Status": booking.status,
+      "Resident Name": booking.resident.fullName,
+      "Email": booking.resident.user.email,
+      "Phone": booking.resident.phone,
+      
+      Nationality: booking.resident.nationality ?? "",
+      "Meal Type": booking.resident.mealType,
+      Gender: booking.resident.gender,
+      Company: booking.resident.company ?? "",
+      Department: booking.resident.department,
+      Title: booking.resident.title ?? "",
+      "Start Date": formatTimestapWithoutHours(booking.startedAt),
+      "End Date": formatTimestapWithoutHours(booking.endedAt),
+      "Checked In At": formatTimestamp(booking.checkedInAt),
+      "Checked Out At": formatTimestamp(booking.checkedOutAt),
+    }));
+    const workbook = XLSX.utils.book_new();
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = [
+      { wch: 20 }, { wch: 20 }, { wch: 18 }, { wch: 28 }, { wch: 20 },
+      { wch: 18 }, { wch: 14 }, { wch: 25 }, { wch: 20 }, { wch: 24 }, { wch: 24 },
+    ];
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Bookings");
+    const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
+    const filename = `check-ins-check-outs-${date}.xlsx`;
+
+    await notifyActor(req, { title: "Daily check-in and check-out export successful", message: `${bookings.length} bookings exported for ${date}`, type: "SUCCESS" });
+    await auditActor(req, actor, { action: "Export", resource: "booking", description: `Exported ${bookings.length} check-in/check-out bookings for ${date}.` });
+    res.setHeader("Content-Type", "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet");
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Cache-Control", "no-store");
+    res.status(200).send(buffer);
+  } catch (error) {
+    console.error("Export daily check-ins and check-outs error:", error);
+    if (res.headersSent) return;
+    sendError(res, 500, "Failed to export daily check-ins and check-outs.");
   }
 }
 
