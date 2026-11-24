@@ -271,7 +271,7 @@ export async function listBookings(
             ];
           } else {
             where.status = { in: IN_HOUSE_STATUSES };
-            where.endedAt = { gte: start, lt: end };
+            where.endedAt = { lt: end };
           }
           break;
       }
@@ -671,7 +671,7 @@ export async function exportBookingsToExcel(
           if (req.query.frontdeskHistory === "true") {
             tabFilters.push(getHistoricalFrontDeskTabFilter("departure", start, end)!);
           } else {
-            tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { gte: start, lt: end } });
+            tabFilters.push({ status: { in: IN_HOUSE_STATUSES } }, { endedAt: { lt: end } });
           }
           break;
       }

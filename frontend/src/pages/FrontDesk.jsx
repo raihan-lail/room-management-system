@@ -597,6 +597,9 @@ export default function FrontDesk() {
   const overdueArrivalCount = segment === "arrival" && isCurrentRange
     ? bookingList.filter((booking) => booking.started_at && booking.started_at < getTodayKey()).length
     : 0;
+  const overdueDepartureCount = segment === "departure" && isCurrentRange
+    ? bookingList.filter((booking) => booking.ended_at && booking.ended_at < getTodayKey()).length
+    : 0;
 
   const startRow =
     bookingPagination.total === 0 ? 0 : (safePage - 1) * pageSize + 1;
@@ -837,6 +840,11 @@ aria-label={
               {overdueArrivalCount} arrival{overdueArrivalCount === 1 ? " has" : "s have"} passed the started_at date
             </div>
           )}
+          {overdueDepartureCount > 0 && (
+            <div className="frontdesk-overdue-alert" role="alert">
+              {overdueDepartureCount} departure{overdueDepartureCount === 1 ? " has" : "s have"} passed the ended_at date
+            </div>
+          )}
           <div className="office-table-wrapper">
             <table className="office-table">
               <thead>
@@ -1044,7 +1052,8 @@ aria-label={
                           : booking.id
                       }
                       className={
-                        (segment === "arrival" && isCurrentRange && booking.started_at && booking.started_at < getTodayKey())
+                        (segment === "arrival" && isCurrentRange && booking.started_at && booking.started_at < getTodayKey()) ||
+                        (segment === "departure" && isCurrentRange && booking.ended_at && booking.ended_at < getTodayKey())
                           ? "frontdesk-row--overdue"
                           : ""
                       }
