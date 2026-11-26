@@ -723,8 +723,11 @@ export async function exportBookingsToExcel(
       sendError(res, 400, "Invalid gender filter.");
       return;
     }
-    const statusInput = getParam("status").toUpperCase();
-    if (statusInput && !Object.values(BookingStatus).includes(statusInput as BookingStatus)) {
+    const statusInput = getParam("status")
+      .split(",")
+      .map((status) => status.trim().toUpperCase())
+      .filter(Boolean);
+    if (statusInput.some((status) => !Object.values(BookingStatus).includes(status as BookingStatus))) {
       sendError(res, 400, "Invalid booking status filter.");
       return;
     }
@@ -911,7 +914,7 @@ export async function exportBookingsToExcel(
       ...(startedAtFilter ? [{ startedAt: startedAtFilter }] : []),
       ...(checkedInAtFilter ? [{ checkedInAt: checkedInAtFilter }] : []),
       ...(checkedOutAtFilter ? [{ checkedOutAt: checkedOutAtFilter }] : []),
-      ...(statusInput ? [{ status: statusInput as BookingStatus }] : []),
+      ...(statusInput.length ? [{ status: { in: statusInput as BookingStatus[] } }] : []),
       ...(Object.keys(residentFilters).length
         ? [{ resident: residentFilters }]
         : []),

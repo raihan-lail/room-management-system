@@ -502,6 +502,7 @@ model AuditLog {
   id          String   @id @default(cuid())
   actorUserId String?
   actorName   String?
+  actorEmail  String?
   action      String
   resource    String
   resourceId  String?

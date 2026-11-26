@@ -23,6 +23,7 @@ export async function getAuditLogs(
     );
 
     const actorUserId = singleParam(req.query.actorUserId);
+    const actorEmail = singleParam(req.query.actorEmail);
     const actorName = singleParam(req.query.actorName);
     const resourceId = singleParam(req.query.resourceId);
     const description = singleParam(req.query.description);
@@ -36,6 +37,14 @@ export async function getAuditLogs(
       ...(actorUserId ? { actorUserId } : {}),
       ...(actorName
         ? { actorName: { contains: actorName, mode: "insensitive" as const } }
+        : {}),
+      ...(actorEmail
+        ? {
+            actorEmail: {
+              contains: actorEmail,
+              mode: "insensitive" as const,
+            },
+          }
         : {}),
       ...(actions
         ? actions.length === 1
@@ -62,6 +71,12 @@ export async function getAuditLogs(
               },
               {
                 actorName: {
+                  contains: search,
+                  mode: "insensitive" as const,
+                },
+              },
+              {
+                actorEmail: {
                   contains: search,
                   mode: "insensitive" as const,
                 },

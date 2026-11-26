@@ -15,6 +15,7 @@ export async function getActor(userId: string) {
   return prisma.employee.findUnique({
     where: { userId },
     include: {
+      user: { select: { email: true } },
       roles: {
         include: {
           role: {
