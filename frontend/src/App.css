@@ -4614,6 +4614,12 @@ textarea,
   color: var(--brand-bold);
 }
 
+.modal__close:disabled {
+  opacity: 0.5;
+
+  cursor: not-allowed;
+}
+
 .modal__form {
   display: flex;
   flex-direction: column;
@@ -4706,6 +4712,16 @@ textarea,
   height: 16px;
 
   cursor: pointer;
+}
+
+.modal__checkbox.is-disabled {
+  opacity: 0.6;
+
+  cursor: not-allowed;
+}
+
+.modal__checkbox.is-disabled input {
+  cursor: not-allowed;
 }
 
 .modal__actions {

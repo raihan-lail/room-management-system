@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import apiRequest from "../../api/client";
 import useAuth from "../../contexts/useAuth";
 import { COUNTRIES } from "../../data/countries";
@@ -55,6 +55,19 @@ function addOneYear(isoDate) {
   return date.toISOString().slice(0, 10);
 }
 
+function getActiveFloors(location) {
+  return (location?.floors ?? []).filter((floor) => floor.isActive !== false);
+}
+
+function SummaryItem({ label, value }) {
+  return (
+    <div className="detail-grid__item">
+      <p className="detail-grid__label">{label}</p>
+      <p className="detail-grid__value">{value || "-"}</p>
+    </div>
+  );
+}
+
 
 
 export default function BookingCreateModal({ onClose, onCreated, initialValues, lockedBed }) {
@@ -64,15 +77,25 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   const [residents, setResidents] = useState([]);
   const [beds, setBeds] = useState([]);
   const [sites, setSites] = useState([]);
+  const [locations, setLocations] = useState([]);
+  const [selectedLocation, setSelectedLocation] = useState("");
+  const [selectedFloor, setSelectedFloor] = useState("");
   const [values, setValues] = useState(() => ({ ...EMPTY_VALUES, ...initialValues }));
   const [residentMode, setResidentMode] = useState("existing");
   const [newResident, setNewResident] = useState(EMPTY_NEW_RESIDENT);
   const [noEndDate, setNoEndDate] = useState(false);
+  const [step, setStep] = useState("form");
 
   const [isLoading, setIsLoading] = useState(true);
   const [isLoadingBeds, setIsLoadingBeds] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  const modalRef = useRef(null);
+
+  useEffect(() => {
+    modalRef.current?.scrollTo({ top: 0 });
+  }, [step]);
 
   const loadOptions = useCallback(async () => {
     setIsLoading(true);
@@ -84,9 +107,10 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         canManageResidents
           ? apiRequest("/api/site").catch(() => null)
           : Promise.resolve(null),
+        apiRequest("/api/location").catch(() => null),
       ];
 
-      const [residentResponse, siteResponse] =
+      const [residentResponse, siteResponse, locationResponse] =
         await Promise.all(requests);
 
       setResidents(
@@ -100,6 +124,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         : [];
 
       setSites(siteList);
+      setLocations(Array.isArray(locationResponse?.data) ? locationResponse.data : []);
 
       setNewResident((prev) => ({
         ...prev,
@@ -120,7 +145,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   );
 
   useEffect(() => {
-  if (!hasValidStayDates || lockedBed) {
+  if (!hasValidStayDates || !selectedLocation || !selectedFloor || lockedBed) {
     // Defer the state updates to satisfy the linter
     queueMicrotask(() => {
       setBeds([]);
@@ -140,6 +165,8 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
       const params = new URLSearchParams({
         status: "VACANT",
         pageSize: "100",
+        locationId: selectedLocation,
+        floorId: selectedFloor,
         startDate: values.startedAt,
         endDate: effectiveEndedAt,
       });
@@ -163,7 +190,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
   return () => {
     isCurrentRequest = false;
   };
-}, [hasValidStayDates, values.startedAt, effectiveEndedAt, lockedBed]);
+}, [hasValidStayDates, values.startedAt, effectiveEndedAt, selectedLocation, selectedFloor, lockedBed]);
 
   useEffect(() => {
     const timer = window.setTimeout(() => {
@@ -213,19 +240,151 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     return [];
   }, [sites, user]);
 
+  const locationOptions = useMemo(
+    () => locations.map((location) => ({ value: location.id, label: location.name })),
+    [locations],
+  );
+  const floorOptions = useMemo(() => {
+    const location = locations.find((item) => item.id === selectedLocation);
+
+    return getActiveFloors(location).map((floor) => ({
+      value: floor.id,
+      label: floor.name,
+    }));
+  }, [locations, selectedLocation]);
+
+  const selectedResident = useMemo(
+    () =>
+      residents.find((resident) => resident.id === values.residentId) ?? null,
+    [residents, values.residentId],
+  );
+
+  const selectedBed = useMemo(
+    () => lockedBed ?? beds.find((bed) => bed.id === values.bedId) ?? null,
+    [lockedBed, beds, values.bedId],
+  );
+
+  const genderLabel =
+    GENDER_OPTIONS.find(
+      (option) =>
+        option.value ===
+        (residentMode === "new" ? newResident.gender : selectedResident?.gender),
+    )?.label ?? "-";
+
+  const siteLabel =
+    residentMode === "new"
+      ? siteOptions.find((option) => option.value === newResident.siteId)?.label
+      : selectedResident?.site?.name;
+
+  const locationLabel =
+    selectedBed?.room?.floor?.location?.name ??
+    locations.find((location) => location.id === selectedLocation)?.name;
+
+  const floorLabel =
+    selectedBed?.room?.floor?.name ??
+    floorOptions.find((floor) => floor.value === selectedFloor)?.label;
+
+  const residentSummary =
+    residentMode === "new"
+      ? [
+          { label: "Full Name", value: newResident.fullName },
+          { label: "Email", value: newResident.email },
+          { label: "Phone", value: newResident.phone },
+          { label: "Gender", value: genderLabel },
+          { label: "Nationality", value: newResident.nationality },
+          { label: "Meal Type", value: newResident.mealType },
+          { label: "Company", value: newResident.company },
+          { label: "Department", value: newResident.department },
+          { label: "Title", value: newResident.title },
+          { label: "Site", value: siteLabel },
+        ]
+      : [
+          { label: "Full Name", value: selectedResident?.fullName },
+          { label: "Email", value: selectedResident?.user?.email },
+          { label: "Phone", value: selectedResident?.phone },
+          { label: "Gender", value: genderLabel },
+          { label: "Nationality", value: selectedResident?.nationality },
+          { label: "Meal Type", value: selectedResident?.mealType },
+          { label: "Company", value: selectedResident?.company },
+          { label: "Department", value: selectedResident?.department },
+          { label: "Title", value: selectedResident?.title },
+          { label: "Site", value: siteLabel },
+        ];
+
+  const bookingSummary = [
+    { label: "Location", value: locationLabel },
+    { label: "Floor", value: floorLabel },
+    { label: "Room", value: selectedBed?.room?.name },
+    { label: "Bed", value: selectedBed?.name },
+    { label: "Start Date", value: values.startedAt },
+    { label: "End Date", value: effectiveEndedAt },
+    { label: "Open-ended", value: noEndDate ? "Yes" : "No" },
+    { label: "Notes", value: values.notes.trim() },
+  ];
+
   
 
   const handleChange = (name, value) => {
-    setValues((prev) => ({
-      ...prev,
-      [name]: value,
-      ...(name === "startedAt" || name === "endedAt"
-        ? { bedId: lockedBed ? prev.bedId : "" }
-        : {}),
-    }));
+    setError("");
+
+    if (name === "startedAt" && !value) {
+      setNoEndDate(false);
+    }
+
+    setValues((prev) => {
+      const next = {
+        ...prev,
+        [name]: value,
+      };
+
+      if (name === "startedAt" || name === "endedAt") {
+        next.bedId = lockedBed ? prev.bedId : "";
+      }
+
+      if (name === "startedAt" && !value) {
+        next.endedAt = "";
+      }
+
+      /*
+       * Moving the start date past the current end
+       * date would leave the stay invalid.
+       */
+      if (
+        name === "startedAt" &&
+        !noEndDate &&
+        next.endedAt &&
+        value >= next.endedAt
+      ) {
+        next.endedAt = "";
+      }
+
+      return next;
+    });
+  };
+
+  const handleLocationChange = (_name, value) => {
+    setError("");
+    setSelectedLocation(value);
+
+    /*
+     * Selecting a location should make its first active
+     * floor effective so the vacant beds load right away.
+     */
+    const location = locations.find((item) => item.id === value);
+    const [firstFloor] = getActiveFloors(location);
+
+    setSelectedFloor(firstFloor?.id ?? "");
+    setValues((prev) => ({ ...prev, bedId: "" }));
+  };
+
+  const handleFloorChange = (_name, value) => {
+    setError("");
+    setSelectedFloor(value);
+    setValues((prev) => ({ ...prev, bedId: "" }));
   };
 
   const handleNewResidentChange = (name, value) => {
+    setError("");
     setNewResident((prev) => ({ ...prev, [name]: value }));
   };
 
@@ -248,12 +407,15 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     setError("");
   };
 
-  const handleSubmit = async (event) => {
-    event.preventDefault();
+  const handleRequestClose = () => {
+    if (isSubmitting) return;
 
+    onClose();
+  };
+
+  const validateBooking = () => {
     if (residentMode === "existing" && !values.residentId) {
-      setError("Select a resident.");
-      return;
+      return "Select a resident.";
     }
 
     if (residentMode === "new") {
@@ -265,16 +427,12 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
         !newResident.siteId 
        
       ) {
-        setError(
-          "Fill in the required resident fields.",
-        );
-        return;
+        return "Fill in the required resident fields.";
       }
     }
 
-    if (!values.bedId) {
-      setError("Select a vacant bed.");
-      return;
+    if (!values.startedAt || !effectiveEndedAt) {
+      return "Select the stay start and end dates.";
     }
 
     const startedAt = new Date(`${values.startedAt}T00:00:00.000Z`);
@@ -285,9 +443,35 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
       Number.isNaN(endedAt.getTime()) ||
       startedAt >= endedAt
     ) {
-      setError("The end date must be after the start date.");
+      return "The end date must be after the start date.";
+    }
+
+    if (!values.bedId) {
+      return "Select a vacant bed.";
+    }
+
+    return "";
+  };
+
+  const handleSubmit = (event) => {
+    event.preventDefault();
+
+    const validationError = validateBooking();
+
+    if (validationError) {
+      setError(validationError);
       return;
     }
+
+    setError("");
+    setStep("confirm");
+  };
+
+  const handleConfirm = async (event) => {
+    event.preventDefault();
+
+    const startedAt = new Date(`${values.startedAt}T00:00:00.000Z`);
+    const endedAt = new Date(`${effectiveEndedAt}T00:00:00.000Z`);
 
     setIsSubmitting(true);
     setError("");
@@ -345,6 +529,8 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     } catch (err) {
       const message = err.message || "Failed to create booking.";
 
+      setStep("form");
+
       /*
        * The resident is created before the booking, so a booking
        * failure must not leave the user without a way to reuse it.
@@ -369,31 +555,100 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
     }
   };
 
+  const modalTitle = step === "confirm" ? "Confirm Booking" : "Create Booking";
+
   return (
-    <div className="modal-overlay" onMouseDown={onClose}>
+    <div className="modal-overlay" onMouseDown={handleRequestClose}>
       <div
+        ref={modalRef}
         className="modal modal--wide"
         role="dialog"
         aria-modal="true"
-        aria-label="Create Booking"
+        aria-label={modalTitle}
         onMouseDown={(event) => event.stopPropagation()}
       >
         <div className="modal__header">
-          <h2 className="modal__title">Create Booking</h2>
+          <h2 className="modal__title">{modalTitle}</h2>
 
           <button
             type="button"
             className="modal__close"
-            onClick={onClose}
+            onClick={handleRequestClose}
             aria-label="Close"
+            disabled={isSubmitting}
           >
             <i className="bi bi-x-lg" aria-hidden="true" />
           </button>
         </div>
 
-        <form className="modal__form" onSubmit={handleSubmit}>
+        {step === "confirm" ? (
+          <form
+            className="modal__form"
+            onSubmit={handleConfirm}
+            aria-busy={isSubmitting}
+          >
+            <p className="muted">
+              Review the resident and booking details before creating this
+              booking.
+            </p>
+
+            <section className="modal__section">
+              <h3 className="modal__section-title">Resident</h3>
+
+              {residentMode === "new" && (
+                <p className="muted">
+                  A new resident will be created with this booking.
+                </p>
+              )}
+
+              <div className="detail-grid">
+                {residentSummary.map((field) => (
+                  <SummaryItem
+                    key={field.label}
+                    label={field.label}
+                    value={field.value}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <section className="modal__section">
+              <h3 className="modal__section-title">Booking</h3>
+
+              <div className="detail-grid">
+                {bookingSummary.map((field) => (
+                  <SummaryItem
+                    key={field.label}
+                    label={field.label}
+                    value={field.value}
+                  />
+                ))}
+              </div>
+            </section>
+
+            <div className="modal__actions">
+              <button
+                type="button"
+                className="btn btn-neutral"
+                onClick={() => setStep("form")}
+                disabled={isSubmitting}
+              >
+                Edit
+              </button>
+
+              <button
+                type="submit"
+                className="btn btn-primary"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? "Creating..." : "Confirm Booking"}
+              </button>
+            </div>
+          </form>
+        ) : (
+          <form className="modal__form" onSubmit={handleSubmit} aria-busy={isSubmitting}>
           {isLoading && (
-            <p className="muted">Loading resident and site options...</p>
+            <p className="muted">Loading options...</p>
           )}
 
           <section className="modal__section">
@@ -441,7 +696,14 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                   onChange={handleChange}
                 />
 
-                
+                {!isLoading && !error && residents.length === 0 && (
+                  <p className="muted">
+                    No residents found.
+                    {canManageResidents
+                      ? " Use Add new resident to create one."
+                      : ""}
+                  </p>
+                )}
               </>
             ) : (
               <>
@@ -583,7 +845,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
           </section>
 
           <section className="modal__section">
-            <h3 className="modal__section-title">2. Booking Data</h3>
+            <h3 className="modal__section-title">2. Stay &amp; Bed</h3>
 
             <div className="modal__grid">
               {lockedBed ? (
@@ -598,6 +860,7 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                   </label>
                 </>
               ) : null}
+
               <ModalField
                 field={{
                   name: "startedAt",
@@ -616,15 +879,20 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
                   type: noEndDate ? "text" : "date",
                   required: true,
                   readOnly: noEndDate,
+                  min: noEndDate ? undefined : values.startedAt || undefined,
                 }}
                 value={noEndDate ? autoEndedAt : values.endedAt}
                 onChange={handleChange}
               />
 
-              <label className="modal__checkbox">
+              <label
+                className={`modal__checkbox${values.startedAt ? "" : " is-disabled"}`}
+                title={values.startedAt ? undefined : "Select a start date first"}
+              >
                 <input
                   type="checkbox"
                   checked={noEndDate}
+                  disabled={!values.startedAt}
                   onChange={(event) =>
                     handleNoEndDateChange(event.target.checked)
                   }
@@ -635,34 +903,69 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
               </label>
 
               {!lockedBed && (
-                <ModalField
-                  field={{
-                    name: "bedId",
-                    label: "Vacant Bed",
-                    type: "select",
-                    options: bedOptions,
-                    placeholderOption: !hasValidStayDates
-                      ? "Select stay dates first"
-                      : isLoadingBeds
-                        ? "Loading available beds..."
-                        : "Select a vacant bed",
-                    searchPlaceholder: "Search by room or bed...",
-                    searchable: true,
-                    required: true,
-                  }}
-                  value={values.bedId}
-                  values={values}
-                  onChange={handleChange}
-                />
+                <>
+                  <ModalField
+                    field={{
+                      name: "locationId",
+                      label: "Location",
+                      type: "select",
+                      options: locationOptions,
+                      placeholderOption: "Select a location",
+                      required: true,
+                    }}
+                    value={selectedLocation}
+                    onChange={handleLocationChange}
+                  />
+
+                  <ModalField
+                    field={{
+                      name: "floorId",
+                      label: "Floor",
+                      type: "select",
+                      options: floorOptions,
+                      placeholderOption: selectedLocation ? "Select a floor" : "Select a location first",
+                      required: true,
+                    }}
+                    value={selectedFloor}
+                    onChange={handleFloorChange}
+                  />
+
+                  <ModalField
+                    field={{
+                      name: "bedId",
+                      label: "Vacant Bed",
+                      type: "select",
+                      options: bedOptions,
+                      placeholderOption: !hasValidStayDates
+                        ? "Select stay dates first"
+                        : !selectedLocation || !selectedFloor
+                          ? "Select a location and floor first"
+                        : isLoadingBeds
+                          ? "Loading available beds..."
+                          : "Select a vacant bed",
+                      searchPlaceholder: "Search by room or bed...",
+                      searchable: true,
+                      required: true,
+                    }}
+                    value={values.bedId}
+                    values={values}
+                    onChange={handleChange}
+                  />
+                </>
               )}
             </div>
 
             {!lockedBed &&
               hasValidStayDates &&
-              !isLoadingBeds &&
-              beds.length === 0 && (
+              selectedLocation &&
+              selectedFloor &&
+              !isLoadingBeds && (
                 <p className="muted">
-                  No vacant beds are available for these dates.
+                  {beds.length === 0
+                    ? "No vacant beds are available for these dates."
+                    : `${beds.length} vacant ${
+                        beds.length === 1 ? "bed" : "beds"
+                      } available for these dates.`}
                 </p>
               )}
 
@@ -678,9 +981,18 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
             />
           </section>
 
-          {error && <p className="error-text">{error}</p>}
+          {error && (
+            <p className="error-text" role="alert">
+              {error}
+            </p>
+          )}
           <div className="modal__actions">
-            <button type="button" className="btn btn-neutral" onClick={onClose}>
+            <button
+              type="button"
+              className="btn btn-neutral"
+              onClick={handleRequestClose}
+              disabled={isSubmitting}
+            >
               Cancel
             </button>
 
@@ -689,10 +1001,11 @@ export default function BookingCreateModal({ onClose, onCreated, initialValues, 
               className="btn btn-primary"
               disabled={isLoading || isSubmitting}
             >
-              {isSubmitting ? "Creating..." : "Create Booking"}
+              {isSubmitting ? "Creating..." : "Review Booking"}
             </button>
           </div>
-        </form>
+          </form>
+        )}
       </div>
     </div>
   );
