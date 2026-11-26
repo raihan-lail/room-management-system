@@ -315,7 +315,6 @@ export default function Sidebar({
                     />
                   )}
 
-               
                 {hasChildren && (
                   <i
                     className={`bi ${
@@ -357,7 +356,7 @@ export default function Sidebar({
                           aria-hidden="true"
                         />
 
-                        <span>
+                        <span className="side-nav-link__label">
                           {child.label}
                         </span>
                         {isComplaintItem && hasComplaintAlerts && (

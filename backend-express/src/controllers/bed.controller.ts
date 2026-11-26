@@ -535,11 +535,15 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
       return "";
     };
 
-    const statusInput = getParam("status").toUpperCase();
-    if (statusInput && !BED_STATUSES.includes(statusInput as BedStatus)) {
+    const statusInput = getParam("status")
+      .split(",")
+      .map((status) => status.trim().toUpperCase())
+      .filter(Boolean);
+    const exportBedStatuses = [...BED_STATUSES, "ALLOCATED"] as const;
+    if (statusInput.some((status) => !exportBedStatuses.includes(status as (typeof exportBedStatuses)[number]))) {
       return res.status(400).json({
         message: "Invalid bed status filter",
-        allowedStatuses: BED_STATUSES,
+        allowedStatuses: exportBedStatuses,
       });
     }
 
@@ -564,9 +568,23 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
     const bedName = getParam("bedName", "bed_name", "bed");
     const search = getParam("search");
     const nationality = getParam("nationality", "country");
+    const requestedBedStatuses = statusInput.filter(
+      (status): status is BedStatus => BED_STATUSES.includes(status as BedStatus),
+    );
+    const statusConditions: Prisma.BedWhereInput[] = [
+      ...(requestedBedStatuses.length
+        ? [{
+            status: { in: requestedBedStatuses },
+            room: { allocation: { is: null } },
+          }]
+        : []),
+      ...(statusInput.includes("ALLOCATED")
+        ? [{ room: { allocation: { isNot: null } } }]
+        : []),
+    ];
 
     const where: Prisma.BedWhereInput = {
-      ...(statusInput ? { status: statusInput as BedStatus } : {}),
+      ...(statusInput.length ? { AND: [{ OR: statusConditions }] } : {}),
       ...(roomId ? { roomId } : {}),
       ...(isActiveInput ? { isActive: isActiveInput === "true" } : {}),
       ...(bedName

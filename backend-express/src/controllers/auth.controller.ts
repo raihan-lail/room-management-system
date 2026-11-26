@@ -59,7 +59,7 @@ export async function login(
     });
 
     if (!user) {
-      await auditActor(req, null, {
+      await auditActor(req, { email: normalizedEmail }, {
         action: "login_failed",
         resource: "auth",
         description: "Failed login attempt",

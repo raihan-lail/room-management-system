@@ -11,7 +11,11 @@ function buildInitialFilters(filterFields, initialFilters) {
     const provided = initialFilters?.[field.name];
 
     values[field.name] =
-      provided !== undefined ? provided : (field.defaultValue ?? "");
+      provided !== undefined
+        ? field.type === "checkboxes"
+          ? (Array.isArray(provided) ? provided : provided ? [provided] : [])
+          : provided
+        : (field.defaultValue ?? (field.type === "checkboxes" ? [] : ""));
 
     return values;
   }, {});
@@ -111,7 +115,9 @@ export default function ExportModal({
       filterFields.filter((field) => {
         const value = filters[field.name];
 
-        return value !== undefined && value !== null && String(value).trim() !== "";
+        return Array.isArray(value)
+          ? value.length > 0
+          : value !== undefined && value !== null && String(value).trim() !== "";
       }).length,
     [filterFields, filters]
   );
@@ -152,7 +158,7 @@ export default function ExportModal({
 
         if (value === undefined || value === null) continue;
 
-        const text = String(value).trim();
+        const text = Array.isArray(value) ? value.filter(Boolean).join(",") : String(value).trim();
 
         if (text) {
           params.set(field.name, text);
@@ -247,13 +253,37 @@ export default function ExportModal({
 
               {filterFields.map((field) => {
                 const Wrapper =
-                  field.type === "select" && field.searchable ? "div" : "label";
+                  (field.type === "select" && field.searchable) || field.type === "checkboxes"
+                    ? "div"
+                    : "label";
 
                 return (
                   <Wrapper key={field.name} className="form-field">
                     <span>{field.label}</span>
 
-                    {field.type === "select" && field.searchable ? (
+                    {field.type === "checkboxes" ? (
+                      <div className="export-status-options" role="group" aria-label={field.label}>
+                        {(field.options ?? []).map((option) => {
+                          const selected = filters[field.name] ?? [];
+                          return (
+                            <label key={option.value} className="modal__checkbox">
+                              <input
+                                type="checkbox"
+                                checked={selected.includes(option.value)}
+                                onChange={(event) => handleFilterChange(
+                                  field.name,
+                                  event.target.checked
+                                    ? [...selected, option.value]
+                                    : selected.filter((value) => value !== option.value),
+                                )}
+                                disabled={exporting}
+                              />
+                              <span>{option.label}</span>
+                            </label>
+                          );
+                        })}
+                      </div>
+                    ) : field.type === "select" && field.searchable ? (
                       <SearchableFilterSelect
                         field={field}
                         value={filters[field.name] ?? ""}

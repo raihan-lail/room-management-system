@@ -41,21 +41,33 @@ function getSiteComplaintFilter(
 
 function buildComplaintWhere(
   actor: Actor,
-  query: AuthRequest["query"]
+  query: AuthRequest["query"],
+  allowMultipleStatuses = false,
 ): { where: Prisma.ComplaintWhereInput } | { error: string } {
   const where: Prisma.ComplaintWhereInput = {
     AND: [getSiteComplaintFilter(actor)],
   };
 
   if (query.status !== undefined) {
+    const statuses = typeof query.status === "string"
+      ? (allowMultipleStatuses ? query.status.split(",") : [query.status])
+          .map((status) => status.trim().toUpperCase())
+          .filter(Boolean)
+      : [];
     if (
       typeof query.status !== "string" ||
-      !Object.values(ComplaintStatus).includes(query.status as ComplaintStatus)
+      statuses.length === 0 ||
+      (!allowMultipleStatuses && statuses.length !== 1) ||
+      statuses.some((status) => !Object.values(ComplaintStatus).includes(status as ComplaintStatus))
     ) {
       return { error: "Invalid complaint status." };
     }
 
-    where.status = query.status as ComplaintStatus;
+    if (allowMultipleStatuses) {
+      where.status = { in: statuses as ComplaintStatus[] };
+    } else {
+      where.status = statuses[0] as ComplaintStatus;
+    }
   }
 
   if (query.priority !== undefined) {
@@ -210,7 +222,7 @@ export async function exportComplaints(
   const actor = await getActorOrRespond(req, res);
   if (!actor) return;
 
-  const filters = buildComplaintWhere(actor, req.query);
+  const filters = buildComplaintWhere(actor, req.query, true);
 
   if ("error" in filters) {
     res.status(400).json({ message: filters.error });
