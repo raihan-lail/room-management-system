@@ -144,6 +144,10 @@ export function ModalField({ field, value, values = {}, onChange }) {
         onChange={handleChange}
         required={field.required}
       >
+        {field.placeholderOption && (
+          <option value="">{field.placeholderOption}</option>
+        )}
+
         {resolveOptions(field, values).map((option) => {
           const { value: optionValue, label } = normalizeOption(option);
 
