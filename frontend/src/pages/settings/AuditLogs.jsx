@@ -257,7 +257,7 @@ export default function AuditLog() {
 
                         <td>
                           <strong>
-                            {log.actorName || "Unknown user"}
+                            {log.actorName || "Unknown user"} - {log.actorEmail}
                           </strong>
                           <br />
                           <small className="muted">

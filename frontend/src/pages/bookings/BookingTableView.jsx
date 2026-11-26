@@ -135,7 +135,7 @@ export default function BookingTableView() {
 
   const exportFilterFields = useMemo(() => [
     { name: "search", label: "Search", type: "search", placeholder: "Resident, room, bed, company..." },
-    { name: "status", label: "Status", type: "select", placeholderOption: "All statuses", options: STATUS_OPTIONS.map((status) => ({ value: status, label: formatStatus(status) })) },
+    { name: "status", label: "Status", type: "checkboxes", options: STATUS_OPTIONS.map((status) => ({ value: status, label: formatStatus(status) })) },
     { name: "startedAtFrom", label: "Start From", type: "date" },
     { name: "startedAtTo", label: "Start To", type: "date" },
     { name: "checkedInAt", label: "Checked In At", type: "date" },

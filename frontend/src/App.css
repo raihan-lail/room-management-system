@@ -266,8 +266,11 @@
 }
 
 .side-nav-parent__chevron {
+  width: 9px;
+
   font-size: 9px;
   line-height: 1;
+  text-align: center;
   flex-shrink: 0;
 }
 
@@ -296,6 +299,12 @@
   font-size: 11px;
   line-height: 15px;
   font-weight: 500;
+}
+
+/* Keep alert dots in the same column, just before the chevron slot. */
+.side-nav-parent:not(:has(.side-nav-parent__chevron)),
+.side-nav-subitem {
+  padding-right: 23px;
 }
 
 .side-nav-subitem__icon {
@@ -4712,6 +4721,16 @@ textarea,
   height: 16px;
 
   cursor: pointer;
+}
+
+.export-status-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 16px;
+}
+
+.export-status-options .modal__checkbox {
+  grid-column: auto;
 }
 
 .modal__checkbox.is-disabled {

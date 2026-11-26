@@ -614,8 +614,7 @@ export default function Complains() {
             {
               name: "status",
               label: "Status",
-              type: "select",
-              placeholderOption: "Any status",
+              type: "checkboxes",
               options: STATUS_OPTIONS.map((status) => ({
                 value: status,
                 label: formatStatus(status),

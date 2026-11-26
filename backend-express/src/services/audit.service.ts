@@ -5,6 +5,7 @@ import { prisma } from "../lib/prisma.js";
 interface CreateAuditLogInput {
   actorUserId?: string | null;
   actorName?: string | null;
+  actorEmail?: string | null;
 
   action: string;
   resource: string;
@@ -26,6 +27,7 @@ export async function createAuditLog(
     data: {
       actorUserId: input.actorUserId ?? null,
       actorName: input.actorName ?? null,
+      actorEmail: input.actorEmail ?? null,
 
       action: input.action,
       resource: input.resource,
@@ -44,7 +46,25 @@ export async function createAuditLog(
 type AuditActorLike = {
   userId?: string | null;
   name?: string | null;
+  email?: string | null;
+  user?: { email?: string | null } | null;
 } | null | undefined;
+
+async function resolveActorEmail(
+  client: Prisma.TransactionClient,
+  actorUserId: string | null,
+  actor: AuditActorLike
+): Promise<string | null> {
+  const email = actor?.email ?? actor?.user?.email ?? null;
+  if (email || !actorUserId) return email;
+
+  const user = await client.user.findUnique({
+    where: { id: actorUserId },
+    select: { email: true },
+  });
+
+  return user?.email ?? null;
+}
 
 /**
  * Best-effort audit log for the acting user (outside a transaction).
@@ -57,10 +77,13 @@ export async function auditActor(
 ): Promise<void> {
   try {
     const meta = getRequestMeta(req);
+    const actorUserId = req.userId ?? actor?.userId ?? null;
+    const actorEmail = await resolveActorEmail(prisma, actorUserId, actor);
     await prisma.auditLog.create({
       data: {
-        actorUserId: req.userId ?? actor?.userId ?? null,
+        actorUserId,
         actorName: actor?.name ?? null,
+        actorEmail,
         action: input.action,
         resource: input.resource,
         resourceId: input.resourceId ?? null,
@@ -88,10 +111,13 @@ export async function auditInTransaction(
 ): Promise<void> {
   try {
     const meta = getRequestMeta(req);
+    const actorUserId = req.userId ?? actor?.userId ?? null;
+    const actorEmail = await resolveActorEmail(tx, actorUserId, actor);
     await createAuditLog(tx, {
       ...input,
-      actorUserId: req.userId ?? actor?.userId ?? null,
+      actorUserId,
       actorName: actor?.name ?? null,
+      actorEmail,
       ipAddress: meta.ipAddress,
       userAgent: meta.userAgent,
     });

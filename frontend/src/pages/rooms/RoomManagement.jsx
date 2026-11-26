@@ -31,6 +31,7 @@ const BED_STATUSES = [
   { value: "BOOKED", label: "Booked" },
   { value: "OCCUPIED", label: "Occupied" },
   { value: "HOME_LEAVE", label: "Home Leave" },
+  { value: "ALLOCATED", label: "Allocated" },
 ];
 
 function getRoomList(response) {
@@ -274,7 +275,7 @@ export default function RoomManagement() {
 
     return [
       { name: "search", label: "Search", type: "search", placeholder: "Bed, room, description..." },
-      { name: "status", label: "Bed Status", type: "select", placeholderOption: "All statuses", options: BED_STATUSES },
+      { name: "status", label: "Bed Status", type: "checkboxes", options: BED_STATUSES },
       { name: "nationality", label: "Nationality", type: "select", placeholderOption: "All nationalities", searchable: true, searchPlaceholder: "Search country...", options: COUNTRIES.map((country) => ({ value: country, label: country })) },
       { name: "locationId", label: "Location", type: "select", placeholderOption: "All locations", options: locationOptions },
       { name: "floorId", label: "Floor", type: "select", placeholderOption: "All floors", options: floorOptions },
