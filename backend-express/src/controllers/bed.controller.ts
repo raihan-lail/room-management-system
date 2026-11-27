@@ -568,15 +568,55 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
     const bedName = getParam("bedName", "bed_name", "bed");
     const search = getParam("search");
     const nationality = getParam("nationality", "country");
+    const dateInput = getParam("date");
+    let dateStart: Date | undefined;
+    let dateEnd: Date | undefined;
+    if (dateInput) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateInput)) {
+        return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." });
+      }
+      dateStart = new Date(`${dateInput}T00:00:00.000Z`);
+      if (Number.isNaN(dateStart.getTime()) || dateStart.toISOString().slice(0, 10) !== dateInput) {
+        return res.status(400).json({ message: "Invalid date. Use YYYY-MM-DD." });
+      }
+      dateEnd = new Date(dateStart.getTime() + 24 * 60 * 60 * 1000);
+    }
     const requestedBedStatuses = statusInput.filter(
       (status): status is BedStatus => BED_STATUSES.includes(status as BedStatus),
     );
+    const occupiedOnDate: Prisma.BookingWhereInput = {
+      status: { in: ["IN_HOUSE", "HOME_LEAVE"] },
+      startedAt: { lt: dateEnd! },
+      endedAt: { gt: dateStart! },
+    };
+    const bookedOnDate: Prisma.BookingWhereInput = {
+      status: "CONFIRMED",
+      createdAt: { lt: dateEnd! },
+      startedAt: { gte: dateStart! },
+    };
     const statusConditions: Prisma.BedWhereInput[] = [
       ...(requestedBedStatuses.length
-        ? [{
-            status: { in: requestedBedStatuses },
-            room: { allocation: { is: null } },
-          }]
+        ? dateStart
+          ? requestedBedStatuses.map((status): Prisma.BedWhereInput => {
+              const bookingCondition: Prisma.BedWhereInput = status === "VACANT"
+                ? { bookings: { none: { OR: [occupiedOnDate, bookedOnDate] } } }
+                : status === "BOOKED"
+                  ? { bookings: { some: bookedOnDate, none: occupiedOnDate } }
+                  : {
+                      bookings: {
+                        some: {
+                          status: status === "OCCUPIED" ? "IN_HOUSE" : "HOME_LEAVE",
+                          startedAt: { lt: dateEnd! },
+                          endedAt: { gt: dateStart! },
+                        },
+                      },
+                    };
+              return { ...bookingCondition, room: { allocation: { is: null } } };
+            })
+          : [{
+              status: { in: requestedBedStatuses },
+              room: { allocation: { is: null } },
+            }]
         : []),
       ...(statusInput.includes("ALLOCATED")
         ? [{ room: { allocation: { isNot: null } } }]
@@ -584,7 +624,7 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
     ];
 
     const where: Prisma.BedWhereInput = {
-      ...(statusInput.length ? { AND: [{ OR: statusConditions }] } : {}),
+      ...(statusInput.length && !dateStart ? { AND: [{ OR: statusConditions }] } : {}),
       ...(roomId ? { roomId } : {}),
       ...(isActiveInput ? { isActive: isActiveInput === "true" } : {}),
       ...(bedName
@@ -649,10 +689,10 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
           },
         },
         bookings: {
-          where: {
-            status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] },
-          },
-          orderBy: { startedAt: "desc" },
+          where: dateStart
+            ? { OR: [occupiedOnDate, bookedOnDate] }
+            : { status: { in: ["CONFIRMED", "IN_HOUSE", "HOME_LEAVE"] } },
+          orderBy: { startedAt: dateStart ? "asc" : "desc" },
           include: {
             resident: {
               include: { user: { select: { email: true } } },
@@ -669,22 +709,58 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
       });
     }
 
-    const rows = beds.map((bed) => {
+    const bedsForExport = dateStart
+      ? beds.filter((bed) => {
+          const activeStay = bed.bookings.find(
+            (booking) => booking.status === "IN_HOUSE" || booking.status === "HOME_LEAVE",
+          );
+          const confirmedUpcoming = bed.bookings.find((booking) => booking.status === "CONFIRMED");
+          const dateStatus: BedStatus = activeStay?.status === "IN_HOUSE"
+            ? "OCCUPIED"
+            : activeStay?.status === "HOME_LEAVE"
+              ? "HOME_LEAVE"
+              : confirmedUpcoming
+                ? "BOOKED"
+                : "VACANT";
+          const exportedStatus = bed.room.allocation ? "ALLOCATED" : dateStatus;
+          return !statusInput.length || statusInput.includes(exportedStatus);
+        })
+      : beds;
+
+    if (bedsForExport.length === 0) {
+      return res.status(400).json({
+        message: "No beds match the selected filters. Nothing to export.",
+      });
+    }
+
+    const rows = bedsForExport.map((bed) => {
+      const activeStay = bed.bookings.find(
+        (booking) => booking.status === "IN_HOUSE" || booking.status === "HOME_LEAVE",
+      );
+      const confirmedUpcoming = bed.bookings.find((booking) => booking.status === "CONFIRMED");
+      const dateStatus: BedStatus = activeStay?.status === "IN_HOUSE"
+        ? "OCCUPIED"
+        : activeStay?.status === "HOME_LEAVE"
+          ? "HOME_LEAVE"
+          : confirmedUpcoming
+            ? "BOOKED"
+            : "VACANT";
+      const bedStatus = dateStart ? dateStatus : bed.status;
       const expectedBookingStatus =
-        bed.status === "VACANT"
+        bedStatus === "VACANT"
           ? null
-          : BOOKING_STATUS_BY_BED_STATUS[bed.status];
+          : BOOKING_STATUS_BY_BED_STATUS[bedStatus];
       const bookingCandidates = expectedBookingStatus
         ? bed.bookings.filter(
             (booking) => booking.status === expectedBookingStatus,
           )
         : [];
       const booking =
-        expectedBookingStatus === "CONFIRMED"
+        expectedBookingStatus === "CONFIRMED" && !dateStart
           ? bookingCandidates[bookingCandidates.length - 1]
           : bookingCandidates[0];
       const allocation = bed.room.allocation;
-      const exportedBedStatus = allocation ? "ALLOCATED" : bed.status;
+      const exportedBedStatus = allocation ? "ALLOCATED" : bedStatus;
 
       return {
         "Site": bed.room.floor.location.site.name,
@@ -729,7 +805,7 @@ export async function exportBedsToExcel(req: AuthRequest, res: Response) {
     ];
     XLSX.utils.book_append_sheet(workbook, worksheet, "Beds");
     const buffer = XLSX.write(workbook, { type: "buffer", bookType: "xlsx" });
-    const filename = `beds-${new Date().toISOString().slice(0, 10)}.xlsx`;
+    const filename = `Beds Data - ${dateInput || new Date().toISOString().slice(0, 10)}.xlsx`;
 
     await notifyActor(req, {
       title: "Bed data export successfully",

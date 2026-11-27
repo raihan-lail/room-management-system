@@ -275,6 +275,7 @@ export default function RoomManagement() {
 
     return [
       { name: "search", label: "Search", type: "search", placeholder: "Bed, room, description..." },
+      { name: "date", label: "Status as of", type: "date" },
       { name: "status", label: "Bed Status", type: "checkboxes", options: BED_STATUSES },
       { name: "nationality", label: "Nationality", type: "select", placeholderOption: "All nationalities", searchable: true, searchPlaceholder: "Search country...", options: COUNTRIES.map((country) => ({ value: country, label: country })) },
       { name: "locationId", label: "Location", type: "select", placeholderOption: "All locations", options: locationOptions },
@@ -1092,10 +1093,10 @@ export default function RoomManagement() {
         <ExportModal
           title="Export Beds"
           endpoint="/api/bed/export"
-          filename="beds.xlsx"
+          filename={() => `Beds Data - ${bedDate || getTodayDate()}.xlsx`}
           entityLabel="beds"
           filterFields={bedExportFilterFields}
-          initialFilters={{ search, status: bedStatus }}
+          initialFilters={{ search, date: bedDate, status: bedStatus }}
           onClose={() => setIsExportModalOpen(false)}
         />
       )}
